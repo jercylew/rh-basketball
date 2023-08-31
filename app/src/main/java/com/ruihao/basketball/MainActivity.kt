@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
 //        setContentView(binding.root)
-        setContentView(R.layout.test_layout)
+        setContentView(R.layout.basketball_home)
 
         // Example of a call to a native method
 //        binding.sampleText.text = stringFromJNI()

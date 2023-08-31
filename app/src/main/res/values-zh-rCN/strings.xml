@@ -1,8 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Basketball</string>
-    <string name="home_title">Basketball Manage System</string>
-    <string name="home_scan_qr">Scan QR code to login</string>
-    <string name="total_basketballs">Total: %d</string>
+    <string name="app_name">借球机</string>
+    <string name="home_title">智能借球机</string>
+    <string name="home_scan_qr">扫描二维码登录</string>
+    <string name="total_basketballs">总球数: %d</string>
     <string name="remain_basketballs">Remaining: %d</string>
     <string name="borrow_basketball">Borrow</string>
     <string name="return_basketball">Return</string>

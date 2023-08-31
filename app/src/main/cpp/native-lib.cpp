@@ -1,6 +1,8 @@
 #include <jni.h>
 #include <string>
 
+
+
 std::string __jstring2cstring__(JNIEnv* env, jstring strIn)
 {
     std::string result = "";
@@ -50,4 +52,71 @@ Java_com_ruihao_basketball_MainActivity_doFaceRecognition(
 
     return env->NewStringUTF(result.c_str());
 }
+
+// Modbus
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_ruihao_basketball_MainActivity_initModbus(
+        JNIEnv* env,
+        jobject /* this */) {
+    bool retOk = true;
+
+    // Do the modbus rtu connection
+
+    return retOk ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_ruihao_basketball_MainActivity_writeModbusBit(
+        JNIEnv* env,
+        jobject /* this */,
+        jint address,
+        jint value) {
+    bool retOk = true;
+
+    // Do the modbus rtu writing
+
+    return retOk ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_ruihao_basketball_MainActivity_writeModbusRegister(
+        JNIEnv* env,
+        jobject /* this */,
+        jint address,
+        jint value) {
+    bool retOk = true;
+
+    // Do the modbus rtu writing
+
+    return retOk ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_ruihao_basketball_MainActivity_readModbusBit(
+        JNIEnv* env,
+        jobject /* this */,
+        jint address) {
+    jint retInt = 0;
+
+    // Do the modbus rtu writing
+
+    return retInt;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_ruihao_basketball_MainActivity_readModbusRegister(
+        JNIEnv* env,
+        jobject /* this */,
+        jint address) {
+    jint retInt = 0;
+
+    // Do the modbus rtu writing
+
+    return retInt;
+}
+
+
+
+
+
 

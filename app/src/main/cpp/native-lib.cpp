@@ -3,7 +3,7 @@
 
 
 
-std::string __jstring2cstring__(JNIEnv* env, jstring strIn)
+std::string jstring2cstring(JNIEnv* env, jstring strIn)
 {
     std::string result = "";
     if (!strIn)
@@ -45,7 +45,7 @@ Java_com_ruihao_basketball_MainActivity_doFaceRecognition(
     if (!imagePath)
         return env->NewStringUTF(result.c_str());
 
-    inImagePath = __jstring2cstring__(env, imagePath);
+    inImagePath = jstring2cstring(env, imagePath);
 
     //Do the face recognition
     result = inImagePath + ": " + "Yuming";

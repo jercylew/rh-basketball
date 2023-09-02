@@ -6,6 +6,10 @@ import android.view.View
 import android.view.Window
 import android.view.WindowManager
 import android.widget.TextView
+import android.widget.AdapterView
+import java.util.*
+import kotlin.collections.ArrayList
+import android.widget.GridView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -14,6 +18,8 @@ import com.ruihao.basketball.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    lateinit var mGVBalls: GridView
+    lateinit var mListBalls: List<GridViewModal>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         actionBar?.hide()
@@ -24,14 +30,19 @@ class MainActivity : AppCompatActivity() {
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
 
         // Modbus init
+        initModbus()
 
         // Camera init
+        initCamera()
 
         super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
 //        setContentView(binding.root)
         setContentView(R.layout.basketball_home)
+
+        // Set adapter
+        initGridView()
 
         // Example of a call to a native method
 //        binding.sampleText.text = stringFromJNI()
@@ -47,6 +58,23 @@ class MainActivity : AppCompatActivity() {
 
     private fun initCamera() {
 
+    }
+
+    private fun initGridView() {
+        mGVBalls = findViewById(R.id.gvChannelBasketballs)
+        mListBalls = ArrayList<GridViewModal>()
+
+        for (i in 1..24) {
+            mListBalls = mListBalls + GridViewModal("C++",
+                R.drawable.basketball_color_icon)
+        }
+
+        // on below line we are initializing our course adapter
+        // and passing course list and context.
+        val courseAdapter = GridRVAdapter(mListBalls = mListBalls, this@MainActivity)
+
+        // on below line we are setting adapter to our grid view.
+        mGVBalls.adapter = courseAdapter
     }
 
     /**

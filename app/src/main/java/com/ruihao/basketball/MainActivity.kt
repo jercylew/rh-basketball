@@ -1,5 +1,6 @@
 package com.ruihao.basketball
 
+import android.content.res.Configuration
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
@@ -14,12 +15,18 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.ruihao.basketball.databinding.ActivityMainBinding
+import com.ruihao.basketball.User
 
 class MainActivity : AppCompatActivity() {
-
     private lateinit var binding: ActivityMainBinding
-    lateinit var mGVBalls: GridView
-    lateinit var mListBalls: List<GridViewModal>
+    private lateinit var mGVBalls: GridView
+    private lateinit var mListBalls: List<GridViewModal>
+    private lateinit var mTVTotalQty: TextView
+    private lateinit var mTVRemainQty: TextView
+    private var mTotalBallsQty: Array<Int> = arrayOf<Int>(12, 12)
+    private var mRemainBallsQty: Array<Int> = arrayOf<Int>(0, 0)
+    private var mUser: User? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         actionBar?.hide()
@@ -28,11 +35,7 @@ class MainActivity : AppCompatActivity() {
         windowInsetsController.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
-
-        // Modbus init
         initModbus()
-
-        // Camera init
         initCamera()
 
         super.onCreate(savedInstanceState)
@@ -40,13 +43,25 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
 //        setContentView(binding.root)
         setContentView(R.layout.basketball_home)
-
-        // Set adapter
         initGridView()
+        mTVTotalQty = findViewById(R.id.tvTotalQty)
+        mTVRemainQty = findViewById(R.id.tvRemainQty)
 
         // Example of a call to a native method
 //        binding.sampleText.text = stringFromJNI()
         binding.sampleText.text = doFaceRecognition("/path/images/yuming.jpg")
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        //Fetch data from controller via modbus
+
+        //Update UI
+        var total: Int = mTotalBallsQty[0] + mTotalBallsQty[1]
+        var remain: Int = mRemainBallsQty[0] + mRemainBallsQty[1]
+        mTVTotalQty.text = String.format(getString(R.string.total_basketballs), total)
+        mTVRemainQty.text = String.format(getString(R.string.remain_basketballs), remain)
     }
 
     override fun onDestroy() {
@@ -64,7 +79,15 @@ class MainActivity : AppCompatActivity() {
         mGVBalls = findViewById(R.id.gvChannelBasketballs)
         mListBalls = ArrayList<GridViewModal>()
 
-        for (i in 1..24) {
+        for (i in 1..8) {
+            mListBalls = mListBalls + GridViewModal("C++",
+                R.drawable.basketball_color_icon)
+        }
+        for (i in 1..4) {
+            mListBalls = mListBalls + GridViewModal("C++",
+                R.drawable.basketball_gray_icon)
+        }
+        for (i in 1..12) {
             mListBalls = mListBalls + GridViewModal("C++",
                 R.drawable.basketball_color_icon)
         }

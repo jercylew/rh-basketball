@@ -7,9 +7,10 @@
     <string name="borrow_basketball">Borrow</string>
     <string name="return_basketball">Return</string>
     <string name="welcome_text_format">Welcome %s</string>
+    <string name="welcome_user_name">Guest</string>
     <string name="footer_technique_support">Technique support: Shenzhen Ruihao Technology Co., Ltd</string>
     <string name="footer_tel">Tel: 0755–8423987</string>
-    <string name="tip_login">Please login via either card or QR code</string>
+    <string name="tip_login">Please login via either card or QR code at first</string>
     <string name="tip_take_basketball">Please take the basketball</string>
     <string name="tip_return_basketball">Please put the basketball into the door just opened</string>
     <string name="view_borrow_records">Borrowing log</string>

@@ -8,9 +8,11 @@ import android.view.Window
 import android.view.WindowManager
 import android.widget.TextView
 import android.widget.AdapterView
+import android.widget.Button
 import java.util.*
 import kotlin.collections.ArrayList
 import android.widget.GridView
+import android.widget.Toast
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -23,8 +25,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mListBalls: List<GridViewModal>
     private lateinit var mTVTotalQty: TextView
     private lateinit var mTVRemainQty: TextView
+    private lateinit var mTVGreeting: TextView
+    private lateinit var mBtnBorrow: Button
+    private lateinit var mBtnReturn: Button
     private var mTotalBallsQty: Array<Int> = arrayOf<Int>(12, 12)
-    private var mRemainBallsQty: Array<Int> = arrayOf<Int>(0, 0)
+    private var mRemainBallsQty: Array<Int> = arrayOf<Int>(8, 12)
     private var mUser: User? = null
 
 
@@ -46,6 +51,19 @@ class MainActivity : AppCompatActivity() {
         initGridView()
         mTVTotalQty = findViewById(R.id.tvTotalQty)
         mTVRemainQty = findViewById(R.id.tvRemainQty)
+        mTVGreeting = findViewById(R.id.tvGreeting)
+
+        mBtnBorrow = findViewById(R.id.btnBorrow)
+        mBtnReturn = findViewById(R.id.btnReturn)
+
+        mBtnBorrow.setOnClickListener {
+            Toast.makeText(this@MainActivity, getString(R.string.tip_login),
+                Toast.LENGTH_SHORT).show()
+        }
+        mBtnReturn.setOnClickListener {
+            Toast.makeText(this@MainActivity, getString(R.string.tip_login),
+                Toast.LENGTH_SHORT).show()
+        }
 
         // Example of a call to a native method
 //        binding.sampleText.text = stringFromJNI()
@@ -62,6 +80,8 @@ class MainActivity : AppCompatActivity() {
         var remain: Int = mRemainBallsQty[0] + mRemainBallsQty[1]
         mTVTotalQty.text = String.format(getString(R.string.total_basketballs), total)
         mTVRemainQty.text = String.format(getString(R.string.remain_basketballs), remain)
+        val userName: String = mUser?.name ?: getString(R.string.welcome_user_name)
+        mTVGreeting.text = String.format(getString(R.string.welcome_text_format, userName))
     }
 
     override fun onDestroy() {

@@ -3,6 +3,7 @@ package com.ruihao.basketball
 import android.content.res.Configuration
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
@@ -34,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private var mRemainBallsQty: Array<Int> = arrayOf<Int>(8, 12)
     private var mUser: User? = null
     private var mScanBarQRCodeBytes: ArrayList<Int> = ArrayList<Int>()
+    private var mScanBarQRCodeTimer: CountDownTimer? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,15 +97,29 @@ class MainActivity : AppCompatActivity() {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         mScanBarQRCodeBytes.add(keyCode)
+        Log.d("#######RH-Basketball", "Received Key: $keyCode")
 
-        if (mScanBarQRCodeBytes.size == 13) {
-            handleScanICOrQRCard()
+        if (mScanBarQRCodeTimer != null) {
+            Log.d("#######RH-Basketball", "Key receive not completed, continue receive")
+            mScanBarQRCodeTimer!!.cancel()
+            mScanBarQRCodeTimer = null
         }
+        mScanBarQRCodeTimer = object : CountDownTimer(350, 350) {
+            override fun onTick(millisUntilFinished: Long) {
+                // Do nothing
+            }
+            override fun onFinish() {
+                handleScanICOrQRCard()
+            }
+        }
+
+        (mScanBarQRCodeTimer as CountDownTimer).start()
 
         return super.onKeyDown(keyCode, event)
     }
 
     private fun handleScanICOrQRCard(): Unit {
+        Log.d("#######RH-Basketball", "Bar / QR code receive completed, now check it!")
         var result: String = ""
         var hasShift: Boolean = false
         for(keyCode in mScanBarQRCodeBytes){
@@ -112,6 +128,8 @@ class MainActivity : AppCompatActivity() {
         }
         Toast.makeText(this, result, Toast.LENGTH_LONG).show();
         mScanBarQRCodeBytes.clear();
+
+        mScanBarQRCodeTimer = null
     }
 
     private fun keyCodeToChar(keyCode: Int, hasShift: Boolean): String {

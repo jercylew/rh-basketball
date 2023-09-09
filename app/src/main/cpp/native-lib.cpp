@@ -1,8 +1,6 @@
 #include <jni.h>
 #include <string>
 
-
-
 std::string jstring2cstring(JNIEnv* env, jstring strIn)
 {
     std::string result = "";
@@ -114,7 +112,6 @@ Java_com_ruihao_basketball_MainActivity_readModbusRegister(
 
     return retInt;
 }
-
 
 
 

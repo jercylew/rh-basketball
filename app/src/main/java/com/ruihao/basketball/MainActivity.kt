@@ -1,26 +1,21 @@
 package com.ruihao.basketball
 
-import android.content.res.Configuration
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.util.Log
 import android.view.KeyEvent
-import android.view.View
-import android.view.Window
-import android.view.WindowManager
-import android.widget.TextView
-import android.widget.AdapterView
 import android.widget.Button
-import java.util.*
-import kotlin.collections.ArrayList
 import android.widget.GridView
+import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.ruihao.basketball.databinding.ActivityMainBinding
-import com.ruihao.basketball.User
+import java.io.IOException
+import java.security.InvalidParameterException
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -36,6 +31,8 @@ class MainActivity : AppCompatActivity() {
     private var mUser: User? = null
     private var mScanBarQRCodeBytes: ArrayList<Int> = ArrayList<Int>()
     private var mScanBarQRCodeTimer: CountDownTimer? = null
+    private var dispQueue: DispQueueThread? = null
+    private var comPort: SerialControl? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,6 +67,12 @@ class MainActivity : AppCompatActivity() {
                 Toast.LENGTH_SHORT).show()
         }
 
+        dispQueue = DispQueueThread()
+        comPort = SerialControl()
+        openComPort(comPort!!)
+
+        dispQueue!!.start()
+
         // Example of a call to a native method
 //        binding.sampleText.text = stringFromJNI()
         binding.sampleText.text = doFaceRecognition("/path/images/yuming.jpg")
@@ -89,10 +92,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        comPort?.close()
+        dispQueue?.interrupt()
 
         // Do the cleaning work
         var num: Int = 10
+        super.onDestroy()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -195,6 +200,21 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    private fun dispRecData(comRecData: ComBean) {
+        val sMsg = StringBuilder()
+        sMsg.append(comRecData.sRecTime)
+        sMsg.append("[")
+        sMsg.append(comRecData.sComPort)
+        sMsg.append("]")
+
+        sMsg.append("[Txt] ")
+        sMsg.append(comRecData.bRec?.let { String(it) })
+
+        Toast.makeText(this, sMsg.toString(), Toast.LENGTH_LONG).show();
+
+        //Handle received message
+    }
+
     private fun initGridView() {
         mGVBalls = findViewById(R.id.gvChannelBasketballs)
         mListBalls = ArrayList<GridViewModal>()
@@ -218,6 +238,66 @@ class MainActivity : AppCompatActivity() {
 
         // on below line we are setting adapter to our grid view.
         mGVBalls.adapter = courseAdapter
+    }
+
+    private fun openComPort(comPort: SerialHelper) {
+        try {
+            comPort.open()
+            Toast.makeText(this, "Open serial port succeed: ${comPort.sPort}",
+                Toast.LENGTH_LONG).show();
+        } catch (e: SecurityException) {
+            Log.e("RH_Basketball", "Unable to open serial port, permission denied!")
+        } catch (e: IOException) {
+            Log.e("RH_Basketball", "Unable to open serial port, IO error!")
+        } catch (e: InvalidParameterException) {
+            Log.e("RH_Basketball", "Unable to open serial port, Parameter error!")
+        }
+    }
+
+    private inner class SerialControl
+        : SerialHelper() {
+        override fun onDataReceived(comRecData: ComBean?) {
+            //数据接收量大或接收时弹出软键盘，界面会卡顿,可能和6410的显示性能有关
+            //直接刷新显示，接收数据量大时，卡顿明显，但接收与显示同步。
+            //用线程定时刷新显示可以获得较流畅的显示效果，但是接收数据速度快于显示速度时，显示会滞后。
+            //最终效果差不多-_-，线程定时刷新稍好一些。
+            if (comRecData != null) {
+                Log.d("RH_Basketball##########", "onDataReceived $comRecData")
+                dispQueue?.addQueue(comRecData)
+            } //线程定时刷新显示(推荐)
+        }
+    }
+
+    private inner class DispQueueThread() : Thread() {
+        private val queueList: Queue<ComBean> = LinkedList()
+
+        override fun run() {
+            super.run()
+            while (!isInterrupted) {
+                val comData: ComBean
+
+                if (queueList == null || queueList.isEmpty()) {
+                    continue
+                }
+
+                while (queueList.poll().also { comData = it } != null) {
+                    Log.d("RH_Basketball##########", "DispQueueThread $comData")
+                    this@MainActivity.runOnUiThread(Runnable { dispRecData(comData) })
+                    try {
+                        sleep(100) //显示性能高的话，可以把此数值调小。
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                    break
+                }
+            }
+        }
+
+        @Synchronized
+        fun addQueue(comData: ComBean) {
+            Log.d("RH_Basketball##########", "addQueue $comData")
+            queueList.add(comData)
+        }
     }
 
     /**

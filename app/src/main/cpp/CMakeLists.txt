@@ -30,6 +30,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         modbus/modbus-data.c
         modbus/modbus-rtu.c
         modbus/modbus-tcp.c
+        SerialPort.c
         native-lib.cpp)
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE modbus)

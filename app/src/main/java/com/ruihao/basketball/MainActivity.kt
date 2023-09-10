@@ -307,7 +307,7 @@ class MainActivity : AppCompatActivity() {
     private external fun stringFromJNI(): String
     private external fun doFaceRecognition(imagePath: String): String
     private external fun initModbus(): Boolean
-    private external fun writeModbusBit(address: Int, value: Int): Boolean
+    private external fun writeModbusBit(address: Int, value: Boolean): Boolean
     private external fun writeModbusRegister(address: Int, value: Int): Boolean
     private external fun readModbusBit(address: Int): Int
     private external fun readModbusRegister(address: Int): Int

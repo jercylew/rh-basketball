@@ -30,6 +30,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         modbus/modbus-data.c
         modbus/modbus-rtu.c
         modbus/modbus-tcp.c
+        modbus_wrapper.cpp
         SerialPort.c
         native-lib.cpp)
 

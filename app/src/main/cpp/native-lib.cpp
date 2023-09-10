@@ -1,5 +1,6 @@
 #include <jni.h>
 #include <string>
+#include "modbus_wrapper.h"
 
 std::string jstring2cstring(JNIEnv* env, jstring strIn)
 {
@@ -56,11 +57,24 @@ extern "C" JNIEXPORT jboolean JNICALL
 Java_com_ruihao_basketball_MainActivity_initModbus(
         JNIEnv* env,
         jobject /* this */) {
-    bool retOk = true;
+    bool bRet = do_open_modbus();
+    return bRet ? JNI_TRUE : JNI_FALSE;
+}
 
-    // Do the modbus rtu connection
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_ruihao_basketball_MainActivity_closeModbus(
+        JNIEnv* env,
+        jobject /* this */) {
+    bool bRet = do_close_modbus();
+    return bRet ? JNI_TRUE : JNI_FALSE;
+}
 
-    return retOk ? JNI_TRUE : JNI_FALSE;
+extern "C" JNIEXPORT jboolean JNICALL
+        Java_com_ruihao_basketball_MainActivity_restartModbus(
+                JNIEnv* env,
+                jobject /* this */) {
+    bool retOk = do_restart_modbus();
+    return retOk;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
@@ -68,12 +82,9 @@ Java_com_ruihao_basketball_MainActivity_writeModbusBit(
         JNIEnv* env,
         jobject /* this */,
         jint address,
-        jint value) {
-    bool retOk = true;
-
-    // Do the modbus rtu writing
-
-    return retOk ? JNI_TRUE : JNI_FALSE;
+        jboolean value) {
+    bool bRet = do_write_modbus_bit(address, value ? 1 : 0);
+    return bRet ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
@@ -82,11 +93,8 @@ Java_com_ruihao_basketball_MainActivity_writeModbusRegister(
         jobject /* this */,
         jint address,
         jint value) {
-    bool retOk = true;
-
-    // Do the modbus rtu writing
-
-    return retOk ? JNI_TRUE : JNI_FALSE;
+    bool bRet = do_write_modbus_register(address, value);
+    return bRet ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -94,11 +102,7 @@ Java_com_ruihao_basketball_MainActivity_readModbusBit(
         JNIEnv* env,
         jobject /* this */,
         jint address) {
-    jint retInt = 0;
-
-    // Do the modbus rtu writing
-
-    return retInt;
+    return do_read_modbus_bit(address);
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -106,11 +110,7 @@ Java_com_ruihao_basketball_MainActivity_readModbusRegister(
         JNIEnv* env,
         jobject /* this */,
         jint address) {
-    jint retInt = 0;
-
-    // Do the modbus rtu writing
-
-    return retInt;
+    return do_read_modbus_register(address);
 }
 
 

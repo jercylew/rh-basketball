@@ -16,6 +16,9 @@ import com.ruihao.basketball.databinding.ActivityMainBinding
 import java.io.IOException
 import java.security.InvalidParameterException
 import java.util.*
+import com.chaquo.python.PyException
+import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -50,6 +53,11 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
 //        setContentView(binding.root)
         setContentView(R.layout.basketball_home)
+        
+        if (!Python.isStarted()) {
+            Python.start(AndroidPlatform(this))
+        }
+
         initGridView()
         mTVTotalQty = findViewById(R.id.tvTotalQty)
         mTVRemainQty = findViewById(R.id.tvRemainQty)

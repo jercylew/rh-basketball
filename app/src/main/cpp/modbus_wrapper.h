@@ -3,6 +3,7 @@
 //
 #include <jni.h>
 #include <string>
+#include <cerrno>
 #include <android/log.h>
 #include "modbus/modbus.h"
 

@@ -5,7 +5,8 @@
     android:id="@+id/basketballHome"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/basketball_bg">
+    android:background="@drawable/basketball_bg"
+    tools:context=".MainActivity">
 
     <TextView
         android:id="@+id/tvHomeTitle"
@@ -112,8 +113,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btnBorrow" />
 
-    <TextureView
-        android:id="@+id/ttvCameraPreview"
+    <androidx.camera.view.PreviewView
+        android:id="@+id/viewFinder"
         android:layout_width="164dp"
         android:layout_height="117dp"
         android:layout_marginTop="40dp"
@@ -131,7 +132,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.866"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ttvCameraPreview" />
+        app:layout_constraintTop_toBottomOf="@+id/viewFinder" />
 
     <TextView
         android:id="@+id/tvTel"

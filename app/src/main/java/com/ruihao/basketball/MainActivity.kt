@@ -23,19 +23,25 @@ import java.security.InvalidParameterException
 import java.util.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
 import androidx.camera.video.VideoCapture
 import androidx.camera.video.Recorder
 import androidx.camera.video.Recording
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.core.Preview
+import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
 import androidx.core.content.ContextCompat
 import androidx.camera.core.CameraSelector
+import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import com.chaquo.python.PyException
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
+
+typealias LumaListener = (luma: Double) -> Unit
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -183,6 +189,8 @@ class MainActivity : AppCompatActivity() {
         openComPort(comPort!!)
 
         dispQueue!!.start()
+
+        cameraExecutor = Executors.newSingleThreadExecutor()
 
         // Request camera permissions
         if (allPermissionsGranted()) {
@@ -366,6 +374,13 @@ class MainActivity : AppCompatActivity() {
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         imageCapture = ImageCapture.Builder().build()
+        val imageAnalyzer = ImageAnalysis.Builder()
+            .build()
+            .also {
+                it.setAnalyzer(cameraExecutor, LuminosityAnalyzer { luma ->
+//                    Log.d(TAG, "Average luminosity: $luma")
+                })
+            }
 
         cameraProviderFuture.addListener({
             // Used to bind the lifecycle of cameras to the lifecycle owner
@@ -387,7 +402,7 @@ class MainActivity : AppCompatActivity() {
 
                 // Bind use cases to camera
                 cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture)
+                    this, cameraSelector, preview, imageCapture, imageAnalyzer)
 
             } catch(exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
@@ -505,6 +520,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private class LuminosityAnalyzer(private val listener: LumaListener) : ImageAnalysis.Analyzer {
+
+        private fun ByteBuffer.toByteArray(): ByteArray {
+            rewind()    // Rewind the buffer to zero
+            val data = ByteArray(remaining())
+            get(data)   // Copy the buffer into a byte array
+            return data // Return the byte array
+        }
+
+        override fun analyze(image: ImageProxy) {
+
+            val buffer = image.planes[0].buffer
+            val data = buffer.toByteArray()
+            val pixels = data.map { it.toInt() and 0xFF }
+            val luma = pixels.average()
+
+            listener(luma)
+
+            image.close()
+        }
+    }
+
     /**
      * A native method that is implemented by the 'basketball' native library,
      * which is packaged with this application.
@@ -519,7 +556,7 @@ class MainActivity : AppCompatActivity() {
 
 
     companion object {
-        private const val TAG = "CameraXApp"
+        private const val TAG = "RH-Basketball"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private val REQUIRED_PERMISSIONS =
             mutableListOf (

@@ -67,12 +67,70 @@ class MainActivity : AppCompatActivity() {
         mBtnReturn = findViewById(R.id.btnReturn)
 
         mBtnBorrow.setOnClickListener {
-            Toast.makeText(this@MainActivity, getString(R.string.tip_login),
-                Toast.LENGTH_SHORT).show()
+            if (mUser == null) {
+                Toast.makeText(this@MainActivity, getString(R.string.tip_login),
+                    Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            Log.d("#########??????&&", "Check the availability~!!!!")
+
+            // Check if there are remaining balls
+            if (mRemainBallsQty[0] + mRemainBallsQty[1] == 0) {
+                Toast.makeText(this@MainActivity, getString(R.string.tip_no_basketball),
+                    Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            // Check which channel has balls
+
+            // Open the door of channel selected
+
+            // Check the number of remaining balls decreased & door flag cleared
+            /*
+            numOfLoop = 6 //3 seconds
+            while (modbus_read(num_qty) == m_remainQty(selected) || modbus_read_bit(out_door) == 1 )
+            {
+                Log.d(TAG, "Still waiting for the ball released from the current channel")
+                sleep(500) //Warning: UI Freezing
+
+                if (numOfLoop >= 6) {
+                    break;
+                }
+            }
+             */
+
+            // Inform the user toc (Play audio)
+
+            // Save borrow record (DO not do this now)
+
+            // Logout
+
+
         }
         mBtnReturn.setOnClickListener {
-            Toast.makeText(this@MainActivity, getString(R.string.tip_login),
-                Toast.LENGTH_SHORT).show()
+            if (mUser == null) {
+                Toast.makeText(this@MainActivity, getString(R.string.tip_login),
+                    Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            if (mRemainBallsQty[0] + mRemainBallsQty[1] == 24) {
+                Toast.makeText(this@MainActivity, getString(R.string.tip_no_space),
+                    Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            // Open the door
+
+            // Inform user to return the ball
+
+            // Close the door
+
+            // Inform the user (Thanks for using)
+
+            // Logout
+
         }
 
         dispQueue = DispQueueThread()

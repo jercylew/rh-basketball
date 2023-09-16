@@ -1,7 +1,6 @@
 package com.ruihao.basketball
 
 import android.Manifest
-import android.R.attr.bitmap
 import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -9,14 +8,14 @@ import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.graphics.Rect
 import android.graphics.YuvImage
-import android.media.Image
 import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Environment
+import android.provider.BaseColumns
 import android.provider.MediaStore
-import android.util.Log
 import android.util.Base64
+import android.util.Log
 import android.view.KeyEvent
 import android.widget.Button
 import android.widget.GridView
@@ -73,8 +72,10 @@ class MainActivity : AppCompatActivity() {
     private var mUser: User? = null
     private var mScanBarQRCodeBytes: ArrayList<Int> = ArrayList<Int>()
     private var mScanBarQRCodeTimer: CountDownTimer? = null
+    private var mUserLoginTimer: CountDownTimer? = null
     private var dispQueue: DispQueueThread? = null
     private var comPort: SerialControl? = null
+    private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
 
     //Camera
     private var imageCapture: ImageCapture? = null
@@ -121,34 +122,6 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 //        setContentView(R.layout.basketball_home)
-        
-        if (!Python.isStarted()) {
-            Python.start(AndroidPlatform(this))
-        }
-
-        mAppDataFile.mkdirs()
-        if (!File(faceRecognitionModelPath()).exists()) {
-            File(faceRecognitionModelPath()).mkdirs()
-        }
-        if (!File(faceRecognitionDataPath()).exists()) {
-            File(faceRecognitionDataPath()).mkdirs()
-        }
-
-        // Load the face_recognition model
-        GlobalScope.launch {
-            val py = Python.getInstance()
-            val module = py.getModule("face_recognition_wrapper")
-            val retState: Boolean = module.callAttr("load_known_faces",
-                faceRecognitionDataPath(), faceRecognitionModelPath())
-                .toBoolean()
-
-            Log.d(TAG, "Loading face recognition model succeed: $retState")
-
-            runOnUiThread {
-                mFaceRecogModelLoaded = retState
-            }
-        }
-
 
         initGridView()
         mTVTotalQty = findViewById(R.id.tvTotalQty)
@@ -302,8 +275,9 @@ class MainActivity : AppCompatActivity() {
             hasShift = (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT);
         }
         Toast.makeText(this, result, Toast.LENGTH_LONG).show();
-        mScanBarQRCodeBytes.clear();
+        loginUser(result)
 
+        mScanBarQRCodeBytes.clear();
         mScanBarQRCodeTimer = null
     }
 
@@ -368,7 +342,32 @@ class MainActivity : AppCompatActivity() {
 
     //Camera
     private fun initCamera() {
+        if (!Python.isStarted()) {
+            Python.start(AndroidPlatform(this))
+        }
 
+        mAppDataFile.mkdirs()
+        if (!File(faceRecognitionModelPath()).exists()) {
+            File(faceRecognitionModelPath()).mkdirs()
+        }
+        if (!File(faceRecognitionDataPath()).exists()) {
+            File(faceRecognitionDataPath()).mkdirs()
+        }
+
+        // Load the face_recognition model
+        GlobalScope.launch {
+            val py = Python.getInstance()
+            val module = py.getModule("face_recognition_wrapper")
+            val retState: Boolean = module.callAttr("load_known_faces",
+                faceRecognitionDataPath(), faceRecognitionModelPath())
+                .toBoolean()
+
+            Log.d(TAG, "Loading face recognition model succeed: $retState")
+
+            runOnUiThread {
+                mFaceRecogModelLoaded = retState
+            }
+        }
     }
 
     private fun takePhoto() {
@@ -452,6 +451,7 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Face recognized as $label",
                             Toast.LENGTH_LONG).show()
+                        loginUser(label)
                     }
                 })
             }
@@ -503,10 +503,9 @@ class MainActivity : AppCompatActivity() {
 
         sMsg.append("[Txt] ")
         sMsg.append(comRecData.bRec?.let { String(it) })
-
         Toast.makeText(this, sMsg.toString(), Toast.LENGTH_LONG).show();
 
-        //Handle received message
+        loginUser(comRecData.bRec?.let { String(it) })
     }
 
     private fun initGridView() {
@@ -545,6 +544,96 @@ class MainActivity : AppCompatActivity() {
             Log.e("RH_Basketball", "Unable to open serial port, IO error!")
         } catch (e: InvalidParameterException) {
             Log.e("RH_Basketball", "Unable to open serial port, Parameter error!")
+        }
+    }
+
+    private fun loginUser(userNo: String?): Unit {
+        val db = mDbHelper.readableDatabase
+
+        val projection = arrayOf<String>(
+            BaseColumns._ID,
+            BasketballContract.User.COLUMN_NO,
+            BasketballContract.User.COLUMN_NAME,
+            BasketballContract.User.COLUMN_AGE,
+            BasketballContract.User.COLUMN_GENDER,
+            BasketballContract.User.COLUMN_CLASS_GRADE,
+        )
+
+        val selection: String =
+            BasketballContract.User.COLUMN_NO + " = ?"
+        val selectionArgs = arrayOf(userNo)
+
+        val sortOrder: String =
+            BasketballContract.User.COLUMN_NAME + " DESC"
+
+        val cursor = db.query(
+            BasketballContract.User.TABLE_NAME,  // The table to query
+            projection,  // The array of columns to return (pass null to get all)
+            selection,  // The columns for the WHERE clause
+            selectionArgs,  // The values for the WHERE clause
+            null,  // don't group the rows
+            null,  // don't filter by row groups
+            sortOrder // The sort order
+        )
+
+        if (cursor.count == 0) {
+            Log.d(TAG, "User not found: $userNo")
+            return
+        }
+
+        if (cursor.count > 1) {
+            Log.w(TAG, "Multiple user found for this user number: $userNo")
+            return
+        }
+
+        var name: String = ""
+        var no: String = ""
+        var id: Int = -1
+        var gender: String = ""
+        var classGrade: String = ""
+        var age: Int = 0
+        while (cursor.moveToNext()) {
+            name = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_NAME))
+            no = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_NO))
+            id = cursor.getInt(cursor.getColumnIndexOrThrow(BaseColumns._ID))
+            gender = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_GENDER))
+            classGrade = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_CLASS_GRADE))
+            break
+        }
+        cursor.close()
+        db.close()
+
+        mUser = User(name = name, id = id, no = no, gender = gender, class_grade = classGrade,
+            age = age, photoUrl = "")
+        mTVGreeting.text = String.format(getString(R.string.welcome_text_format, name))
+
+        //Countdown Timer (1 minute), logout when timeout
+        if (mUserLoginTimer != null) {
+            mUserLoginTimer!!.cancel()
+            mUserLoginTimer = null
+        }
+        mUserLoginTimer = object : CountDownTimer(60000, 60000) {
+            override fun onTick(millisUntilFinished: Long) {
+                // Do nothing
+            }
+            override fun onFinish() {
+                logoutUser(no)
+            }
+        }
+
+        (mUserLoginTimer as CountDownTimer).start()
+    }
+
+    private fun logoutUser(userNo: String?): Unit {
+        Log.d(TAG, "Logout user: $userNo")
+
+        mUser = null
+        mTVGreeting.text = String.format(getString(R.string.welcome_text_format,
+            getString(R.string.welcome_user_name)))
+
+        if (mUserLoginTimer != null) {
+            mUserLoginTimer!!.cancel()
+            mUserLoginTimer = null
         }
     }
 

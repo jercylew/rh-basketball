@@ -1,47 +1,63 @@
 package com.ruihao.basketball
 
 import android.Manifest
-import android.os.Bundle
-import android.os.Build
-import android.provider.MediaStore
+import android.R.attr.bitmap
 import android.content.ContentValues
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageFormat
+import android.graphics.Rect
+import android.graphics.YuvImage
+import android.media.Image
+import android.os.Build
+import android.os.Bundle
 import android.os.CountDownTimer
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
+import android.util.Base64
 import android.view.KeyEvent
 import android.widget.Button
 import android.widget.GridView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.Recorder
+import androidx.camera.video.Recording
+import androidx.camera.video.VideoCapture
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.ruihao.basketball.databinding.ActivityMainBinding
-import java.io.IOException
-import java.security.InvalidParameterException
-import java.util.*
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
-import androidx.camera.video.VideoCapture
-import androidx.camera.video.Recorder
-import androidx.camera.video.Recording
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.core.Preview
-import java.util.concurrent.Executors
-import java.util.concurrent.ExecutorService
-import androidx.core.content.ContextCompat
-import androidx.camera.core.CameraSelector
-import java.nio.ByteBuffer
-import java.text.SimpleDateFormat
-import com.chaquo.python.PyException
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
+import com.ruihao.basketball.databinding.ActivityMainBinding
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.IOException
+import java.nio.ByteBuffer
+import java.security.InvalidParameterException
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
 
 typealias LumaListener = (luma: Double) -> Unit
+typealias FaceCheckListener = (imageDataBase64: String) -> Unit
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -61,8 +77,10 @@ class MainActivity : AppCompatActivity() {
     private var comPort: SerialControl? = null
 
     //Camera
-    private lateinit var viewBinding: ActivityMainBinding
     private var imageCapture: ImageCapture? = null
+    private var mFaceRecogModelLoaded: Boolean = false
+    private val mAppDataFile: File = File(Environment.getExternalStorageDirectory().path
+            + "/RhBasketball")
 
     private var videoCapture: VideoCapture<Recorder>? = null
     private var recording: Recording? = null
@@ -107,6 +125,30 @@ class MainActivity : AppCompatActivity() {
         if (!Python.isStarted()) {
             Python.start(AndroidPlatform(this))
         }
+
+        mAppDataFile.mkdirs()
+        if (!File(faceRecognitionModelPath()).exists()) {
+            File(faceRecognitionModelPath()).mkdirs()
+        }
+        if (!File(faceRecognitionDataPath()).exists()) {
+            File(faceRecognitionDataPath()).mkdirs()
+        }
+
+        // Load the face_recognition model
+        GlobalScope.launch {
+            val py = Python.getInstance()
+            val module = py.getModule("face_recognition_wrapper")
+            val retState: Boolean = module.callAttr("load_known_faces",
+                faceRecognitionDataPath(), faceRecognitionModelPath())
+                .toBoolean()
+
+            Log.d(TAG, "Loading face recognition model succeed: $retState")
+
+            runOnUiThread {
+                mFaceRecogModelLoaded = retState
+            }
+        }
+
 
         initGridView()
         mTVTotalQty = findViewById(R.id.tvTotalQty)
@@ -187,20 +229,22 @@ class MainActivity : AppCompatActivity() {
         dispQueue = DispQueueThread()
         comPort = SerialControl()
         openComPort(comPort!!)
-
         dispQueue!!.start()
 
         cameraExecutor = Executors.newSingleThreadExecutor()
-
-        // Request camera permissions
         if (allPermissionsGranted()) {
             startCamera()
         } else {
             requestPermissions()
         }
+    }
 
-        // Example of a call to a native method
-//        binding.sampleText.text = doFaceRecognition("/path/images/yuming.jpg")
+    private fun faceRecognitionModelPath(): String {
+        return mAppDataFile.path + "/model"
+    }
+
+    private fun faceRecognitionDataPath(): String {
+        return mAppDataFile.path + "/data"
     }
 
     override fun onResume() {
@@ -359,8 +403,7 @@ class MainActivity : AppCompatActivity() {
                     Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
                 }
 
-                override fun
-                        onImageSaved(output: ImageCapture.OutputFileResults){
+                override fun onImageSaved(output: ImageCapture.OutputFileResults){
                     val msg = "Photo capture succeeded: ${output.savedUri}"
                     Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
                     Log.d(TAG, msg)
@@ -377,8 +420,39 @@ class MainActivity : AppCompatActivity() {
         val imageAnalyzer = ImageAnalysis.Builder()
             .build()
             .also {
-                it.setAnalyzer(cameraExecutor, LuminosityAnalyzer { luma ->
-//                    Log.d(TAG, "Average luminosity: $luma")
+                it.setAnalyzer(cameraExecutor, FaceAnalyzer { imageDataBase64 ->
+                    if (!mFaceRecogModelLoaded) {
+                        Log.d(TAG, "Face recognition model not loaded, waiting for it completes")
+                        return@FaceAnalyzer
+                    }
+
+                    val py = Python.getInstance()
+                    val module = py.getModule("face_recognition_wrapper")
+
+                    val retResultJson: String = module.callAttr("get_json_string_of_face_search_with_base64",
+                        imageDataBase64)
+                        .toString()
+
+                    val reader = JSONObject(retResultJson)
+                    val facesInfo: JSONArray = reader.getJSONArray("found_faces")
+                    if (facesInfo.length() == 0) {
+                        Log.d(TAG, "No faces found!")
+                        return@FaceAnalyzer
+                    }
+
+                    if (facesInfo.length() > 1) {
+                        Log.d(TAG,
+                            "Recognized multiple faces, please borrow the ball one by one")
+                    }
+                    val faceInfoJson: JSONObject = facesInfo.getJSONObject(0)
+                    val label: String = faceInfoJson.getString("label")
+                    val posRect = faceInfoJson.getJSONArray("rect")
+
+                    Log.d(TAG, "Face recognized as $label")
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Face recognized as $label",
+                            Toast.LENGTH_LONG).show()
+                    }
                 })
             }
 
@@ -537,6 +611,52 @@ class MainActivity : AppCompatActivity() {
             val luma = pixels.average()
 
             listener(luma)
+
+            image.close()
+        }
+    }
+
+    private class FaceAnalyzer(private val listener: FaceCheckListener) : ImageAnalysis.Analyzer {
+
+        private fun ByteBuffer.toByteArray(): ByteArray {
+            rewind()    // Rewind the buffer to zero
+            val data = ByteArray(remaining())
+            get(data)   // Copy the buffer into a byte array
+            return data // Return the byte array
+        }
+
+        private fun ImageProxy.toBitmap(): Bitmap {
+            val yBuffer = planes[0].buffer // Y
+            val vuBuffer = planes[2].buffer // VU
+
+            val ySize = yBuffer.remaining()
+            val vuSize = vuBuffer.remaining()
+
+            val nv21 = ByteArray(ySize + vuSize)
+
+            yBuffer.get(nv21, 0, ySize)
+            vuBuffer.get(nv21, ySize, vuSize)
+
+            val yuvImage = YuvImage(nv21, ImageFormat.NV21, this.width, this.height, null)
+            val out = ByteArrayOutputStream()
+            yuvImage.compressToJpeg(Rect(0, 0, yuvImage.width, yuvImage.height), 50, out)
+            val imageBytes = out.toByteArray()
+            return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        }
+
+        override fun analyze(image: ImageProxy) {
+            Log.d(TAG, "Got bitmap buffer, plans size: ${image.planes.size}," +
+                    "format: ${image.format}, image size: ${image.width}x${image.height}")
+            val bitmap: Bitmap = image.toBitmap()
+
+
+            // Convert to base64
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+            val bytes = stream.toByteArray()
+            val base64ImageData: String = Base64.encodeToString(bytes, Base64.DEFAULT)
+
+            listener(base64ImageData)
 
             image.close()
         }

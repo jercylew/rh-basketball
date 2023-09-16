@@ -6,5 +6,6 @@ data class User(
     val age: Int,
     val sex: Boolean,
     val weight: Float,
-    val height: Int
+    val height: Int,
+    val photoUrl: String
 )

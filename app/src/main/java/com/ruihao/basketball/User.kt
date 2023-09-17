@@ -6,6 +6,6 @@ data class User(
     val no: String,
     val age: Int,
     val gender: String,
-    val class_grade: String,
-    val photoUrl: String
+    val classGrade: String,
+    val photoUrl: String,
 )

@@ -138,8 +138,6 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            Log.d("#########??????&&", "Check the availability~!!!!")
-
             // Check if there are remaining balls
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 0) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_no_basketball),
@@ -148,8 +146,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             // Check which channel has balls
+            val addressToWrite: Int = if (mRemainBallsQty[0] > 0) 2001 else 2002
 
-            // Open the door of channel selected
+            writeModbusBit(addressToWrite, true)
+            Thread.sleep(500)
+
 
             // Check the number of remaining balls decreased & door flag cleared
             /*
@@ -170,8 +171,7 @@ class MainActivity : AppCompatActivity() {
             // Save borrow record (DO not do this now)
 
             // Logout
-
-
+            logoutUser(mUser!!.no)
         }
         mBtnReturn.setOnClickListener {
             takePhoto()
@@ -274,7 +274,7 @@ class MainActivity : AppCompatActivity() {
             result += keyCodeToChar(keyCode, hasShift);
             hasShift = (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT);
         }
-        Toast.makeText(this, result, Toast.LENGTH_LONG).show();
+//        Toast.makeText(this, result, Toast.LENGTH_LONG).show();
         loginUser(result)
 
         mScanBarQRCodeBytes.clear();
@@ -449,8 +449,8 @@ class MainActivity : AppCompatActivity() {
 
                     Log.d(TAG, "Face recognized as $label")
                     runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Face recognized as $label",
-                            Toast.LENGTH_LONG).show()
+//                        Toast.makeText(this@MainActivity, "Face recognized as $label",
+//                            Toast.LENGTH_LONG).show()
                         loginUser(label)
                     }
                 })
@@ -503,7 +503,7 @@ class MainActivity : AppCompatActivity() {
 
         sMsg.append("[Txt] ")
         sMsg.append(comRecData.bRec?.let { String(it) })
-        Toast.makeText(this, sMsg.toString(), Toast.LENGTH_LONG).show();
+//        Toast.makeText(this, sMsg.toString(), Toast.LENGTH_LONG).show();
 
         loginUser(comRecData.bRec?.let { String(it) })
     }
@@ -578,6 +578,8 @@ class MainActivity : AppCompatActivity() {
 
         if (cursor.count == 0) {
             Log.d(TAG, "User not found: $userNo")
+            Toast.makeText(this, getString(R.string.tip_login_user_not_found),
+                Toast.LENGTH_LONG).show()
             return
         }
 
@@ -603,8 +605,14 @@ class MainActivity : AppCompatActivity() {
         cursor.close()
         db.close()
 
-        mUser = User(name = name, id = id, no = no, gender = gender, class_grade = classGrade,
+        mUser = User(name = name, id = id, no = no, gender = gender, classGrade = classGrade,
             age = age, photoUrl = "")
+        Log.d(TAG, "Login succeed, user: ${mUser!!.name}, ${mUser!!.id}, ${mUser!!.no}," +
+                "${mUser!!.gender}, ${mUser!!.classGrade}, ${mUser!!.age}")
+        Toast.makeText(this, String.format(getString(R.string.tip_login_user_succeed), name),
+            Toast.LENGTH_LONG).show()
+
+
         mTVGreeting.text = String.format(getString(R.string.welcome_text_format, name))
 
         //Countdown Timer (1 minute), logout when timeout
@@ -620,7 +628,6 @@ class MainActivity : AppCompatActivity() {
                 logoutUser(no)
             }
         }
-
         (mUserLoginTimer as CountDownTimer).start()
     }
 

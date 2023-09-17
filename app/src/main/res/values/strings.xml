@@ -15,6 +15,8 @@
     <string name="tip_return_basketball">Please put the basketball into the door just opened</string>
     <string name="tip_no_basketball">No basketball left in this machine, please try in another one</string>
     <string name="tip_no_space">This machine is full, please try in another one</string>
+    <string name="tip_login_user_not_found">The user not found</string>
+    <string name="tip_login_user_succeed">The user %s login succeed</string>
     <string name="view_borrow_records">Borrowing log</string>
     <string name="load_basketballs">Please load basketballs</string>
 </resources>

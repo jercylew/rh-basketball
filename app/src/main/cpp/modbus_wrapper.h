@@ -10,7 +10,7 @@
 #ifndef BASKETBALL_MODBUS_WRAPPER_H
 #define BASKETBALL_MODBUS_WRAPPER_H
 
-#define TAG     "RH_BASKETBALL_SerialPort"
+#define TAG     "RH_BASKETBALL_Modbus"
 
 #define LOGI(fmt, args...) __android_log_print(ANDROID_LOG_INFO,  TAG, fmt, ##args)
 #define LOGD(fmt, args...) __android_log_print(ANDROID_LOG_DEBUG, TAG, fmt, ##args)

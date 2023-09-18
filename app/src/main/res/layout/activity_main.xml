@@ -106,7 +106,7 @@
         android:id="@+id/tvGreeting"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="148dp"
+        android:layout_marginTop="128dp"
         android:text="@string/welcome_text_format"
         android:textSize="24sp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -115,11 +115,10 @@
 
     <androidx.camera.view.PreviewView
         android:id="@+id/viewFinder"
-        android:layout_width="164dp"
-        android:layout_height="117dp"
-        android:layout_marginTop="40dp"
+        android:layout_width="426dp"
+        android:layout_height="287dp"
+        android:layout_marginTop="56dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.501"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvGreeting" />
 

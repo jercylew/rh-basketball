@@ -3,7 +3,7 @@
 //
 #include "modbus_wrapper.h"
 
-static modbus_t *g_ptrModbusCtx = nullptr;
+static modbus_t *g_ptrModbusCtx = NULL;
 
 bool do_open_modbus()
 {
@@ -12,22 +12,23 @@ bool do_open_modbus()
         return true;
     }
 
-    g_ptrModbusCtx = modbus_new_rtu("/dev/ttyS2", 9600,
+    g_ptrModbusCtx = modbus_new_rtu("/dev/ttyS9", 9600,
                                     'N', 8, 1);
-    if (g_ptrModbusCtx == nullptr) {
+    if (g_ptrModbusCtx == NULL) {
         LOGE("Failed to create a modbus rtu instance: %s", modbus_strerror(errno));
         return false;
     }
 
-    if (modbus_rtu_set_serial_mode(g_ptrModbusCtx, MODBUS_RTU_RS485) < 0) {
-        LOGE("Failed to set serial mode to RS485: %s", modbus_strerror(errno));
+    if (modbus_rtu_set_serial_mode(g_ptrModbusCtx, MODBUS_RTU_RS232) == -1) {
+        LOGE("Failed to set serial mode to RS232: %s", modbus_strerror(errno));
+        g_ptrModbusCtx = NULL;
         return false;
     }
 
     if (modbus_connect(g_ptrModbusCtx) == -1) {
         LOGE("Failed to connect to modbus server: %s", modbus_strerror(errno));
         modbus_free(g_ptrModbusCtx);
-        g_ptrModbusCtx = nullptr;
+        g_ptrModbusCtx = NULL;
         return false;
     }
 
@@ -35,7 +36,8 @@ bool do_open_modbus()
         LOGE("Failed to connect to modbus server: %s", modbus_strerror(errno));
         modbus_close(g_ptrModbusCtx);
         modbus_free(g_ptrModbusCtx);
-        g_ptrModbusCtx = nullptr;
+        g_ptrModbusCtx = NULL;
+        return false;
     }
 
     return true;
@@ -43,18 +45,18 @@ bool do_open_modbus()
 
 bool do_close_modbus()
 {
-    if (g_ptrModbusCtx == nullptr) {
+    if (g_ptrModbusCtx == NULL) {
         LOGD("Modbus already closed!");
         return true;
     }
 
-    if (modbus_flush(g_ptrModbusCtx) < 0) {
+    if (modbus_flush(g_ptrModbusCtx) == -1) {
         LOGE("Failed to flush modbus: %s", modbus_strerror(errno));
         return false;
     }
     modbus_close(g_ptrModbusCtx);
     modbus_free(g_ptrModbusCtx);
-    g_ptrModbusCtx = nullptr;
+    g_ptrModbusCtx = NULL;
 
     return true;
 }
@@ -68,7 +70,8 @@ bool do_restart_modbus()
 
 bool do_write_modbus_bit(int address, int value)
 {
-    if (g_ptrModbusCtx == nullptr) {
+    if (g_ptrModbusCtx == NULL) {
+        LOGE("Cannot write modbus bit, modbus not connected!");
         return false;
     }
 
@@ -78,12 +81,13 @@ bool do_write_modbus_bit(int address, int value)
         return false;
     }
 
+    LOGD("Write modbus succeed: address=%d, value=%d", address, value);
     return true;
 }
 
 bool do_write_modbus_register(int address, int value)
 {
-    if (g_ptrModbusCtx == nullptr) {
+    if (g_ptrModbusCtx == NULL) {
         return false;
     }
 
@@ -98,7 +102,7 @@ bool do_write_modbus_register(int address, int value)
 
 int do_read_modbus_bit(int address)
 {
-    if (g_ptrModbusCtx == nullptr) {
+    if (g_ptrModbusCtx == NULL) {
         return -1;
     }
     uint8_t dest[1];
@@ -114,7 +118,7 @@ int do_read_modbus_bit(int address)
 
 int do_read_modbus_register(int address)
 {
-    if (g_ptrModbusCtx == nullptr) {
+    if (g_ptrModbusCtx == NULL) {
         return -1;
     }
     uint16_t dest[1];

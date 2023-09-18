@@ -53,6 +53,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.collections.ArrayList
 
 
 typealias LumaListener = (luma: Double) -> Unit
@@ -68,13 +69,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mBtnBorrow: Button
     private lateinit var mBtnReturn: Button
     private var mTotalBallsQty: Array<Int> = arrayOf<Int>(12, 12)
-    private var mRemainBallsQty: Array<Int> = arrayOf<Int>(8, 12)
+    private var mRemainBallsQty: Array<Int> = arrayOf<Int>(0, 0)
     private var mUser: User? = null
     private var mScanBarQRCodeBytes: ArrayList<Int> = ArrayList<Int>()
     private var mScanBarQRCodeTimer: CountDownTimer? = null
     private var mUserLoginTimer: CountDownTimer? = null
     private var dispQueue: DispQueueThread? = null
     private var comPort: SerialControl? = null
+    private var mModbusOk: Boolean = false
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
 
     //Camera
@@ -114,7 +116,8 @@ class MainActivity : AppCompatActivity() {
         windowInsetsController.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
-        initModbus()
+
+        initController()
         initCamera()
 
         super.onCreate(savedInstanceState)
@@ -138,6 +141,12 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            if (!mModbusOk) {
+                Toast.makeText(this@MainActivity, getString(R.string.tip_device_error),
+                    Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
             // Check if there are remaining balls
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 0) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_no_basketball),
@@ -146,9 +155,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             // Check which channel has balls
-            val addressToWrite: Int = if (mRemainBallsQty[0] > 0) 2001 else 2002
-
-            writeModbusBit(addressToWrite, true)
+            val addressToWrite: Int = if (mRemainBallsQty[0] > 0) 1002 else 1003
+            if (!writeModbusRegister(addressToWrite, 1)) {
+                Log.e(TAG, "Failed to write command of releasing ball!")
+            }
             Thread.sleep(500)
 
 
@@ -165,18 +175,27 @@ class MainActivity : AppCompatActivity() {
                 }
             }
              */
+            updateBallsQuantity()
+            updateGridView()
 
             // Inform the user toc (Play audio)
+            Toast.makeText(this@MainActivity, getString(R.string.tip_take_basketball),
+                Toast.LENGTH_LONG).show()
 
             // Save borrow record (DO not do this now)
 
-            // Logout
             logoutUser(mUser!!.no)
         }
         mBtnReturn.setOnClickListener {
-            takePhoto()
+//            takePhoto()
             if (mUser == null) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_login),
+                    Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            if (!mModbusOk) {
+                Toast.makeText(this@MainActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
@@ -187,16 +206,38 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Open the door
+            // Open the door lock
+            val addressOpen: Int = if (mRemainBallsQty[0] < 12) 1006 else 1007
+            val addressBallEntered: Int = if (mRemainBallsQty[0] < 12) 1004 else 1005
+            if (!writeModbusRegister(addressOpen, 1)) {
+                Log.e(TAG, "Failed to write command of opening the lock of the door")
+            }
+
+            Toast.makeText(this@MainActivity, getString(R.string.tip_return_basketball),
+                Toast.LENGTH_LONG).show()
+
+            // Check if the ball entered
+            var tryCount = 0
+            while (readModbusRegister(addressBallEntered) == 0) {
+                Thread.sleep(100)
+                tryCount += 1
+                if (tryCount >= 30) {
+                    break
+                }
+            }
+            Thread.sleep(500)
+
+            // The door lock will close the door itself, no need to write command
+//            writeModbusRegister(addressOpen, 0)
 
             // Inform user to return the ball
-
-            // Close the door
-
-            // Inform the user (Thanks for using)
+            Toast.makeText(this@MainActivity, getString(R.string.tip_return_succeed),
+                Toast.LENGTH_LONG).show()
+            updateBallsQuantity()
+            updateGridView()
 
             // Logout
-
+            logoutUser(mUser!!.no)
         }
 
         dispQueue = DispQueueThread()
@@ -223,14 +264,61 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         //Fetch data from controller via modbus
+        updateBallsQuantity()
 
-        //Update UI
+        val userName: String = mUser?.name ?: getString(R.string.welcome_user_name)
+        mTVGreeting.text = String.format(getString(R.string.welcome_text_format, userName))
+    }
+
+    private fun updateBallsQuantity(): Unit {
+        mRemainBallsQty[0] = readModbusRegister(1000)
+        mRemainBallsQty[1] = readModbusRegister(1001)
+        if (mRemainBallsQty[0] < 0) {
+            mRemainBallsQty[0] = 0
+        }
+        if (mRemainBallsQty[1] < 0) {
+            mRemainBallsQty[1] = 0
+        }
+
         var total: Int = mTotalBallsQty[0] + mTotalBallsQty[1]
         var remain: Int = mRemainBallsQty[0] + mRemainBallsQty[1]
         mTVTotalQty.text = String.format(getString(R.string.total_basketballs), total)
         mTVRemainQty.text = String.format(getString(R.string.remain_basketballs), remain)
-        val userName: String = mUser?.name ?: getString(R.string.welcome_user_name)
-        mTVGreeting.text = String.format(getString(R.string.welcome_text_format, userName))
+    }
+
+    private fun initGridView() {
+        mGVBalls = findViewById(R.id.gvChannelBasketballs)
+        mListBalls = ArrayList<GridViewModal>()
+
+        updateGridView()
+    }
+
+    private fun updateGridView() {
+        (mListBalls as ArrayList).clear()
+
+        for (i in 1..mRemainBallsQty[0]) {
+            mListBalls = mListBalls + GridViewModal("C++",
+                R.drawable.basketball_color_icon)
+        }
+        for (i in 1..(12 - mRemainBallsQty[0])) {
+            mListBalls = mListBalls + GridViewModal("C++",
+                R.drawable.basketball_gray_icon)
+        }
+        for (i in 1..mRemainBallsQty[1]) {
+            mListBalls = mListBalls + GridViewModal("C++",
+                R.drawable.basketball_color_icon)
+        }
+        for (i in 1..(12 - mRemainBallsQty[1])) {
+            mListBalls = mListBalls + GridViewModal("C++",
+                R.drawable.basketball_gray_icon)
+        }
+
+        // on below line we are initializing our course adapter
+        // and passing course list and context.
+        val courseAdapter = GridRVAdapter(mListBalls = mListBalls, this@MainActivity)
+
+        // on below line we are setting adapter to our grid view.
+        mGVBalls.adapter = courseAdapter
     }
 
     override fun onDestroy() {
@@ -267,7 +355,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleScanICOrQRCard(): Unit {
-        Log.d("#######RH-Basketball", "Bar / QR code receive completed, now check it!")
+        Log.d(TAG, "Bar / QR code receive completed, now check it!")
         var result: String = ""
         var hasShift: Boolean = false
         for(keyCode in mScanBarQRCodeBytes){
@@ -275,6 +363,7 @@ class MainActivity : AppCompatActivity() {
             hasShift = (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT);
         }
 //        Toast.makeText(this, result, Toast.LENGTH_LONG).show();
+
         loginUser(result)
 
         mScanBarQRCodeBytes.clear();
@@ -370,6 +459,32 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun initController(): Unit {
+        GlobalScope.launch {
+            while(true) {
+//                Log.d(TAG, "Doing the controller check regularly ...")
+                if (mModbusOk) {
+                    runOnUiThread {
+                        updateBallsQuantity()
+                        updateGridView()
+                    }
+                }
+                else {
+                    Log.d(TAG, "Trying to connect to modbus ...")
+                    mModbusOk = initModbus()
+                    if (mModbusOk) {
+                        writeModbusRegister(1014, 1000) //出球的时长(推杆动作的间隔): 1 second
+                        writeModbusRegister(1015, 3000) //进球口门锁关闭时长: 3 seconds
+                    }
+                }
+
+                Thread.sleep(3000)
+            }
+        }
+
+
+    }
+
     private fun takePhoto() {
         // Get a stable reference of the modifiable image capture use case
         val imageCapture = imageCapture ?: return
@@ -435,7 +550,7 @@ class MainActivity : AppCompatActivity() {
                     val reader = JSONObject(retResultJson)
                     val facesInfo: JSONArray = reader.getJSONArray("found_faces")
                     if (facesInfo.length() == 0) {
-                        Log.d(TAG, "No faces found!")
+//                        Log.d(TAG, "No faces found!")
                         return@FaceAnalyzer
                     }
 
@@ -447,11 +562,13 @@ class MainActivity : AppCompatActivity() {
                     val label: String = faceInfoJson.getString("label")
                     val posRect = faceInfoJson.getJSONArray("rect")
 
-                    Log.d(TAG, "Face recognized as $label")
+//                    Log.d(TAG, "Face recognized as $label")
                     runOnUiThread {
 //                        Toast.makeText(this@MainActivity, "Face recognized as $label",
 //                            Toast.LENGTH_LONG).show()
-                        loginUser(label)
+                        if (mUser == null) {
+                            loginUser(label)
+                        }
                     }
                 })
             }
@@ -508,36 +625,11 @@ class MainActivity : AppCompatActivity() {
         loginUser(comRecData.bRec?.let { String(it) })
     }
 
-    private fun initGridView() {
-        mGVBalls = findViewById(R.id.gvChannelBasketballs)
-        mListBalls = ArrayList<GridViewModal>()
-
-        for (i in 1..8) {
-            mListBalls = mListBalls + GridViewModal("C++",
-                R.drawable.basketball_color_icon)
-        }
-        for (i in 1..4) {
-            mListBalls = mListBalls + GridViewModal("C++",
-                R.drawable.basketball_gray_icon)
-        }
-        for (i in 1..12) {
-            mListBalls = mListBalls + GridViewModal("C++",
-                R.drawable.basketball_color_icon)
-        }
-
-        // on below line we are initializing our course adapter
-        // and passing course list and context.
-        val courseAdapter = GridRVAdapter(mListBalls = mListBalls, this@MainActivity)
-
-        // on below line we are setting adapter to our grid view.
-        mGVBalls.adapter = courseAdapter
-    }
-
     private fun openComPort(comPort: SerialHelper) {
         try {
             comPort.open()
-            Toast.makeText(this, "Open serial port succeed: ${comPort.sPort}",
-                Toast.LENGTH_LONG).show();
+//            Toast.makeText(this, "Open serial port succeed: ${comPort.sPort}",
+//                Toast.LENGTH_LONG).show();
         } catch (e: SecurityException) {
             Log.e("RH_Basketball", "Unable to open serial port, permission denied!")
         } catch (e: IOException) {
@@ -620,7 +712,7 @@ class MainActivity : AppCompatActivity() {
             mUserLoginTimer!!.cancel()
             mUserLoginTimer = null
         }
-        mUserLoginTimer = object : CountDownTimer(60000, 60000) {
+        mUserLoginTimer = object : CountDownTimer(300000, 300000) {
             override fun onTick(millisUntilFinished: Long) {
                 // Do nothing
             }
@@ -665,13 +757,12 @@ class MainActivity : AppCompatActivity() {
             super.run()
             while (!isInterrupted) {
                 val comData: ComBean
-
                 if (queueList == null || queueList.isEmpty()) {
                     continue
                 }
 
                 while (queueList.poll().also { comData = it } != null) {
-                    Log.d("RH_Basketball##########", "DispQueueThread $comData")
+//                    Log.d("RH_Basketball##########", "DispQueueThread $comData")
                     this@MainActivity.runOnUiThread(Runnable { dispRecData(comData) })
                     try {
                         sleep(100) //显示性能高的话，可以把此数值调小。
@@ -685,7 +776,7 @@ class MainActivity : AppCompatActivity() {
 
         @Synchronized
         fun addQueue(comData: ComBean) {
-            Log.d("RH_Basketball##########", "addQueue $comData")
+//            Log.d("RH_Basketball##########", "addQueue $comData")
             queueList.add(comData)
         }
     }
@@ -713,7 +804,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private class FaceAnalyzer(private val listener: FaceCheckListener) : ImageAnalysis.Analyzer {
-
         private fun ByteBuffer.toByteArray(): ByteArray {
             rewind()    // Rewind the buffer to zero
             val data = ByteArray(remaining())
@@ -741,8 +831,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun analyze(image: ImageProxy) {
-            Log.d(TAG, "Got bitmap buffer, plans size: ${image.planes.size}," +
-                    "format: ${image.format}, image size: ${image.width}x${image.height}")
+//            Log.d(TAG, "Got bitmap buffer, plans size: ${image.planes.size}," +
+//                    "format: ${image.format}, image size: ${image.width}x${image.height}")
             val bitmap: Bitmap = image.toBitmap()
 
 

@@ -8,4 +8,5 @@ data class User(
     val gender: String,
     val classGrade: String,
     val photoUrl: String,
+    val isAdmin: Boolean,
 )

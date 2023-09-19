@@ -15,6 +15,7 @@ private constructor() {
         const val COLUMN_CLASS_GRADE = "class_grade"
         const val COLUMN_TEL = "tel"
         const val COLUMN_GENDER = "gender"
+        const val COLUMN_IS_ADMIN = "is_admin"
     }
 
     object BorrowRecord : BaseColumns {
@@ -55,6 +56,7 @@ internal class BasketballDBHelper(context: Context?) :
                     BasketballContract.User.COLUMN_GENDER + " TEXT," +
                     BasketballContract.User.COLUMN_AGE + " INTEGER," +
                     BasketballContract.User.COLUMN_CLASS_GRADE + " TEXT," +
+                    BasketballContract.User.COLUMN_IS_ADMIN + " INTEGER," +
                     BasketballContract.User.COLUMN_TEL + " TEXT)"
         private const val SQL_DELETE_TABLE_USER =
             "DROP TABLE IF EXISTS " + BasketballContract.User.TABLE_NAME

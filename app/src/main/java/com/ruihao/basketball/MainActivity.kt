@@ -124,7 +124,7 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-//        setContentView(R.layout.basketball_home)
+//        setContentView(R.layout.activity_admin)
 
         initGridView()
         mTVTotalQty = findViewById(R.id.tvTotalQty)
@@ -686,19 +686,21 @@ class MainActivity : AppCompatActivity() {
         var gender: String = ""
         var classGrade: String = ""
         var age: Int = 0
+        var isAdmin: Boolean = false
         while (cursor.moveToNext()) {
             name = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_NAME))
             no = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_NO))
             id = cursor.getInt(cursor.getColumnIndexOrThrow(BaseColumns._ID))
             gender = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_GENDER))
             classGrade = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_CLASS_GRADE))
+            isAdmin = (cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_IS_ADMIN)) == 1)
             break
         }
         cursor.close()
         db.close()
 
         mUser = User(name = name, id = id, no = no, gender = gender, classGrade = classGrade,
-            age = age, photoUrl = "")
+            age = age, photoUrl = "", isAdmin = isAdmin)
         Log.d(TAG, "Login succeed, user: ${mUser!!.name}, ${mUser!!.id}, ${mUser!!.no}," +
                 "${mUser!!.gender}, ${mUser!!.classGrade}, ${mUser!!.age}")
         Toast.makeText(this, String.format(getString(R.string.tip_login_user_succeed), name),

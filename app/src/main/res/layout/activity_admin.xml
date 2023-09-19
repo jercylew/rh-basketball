@@ -106,33 +106,22 @@
         android:id="@+id/tvGreeting"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="148dp"
+        android:layout_marginTop="56dp"
         android:text="@string/welcome_text_format"
         android:textSize="24sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btnBorrow" />
 
-    <androidx.camera.view.PreviewView
-        android:id="@+id/viewFinder"
-        android:layout_width="164dp"
-        android:layout_height="117dp"
-        android:layout_marginTop="40dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.501"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvGreeting" />
-
     <TextView
         android:id="@+id/tvFooterTechSupport"
         android:layout_width="448dp"
         android:layout_height="22dp"
-        android:layout_marginTop="336dp"
         android:text="@string/footer_technique_support"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.866"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/viewFinder" />
+        tools:layout_editor_absoluteY="1225dp" />
 
     <TextView
         android:id="@+id/tvTel"

@@ -28,4 +28,21 @@
     <string name="admin_borrow_log">Borrow Log</string>
     <string name="admin_user_list">Users List</string>
     <string name="admin_load_balls">Load Balls</string>
+    <string name="admin_borrow">Borrow</string>
+    <string name="admin_return">Return</string>
+
+    <string name="admin_user_register_title">User Register</string>
+    <string name="admin_user_register_hint_name">Name</string>
+    <string name="admin_user_register_hint_number">User number</string>
+    <string name="admin_user_register_hint_gender">Gender</string>
+    <string name="admin_user_register_hint_male">Male</string>
+    <string name="admin_user_register_hint_female">Female</string>
+    <string name="admin_user_register_hint_age">Age</string>
+    <string name="admin_user_register_hint_height">Height</string>
+    <string name="admin_user_register_hint_weight">Weight</string>
+    <string name="admin_user_register_hint_aqddress">Address</string>
+    <string name="admin_user_register_hint_phone">Phone</string>
+    <string name="admin_user_register_terms_conditions">I have read, understood and accept the user registration rules</string>
+    <string name="admin_user_register_submit">Submit</string>
+    <string name="admin_user_register_optional">Optional</string>
 </resources>

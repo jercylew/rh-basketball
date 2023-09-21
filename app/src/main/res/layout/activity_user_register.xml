@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/adminUserRegisterView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/basketball_bg"
+    tools:context=".AdminActivity">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="@string/admin_user_register_title"
+        android:textColor="#FFC107"
+        android:textSize="34sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.425"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/names"
+        android:layout_width="322dp"
+        android:layout_height="95dp"
+        android:layout_marginTop="40dp"
+        android:background="@drawable/edit_text_shape"
+        android:ems="10"
+        android:hint="@string/admin_user_register_hint_name"
+        android:paddingLeft="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.117"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/title" />
+
+    <TextView
+        android:id="@+id/gender"
+        android:layout_width="48dp"
+        android:layout_height="54dp"
+        android:layout_marginTop="36dp"
+        android:gravity="center_vertical"
+        android:text="@string/admin_user_register_hint_gender"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.074"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/names" />
+
+    <RadioGroup
+        android:id="@+id/radioGroup"
+        android:layout_width="322dp"
+        android:layout_height="52dp"
+        android:layout_marginTop="44dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.037"
+        app:layout_constraintStart_toEndOf="@+id/gender"
+        app:layout_constraintTop_toBottomOf="@+id/etNo">
+
+        <RadioButton
+            android:id="@+id/radioButton"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:onClick="radioButtonhandler"
+            android:text="@string/admin_user_register_hint_male"
+            android:textSize="18dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <RadioButton
+            android:id="@+id/female"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:onClick="radioButtonhandler"
+            android:text="@string/admin_user_register_hint_female"
+            android:textSize="18dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.655"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </RadioGroup>
+
+    <EditText
+        android:id="@+id/current_weight"
+        android:layout_width="322dp"
+        android:layout_height="95dp"
+        android:layout_marginTop="48dp"
+        android:background="@drawable/edit_text_shape"
+        android:ems="10"
+        android:hint="@string/admin_user_register_hint_weight"
+        android:inputType="number"
+        android:paddingLeft="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.112"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/age" />
+
+    <EditText
+        android:id="@+id/height"
+        android:layout_width="322dp"
+        android:layout_height="88dp"
+        android:layout_marginTop="52dp"
+        android:background="@drawable/edit_text_shape"
+        android:ems="10"
+        android:hint="@string/admin_user_register_hint_height"
+        android:inputType="number"
+        android:paddingLeft="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.553"
+        app:layout_constraintStart_toEndOf="@+id/age"
+        app:layout_constraintTop_toBottomOf="@+id/radioGroup" />
+
+    <EditText
+        android:id="@+id/age"
+        android:layout_width="322dp"
+        android:layout_height="90dp"
+        android:layout_marginTop="48dp"
+        android:background="@drawable/edit_text_shape"
+        android:ems="10"
+        android:hint="@string/admin_user_register_hint_age"
+        android:inputType="number"
+        android:paddingLeft="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.116"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/gender" />
+
+    <EditText
+        android:id="@+id/Phone"
+        android:layout_width="322dp"
+        android:layout_height="96dp"
+        android:layout_marginTop="64dp"
+        android:background="@drawable/edit_text_shape"
+        android:ems="10"
+        android:hint="@string/admin_user_register_hint_phone"
+        android:inputType="phone"
+        android:paddingLeft="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.11"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/current_weight" />
+
+    <EditText
+        android:id="@+id/address"
+        android:layout_width="322dp"
+        android:layout_height="88dp"
+        android:layout_marginTop="52dp"
+        android:background="@drawable/edit_text_shape"
+        android:ems="10"
+        android:hint="@string/admin_user_register_hint_aqddress"
+        android:inputType="text"
+        android:maxLines="2"
+        android:paddingLeft="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.604"
+        app:layout_constraintStart_toEndOf="@+id/current_weight"
+        app:layout_constraintTop_toBottomOf="@+id/height" />
+
+    <CheckBox
+        android:id="@+id/conditions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="52dp"
+        android:backgroundTint="#D500F9"
+        android:buttonTint="#D500F9"
+        android:text="@string/admin_user_register_terms_conditions"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.519"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/Phone" />
+
+    <android.widget.Button
+        android:id="@+id/button"
+        android:layout_width="209dp"
+        android:layout_height="82dp"
+        android:background="@drawable/button_shape"
+        android:shadowRadius="5"
+        android:text="@string/admin_user_register_submit"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.445"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/conditions"
+        app:layout_constraintVertical_bias="0.223" />
+
+    <EditText
+        android:id="@+id/etNo"
+        android:layout_width="322dp"
+        android:layout_height="90dp"
+        android:layout_marginTop="40dp"
+        android:background="@drawable/edit_text_shape"
+        android:ems="10"
+        android:hint="@string/admin_user_register_hint_number"
+        android:inputType="text"
+        android:paddingLeft="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.676"
+        app:layout_constraintStart_toEndOf="@+id/names"
+        app:layout_constraintTop_toBottomOf="@+id/title" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

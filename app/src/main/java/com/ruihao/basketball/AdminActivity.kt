@@ -1,6 +1,7 @@
 package com.ruihao.basketball
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -159,6 +160,11 @@ class AdminActivity : AppCompatActivity() {
         mCardUserRegister.setOnClickListener{
             Toast.makeText(this@AdminActivity, "Register User",
                 Toast.LENGTH_LONG).show()
+            val myIntent = Intent(this@AdminActivity, UserRegisterActivity::class.java)
+            myIntent.putExtra("modbusOk", mModbusOk)
+            myIntent.putExtra("loginUserNo", "a1234567890")
+            myIntent.putExtra("userName", "TestUser")
+            this@AdminActivity.startActivity(myIntent)
         }
         mCardBorrowLog.setOnClickListener{
             Toast.makeText(this@AdminActivity, "View borrow log",

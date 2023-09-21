@@ -1,7 +1,9 @@
 package com.ruihao.basketball
 
 import android.Manifest
+import android.R.attr.value
 import android.content.ContentValues
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -14,7 +16,6 @@ import android.os.CountDownTimer
 import android.os.Environment
 import android.provider.BaseColumns
 import android.provider.MediaStore
-import android.util.Base64
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.Button
@@ -53,7 +54,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import kotlin.collections.ArrayList
 
 
 typealias LumaListener = (luma: Double) -> Unit
@@ -140,7 +140,6 @@ class MainActivity : AppCompatActivity() {
                     Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
-
             if (!mModbusOk) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()
@@ -187,7 +186,18 @@ class MainActivity : AppCompatActivity() {
             logoutUser(mUser!!.no)
         }
         mBtnReturn.setOnClickListener {
+            //Only for test
+            val myIntent = Intent(this@MainActivity, AdminActivity::class.java)
+            myIntent.putExtra("modbusOk", mModbusOk) //Optional parameters
+//            myIntent.putExtra("loginUserNo", mUser.no)
+            myIntent.putExtra("loginUserNo", "a1234567890")
+            myIntent.putExtra("userName", "TestUser")
+
+            this@MainActivity.startActivity(myIntent)
+
+            return@setOnClickListener
 //            takePhoto()
+
             if (mUser == null) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_login),
                     Toast.LENGTH_LONG).show()
@@ -835,16 +845,14 @@ class MainActivity : AppCompatActivity() {
         override fun analyze(image: ImageProxy) {
 //            Log.d(TAG, "Got bitmap buffer, plans size: ${image.planes.size}," +
 //                    "format: ${image.format}, image size: ${image.width}x${image.height}")
-            val bitmap: Bitmap = image.toBitmap()
 
-
-            // Convert to base64
-            val stream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
-            val bytes = stream.toByteArray()
-            val base64ImageData: String = Base64.encodeToString(bytes, Base64.DEFAULT)
-
-            listener(base64ImageData)
+//            val bitmap: Bitmap = image.toBitmap()
+//            val stream = ByteArrayOutputStream()
+//            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+//            val bytes = stream.toByteArray()
+//            val base64ImageData: String = Base64.encodeToString(bytes, Base64.DEFAULT)
+//
+//            listener(base64ImageData)
 
             image.close()
         }

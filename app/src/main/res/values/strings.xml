@@ -21,4 +21,11 @@
     <string name="tip_return_succeed">Your basketball returned succeed, thanks for using</string>
     <string name="view_borrow_records">Borrowing log</string>
     <string name="load_basketballs">Please load basketballs</string>
+
+    <string name="home_title_admin">Basketball Manage System (Admin)</string>
+    <string name="admin_user_register">User Register</string>
+    <string name="admin_settings">Settings</string>
+    <string name="admin_borrow_log">Borrow Log</string>
+    <string name="admin_user_list">Users List</string>
+    <string name="admin_load_balls">Load Balls</string>
 </resources>

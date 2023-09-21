@@ -113,6 +113,25 @@ Java_com_ruihao_basketball_MainActivity_readModbusRegister(
     return do_read_modbus_register(address);
 }
 
+extern "C" JNIEXPORT jint JNICALL
+Java_com_ruihao_basketball_AdminActivity_readModbusRegister(
+        JNIEnv* env,
+        jobject /* this */,
+        jint address) {
+    return do_read_modbus_register(address);
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_ruihao_basketball_AdminActivity_writeModbusRegister(
+        JNIEnv* env,
+        jobject /* this */,
+        jint address,
+        jint value) {
+    bool bRet = do_write_modbus_register(address, value);
+    return bRet ? JNI_TRUE : JNI_FALSE;
+}
+
+
 
 
 

@@ -22,4 +22,11 @@
     <string name="tip_return_succeed">还球成功，谢谢使用</string>
     <string name="view_borrow_records">借阅记录</string>
     <string name="load_basketballs">请装载篮球</string>
+
+    <string name="home_title_admin">智能借球机(管理员)</string>
+    <string name="admin_user_register">用户注册</string>
+    <string name="admin_settings">设置</string>
+    <string name="admin_borrow_log">借球记录</string>
+    <string name="admin_user_list">用户列表</string>
+    <string name="admin_load_balls">装球</string>
 </resources>

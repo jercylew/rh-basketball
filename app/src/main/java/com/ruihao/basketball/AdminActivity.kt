@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.util.Log
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -28,6 +29,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     private lateinit var mTVGreeting: TextView
     private lateinit var mBtnBorrow: Button
     private lateinit var mBtnReturn: Button
+    private lateinit var mBtnBack: ImageButton
     private lateinit var mCardUserRegister: CardView
     private lateinit var mCardSettings: CardView
     private lateinit var mCardBorrowLog: CardView
@@ -72,6 +74,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         mCardSettings = findViewById(R.id.cardSettings)
         mCardUserList = findViewById(R.id.cardUserList)
         mCardUserRegister = findViewById(R.id.cardUserRegister)
+        mBtnBack = findViewById(R.id.ibtnAdminBack)
 
         mBtnBorrow.setOnClickListener {
             if (!mModbusOk) {
@@ -209,6 +212,9 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         mCardUserList.setOnClickListener{
             Toast.makeText(this@AdminActivity, "View user list",
                 Toast.LENGTH_LONG).show()
+        }
+        mBtnBack.setOnClickListener{
+            finish()
         }
 
         setupSharedPreferences()

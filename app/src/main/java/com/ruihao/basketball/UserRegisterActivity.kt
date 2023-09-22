@@ -44,6 +44,7 @@ class UserRegisterActivity : AppCompatActivity() {
     private var mUserNo: String = ""
     private var mUserName: String = ""
     private var mGender: Int = 0
+    private var mModbusOk: Boolean = false
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
     private lateinit var mPhotoImageView: ImageView
 
@@ -64,7 +65,7 @@ class UserRegisterActivity : AppCompatActivity() {
 
         mUserNo = intent.getStringExtra("loginUserNo").toString()
         mUserName = intent.getStringExtra("userName").toString()
-//        mModbusOk = intent.getBooleanExtra("modbusOk", false)
+        mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(R.layout.activity_user_register)

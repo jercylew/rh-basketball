@@ -2,6 +2,8 @@ package com.ruihao.basketball
 
 import android.Manifest
 import android.content.Intent
+import android.content.SharedPreferences
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -14,11 +16,12 @@ import androidx.cardview.widget.CardView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.preference.PreferenceManager
 import com.ruihao.basketball.databinding.ActivityMainBinding
 import java.io.File
 
 
-class AdminActivity : AppCompatActivity() {
+class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var mTVTotalQty: TextView
     private lateinit var mTVRemainQty: TextView
@@ -38,7 +41,8 @@ class AdminActivity : AppCompatActivity() {
     private var mModbusOk: Boolean = false
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
 
-    private val mAppDataFile: File = File(Environment.getExternalStorageDirectory().path
+    private val mAppDataFile: File = File(
+        Environment.getExternalStorageDirectory().path
             + "/RhBasketball")
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -160,7 +164,7 @@ class AdminActivity : AppCompatActivity() {
             val myIntent = Intent(this@AdminActivity, UserRegisterActivity::class.java)
             myIntent.putExtra("modbusOk", mModbusOk)
             myIntent.putExtra("loginUserNo", "a1234567890")
-            myIntent.putExtra("userName", "TestUser")
+            myIntent.putExtra("userName", "Admin")
             this@AdminActivity.startActivity(myIntent)
         }
         mCardBorrowLog.setOnClickListener{
@@ -196,11 +200,23 @@ class AdminActivity : AppCompatActivity() {
         mCardSettings.setOnClickListener{
             Toast.makeText(this@AdminActivity, "Settings",
                 Toast.LENGTH_LONG).show()
+            val intent = Intent(this@AdminActivity, SettingsActivity::class.java)
+            intent.putExtra("modbusOk", mModbusOk)
+            intent.putExtra("loginUserNo", "a1234567890")
+            intent.putExtra("userName", "Admin")
+            startActivity(intent)
         }
         mCardUserList.setOnClickListener{
             Toast.makeText(this@AdminActivity, "View user list",
                 Toast.LENGTH_LONG).show()
         }
+
+        setupSharedPreferences()
+    }
+
+    private fun setupSharedPreferences() {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this)
     }
 
     override fun onResume() {
@@ -229,13 +245,41 @@ class AdminActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        // Do the cleaning work
-        var num: Int = 10
         super.onDestroy()
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .unregisterOnSharedPreferenceChangeListener(this)
     }
 
-    private fun captureVideo() {}
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
+        if (!mModbusOk) {
+            return
+        }
 
+        val qty = sharedPreferences.getString(key, "0")?.toInt()
+        var address = -1
+        if (key == "left_balls_qty") {
+            address = 1000
+        }
+        if (key == "right_balls_qty") {
+            address = 1001
+        }
+        if (key == "left_balls_qty_max") {
+            address = 1008
+        }
+        if (key == "right_balls_qty_max") {
+            address = 1009
+        }
+        if (key == "ball_release_interval") {
+            address = 1014
+        }
+        if (key == "ball_entry_lock_time") {
+            address = 1015
+        }
+
+        if (qty != null && address > 0) {
+            writeModbusRegister(address, qty)
+        }
+    }
 
     /**
      * A native method that is implemented by the 'basketball' native library,
@@ -263,3 +307,4 @@ class AdminActivity : AppCompatActivity() {
         }
     }
 }
+

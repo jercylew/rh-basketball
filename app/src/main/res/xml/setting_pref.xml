@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<!--    <CheckBoxPreference-->
+<!--        android:defaultValue="true"-->
+<!--        android:key="display_text"-->
+<!--        android:summaryOff="Invisible"-->
+<!--        android:summaryOn="Visible"-->
+<!--        android:title="@string/display_text"/>-->
+
+<!--    <ListPreference-->
+<!--        android:defaultValue="pref_color_red_value"-->
+<!--        android:entries="@array/pref_color_option_labels"-->
+<!--        android:entryValues="@array/pref_color_option_values"-->
+<!--        android:key="@string/pref_color_key"-->
+<!--        android:title="@string/change_text_color" />-->
+
+<!--    <EditTextPreference-->
+<!--        android:defaultValue="@string/pref_size_default"-->
+<!--        android:key="@string/pref_size_key"-->
+<!--        android:title="@string/text_size"/>-->
+
+    <EditTextPreference
+        android:defaultValue="0"
+        android:key="left_balls_qty"
+        android:title="@string/settings_title_left_balls_qty"/>
+    <EditTextPreference
+        android:defaultValue="0"
+        android:key="right_balls_qty"
+        android:title="@string/settings_title_right_balls_qty"/>
+    <EditTextPreference
+        android:defaultValue="12"
+        android:key="left_balls_qty_max"
+        android:title="@string/settings_title_left_balls_qty_max"/>
+    <EditTextPreference
+        android:defaultValue="12"
+        android:key="right_balls_qty_max"
+        android:title="@string/settings_title_left_balls_qty_max"/>
+    <EditTextPreference
+        android:defaultValue="1000"
+        android:key="ball_release_interval"
+        android:title="@string/settings_title_ball_release_interval"/>
+    <EditTextPreference
+        android:defaultValue="3000"
+        android:key="ball_entry_lock_time"
+        android:title="@string/settings_title_ball_entry_lock_time"/>
+</PreferenceScreen>

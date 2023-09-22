@@ -4,7 +4,10 @@ import android.Manifest
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.view.MenuItem
+import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NavUtils
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -17,6 +20,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private var mUserNo: String = ""
     private var mUserName: String = ""
+    private lateinit var mBtnBack: ImageButton
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
 
     private val mAppDataFile: File = File(Environment.getExternalStorageDirectory().path
@@ -37,7 +41,14 @@ class SettingsActivity : AppCompatActivity() {
 //        mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(R.layout.activity_admin)
+        setContentView(R.layout.activity_settings)
+
+        mBtnBack = findViewById(R.id.ibtnSettingsBack)
+        mBtnBack.setOnClickListener{
+            finish()
+        }
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
     override fun onResume() {
@@ -51,8 +62,13 @@ class SettingsActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    private fun captureVideo() {}
-
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        val id = item.itemId
+        if (id == android.R.id.home) {
+            NavUtils.navigateUpFromSameTask(this)
+        }
+        return super.onOptionsItemSelected(item)
+    }
 
     companion object {
         private const val TAG = "RH-Basketball"

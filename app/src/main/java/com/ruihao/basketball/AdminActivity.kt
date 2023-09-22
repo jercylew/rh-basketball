@@ -113,9 +113,6 @@ class AdminActivity : AppCompatActivity() {
             // Save borrow record (DO not do this now)
         }
         mBtnReturn.setOnClickListener {
-            //Only for test
-//            takePhoto()
-
             if (!mModbusOk) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()
@@ -171,8 +168,30 @@ class AdminActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG).show()
         }
         mCardLoadBalls.setOnClickListener{
-            Toast.makeText(this@AdminActivity, "Load balls",
+            if (!mModbusOk) {
+                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
+                    Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            // Set the lock door close time: to large enough
+            writeModbusRegister(1015, 65000) //进球口门锁关闭时长: 65 seconds TODO： Support lock time by the user themselves
+
+            // Open Lock
+            if (!writeModbusRegister(1006, 1)) {
+                Log.e(TAG, "Failed to write command of opening the lock of the door: 1006")
+                return@setOnClickListener
+            }
+            if (!writeModbusRegister(1007, 1)) {
+                Log.e(TAG, "Failed to write command of opening the lock of the door: 1007")
+                return@setOnClickListener
+            }
+
+            // Inform the user to load balls
+            Toast.makeText(this@AdminActivity, getString(R.string.admin_tip_load_balls),
                 Toast.LENGTH_LONG).show()
+
+            // Close the lock TODO： The user click a button to lock the doors
         }
         mCardSettings.setOnClickListener{
             Toast.makeText(this@AdminActivity, "Settings",

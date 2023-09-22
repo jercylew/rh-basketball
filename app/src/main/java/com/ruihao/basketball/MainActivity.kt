@@ -445,7 +445,9 @@ class MainActivity : AppCompatActivity() {
             Python.start(AndroidPlatform(this))
         }
 
-        mAppDataFile.mkdirs()
+        if (!mAppDataFile.mkdirs()) {
+            Log.w(TAG, "Failed to create image data directory, face recognition will not work!")
+        }
         if (!File(faceRecognitionModelPath()).exists()) {
             File(faceRecognitionModelPath()).mkdirs()
         }

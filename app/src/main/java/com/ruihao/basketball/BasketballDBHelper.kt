@@ -1,9 +1,11 @@
 package com.ruihao.basketball
 
+import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.provider.BaseColumns
+
 
 internal class BasketballContract
 private constructor() {
@@ -43,6 +45,24 @@ internal class BasketballDBHelper(context: Context?) :
 
     override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         onUpgrade(db, oldVersion, newVersion)
+    }
+
+    fun addNewUser(name: String?, number: String?, age: Int?, gender: Int?,
+                   tel: String?, classGrade: String?) {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        val genderText: String = if(gender == 0) "M"  else "F"
+
+        values.put(BasketballContract.User.COLUMN_NAME, name)
+        values.put(BasketballContract.User.COLUMN_NO, number)
+        values.put(BasketballContract.User.COLUMN_IS_ADMIN, 0)
+        values.put(BasketballContract.User.COLUMN_GENDER, genderText)
+        values.put(BasketballContract.User.COLUMN_CLASS_GRADE, classGrade)
+        values.put(BasketballContract.User.COLUMN_AGE, age)
+        values.put(BasketballContract.User.COLUMN_TEL, tel)
+
+        db.insert(BasketballContract.User.TABLE_NAME, null, values)
+        db.close()
     }
 
     companion object {

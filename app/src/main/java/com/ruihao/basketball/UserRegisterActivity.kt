@@ -9,6 +9,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -40,6 +41,7 @@ class UserRegisterActivity : AppCompatActivity() {
     private lateinit var mEditTextPhone: EditText
     private lateinit var mEditTextClassGrade: EditText
     private lateinit var mBtnSubmit: Button
+    private lateinit var mBtnUserRegisterBack: ImageButton
 
     private var mUserNo: String = ""
     private var mUserName: String = ""
@@ -80,6 +82,7 @@ class UserRegisterActivity : AppCompatActivity() {
         mEditTextPhone = findViewById(R.id.Phone)
         mEditTextClassGrade = findViewById(R.id.etClassGrade)
         mBtnSubmit = findViewById(R.id.btnSubmit)
+        mBtnUserRegisterBack = findViewById(R.id.ibtnUserRegisterBack)
 
         mPhotoImageView.setOnClickListener{
             val imageCapture = mImageCapture ?: return@setOnClickListener
@@ -146,6 +149,9 @@ class UserRegisterActivity : AppCompatActivity() {
 
             Toast.makeText(baseContext, getString(R.string.admin_user_register_tip_user_register_succeed),
                 Toast.LENGTH_SHORT).show()
+        }
+        mBtnUserRegisterBack.setOnClickListener{
+            finish()
         }
 
         startCamera()

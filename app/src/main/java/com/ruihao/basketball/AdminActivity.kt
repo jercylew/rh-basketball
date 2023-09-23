@@ -162,8 +162,6 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             updateBallsQuantity()
         }
         mCardUserRegister.setOnClickListener{
-            Toast.makeText(this@AdminActivity, "Register User",
-                Toast.LENGTH_LONG).show()
             val myIntent = Intent(this@AdminActivity, UserRegisterActivity::class.java)
             myIntent.putExtra("modbusOk", mModbusOk)
             myIntent.putExtra("loginUserNo", "a1234567890")
@@ -212,6 +210,11 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         mCardUserList.setOnClickListener{
             Toast.makeText(this@AdminActivity, "View user list",
                 Toast.LENGTH_LONG).show()
+            val myIntent = Intent(this@AdminActivity, UserListActivity::class.java)
+            myIntent.putExtra("modbusOk", mModbusOk)
+            myIntent.putExtra("loginUserNo", "a1234567890")
+            myIntent.putExtra("userName", "Admin")
+            this@AdminActivity.startActivity(myIntent)
         }
         mBtnBack.setOnClickListener{
             finish()

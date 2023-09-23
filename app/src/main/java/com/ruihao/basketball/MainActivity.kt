@@ -153,6 +153,9 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            // Take the photo of the borrower
+            takePhoto()
+
             // Check which channel has balls
             val addressToWrite: Int = if (mRemainBallsQty[0] > 0) 1002 else 1003
             if (!writeModbusRegister(addressToWrite, 1)) {

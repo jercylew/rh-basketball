@@ -168,6 +168,7 @@
         android:backgroundTint="#D500F9"
         android:buttonTint="#D500F9"
         android:text="@string/admin_user_register_terms_conditions"
+        android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.519"
         app:layout_constraintStart_toStartOf="parent"
@@ -184,10 +185,10 @@
         android:textSize="24sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.445"
+        app:layout_constraintHorizontal_bias="0.285"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/conditions"
-        app:layout_constraintVertical_bias="0.223" />
+        app:layout_constraintVertical_bias="0.23" />
 
     <EditText
         android:id="@+id/etNo"
@@ -232,6 +233,18 @@
         app:layout_constraintStart_toEndOf="@+id/radioGroup"
         app:layout_constraintTop_toBottomOf="@+id/etNo"
         app:layout_constraintVertical_bias="0.484" />
+
+    <ImageButton
+        android:id="@+id/ibtnUserRegisterBack"
+        android:layout_width="154dp"
+        android:layout_height="74dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.253"
+        app:layout_constraintStart_toEndOf="@+id/btnSubmit"
+        app:layout_constraintTop_toBottomOf="@+id/conditions"
+        app:layout_constraintVertical_bias="0.225"
+        app:srcCompat="@drawable/back" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

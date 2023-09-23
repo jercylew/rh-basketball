@@ -65,7 +65,7 @@ class UserRegisterActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
-        mUserNo = intent.getStringExtra("loginUserNo").toString()
+        mUserNo = intent.getStringExtra("userNo").toString()
         mUserName = intent.getStringExtra("userName").toString()
         mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
@@ -85,6 +85,13 @@ class UserRegisterActivity : AppCompatActivity() {
         mBtnUserRegisterBack = findViewById(R.id.ibtnUserRegisterBack)
 
         mPhotoImageView.setOnClickListener{
+            val number: String = mEditTextNumber.text.toString()
+            if (number == "") {
+                Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_name_number_null),
+                    Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
             val imageCapture = mImageCapture ?: return@setOnClickListener
 
             val outputOptions = ImageCapture.OutputFileOptions

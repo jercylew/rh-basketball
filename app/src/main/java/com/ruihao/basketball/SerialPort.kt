@@ -20,7 +20,7 @@ class SerialPort {
         if (!device.canRead() || !device.canWrite()) {
             try {
                 /* Missing read/write permission, trying to chmod the file */
-                val su: Process = Runtime.getRuntime().exec("/system/bin/su");
+                val su: Process = Runtime.getRuntime().exec("/system/xbin/su");
                 val cmd: String = "chmod 666 " + device.absolutePath + "\n" + "exit\n";
                 su.outputStream.write(cmd.toByteArray());
                 if ((su.waitFor() != 0) || !device.canRead()

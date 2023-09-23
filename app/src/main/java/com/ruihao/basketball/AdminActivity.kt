@@ -57,7 +57,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
         super.onCreate(savedInstanceState)
 
-        mUserNo = intent.getStringExtra("loginUserNo").toString()
+        mUserNo = intent.getStringExtra("userNo").toString()
         mUserName = intent.getStringExtra("userName").toString()
         mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
@@ -164,8 +164,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         mCardUserRegister.setOnClickListener{
             val myIntent = Intent(this@AdminActivity, UserRegisterActivity::class.java)
             myIntent.putExtra("modbusOk", mModbusOk)
-            myIntent.putExtra("loginUserNo", "a1234567890")
-            myIntent.putExtra("userName", "Admin")
+            myIntent.putExtra("userNo", mUserNo)
+            myIntent.putExtra("userName", mUserName)
             this@AdminActivity.startActivity(myIntent)
         }
         mCardBorrowLog.setOnClickListener{
@@ -203,8 +203,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 Toast.LENGTH_LONG).show()
             val intent = Intent(this@AdminActivity, SettingsActivity::class.java)
             intent.putExtra("modbusOk", mModbusOk)
-            intent.putExtra("loginUserNo", "a1234567890")
-            intent.putExtra("userName", "Admin")
+            intent.putExtra("userNo", mUserNo)
+            intent.putExtra("userName", mUserName)
             startActivity(intent)
         }
         mCardUserList.setOnClickListener{
@@ -212,11 +212,14 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 Toast.LENGTH_LONG).show()
             val myIntent = Intent(this@AdminActivity, UserListActivity::class.java)
             myIntent.putExtra("modbusOk", mModbusOk)
-            myIntent.putExtra("loginUserNo", "a1234567890")
-            myIntent.putExtra("userName", "Admin")
+            myIntent.putExtra("loginUserNo", mUserNo)
+            myIntent.putExtra("userName", mUserName)
             this@AdminActivity.startActivity(myIntent)
         }
         mBtnBack.setOnClickListener{
+            val returnIntent = Intent()
+            returnIntent.putExtra("state", "back")
+            setResult(RESULT_OK, returnIntent)
             finish()
         }
 
@@ -259,8 +262,15 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             .unregisterOnSharedPreferenceChangeListener(this)
     }
 
+    override fun onBackPressed() {
+        setResult(RESULT_CANCELED)
+        super.onBackPressed()
+    }
+
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
         if (!mModbusOk) {
+            Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
+                Toast.LENGTH_LONG).show()
             return
         }
 
@@ -286,6 +296,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         }
 
         if (qty != null && address > 0) {
+            Log.d(TAG, "Write setting at $address: $qty")
             writeModbusRegister(address, qty)
         }
     }

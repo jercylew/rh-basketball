@@ -21,6 +21,7 @@ class SettingsActivity : AppCompatActivity() {
     private var mUserNo: String = ""
     private var mUserName: String = ""
     private lateinit var mBtnBack: ImageButton
+    private var mModbusOk: Boolean = false
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
 
     private val mAppDataFile: File = File(Environment.getExternalStorageDirectory().path
@@ -36,9 +37,9 @@ class SettingsActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
-        mUserNo = intent.getStringExtra("loginUserNo").toString()
+        mUserNo = intent.getStringExtra("userNo").toString()
         mUserName = intent.getStringExtra("userName").toString()
-//        mModbusOk = intent.getBooleanExtra("modbusOk", false)
+        mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(R.layout.activity_settings)
@@ -53,12 +54,9 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        val userName: String = if (mUserName == "") getString(R.string.welcome_user_name) else mUserName
     }
 
     override fun onDestroy() {
-        // Do the cleaning work
-        var num: Int = 10
         super.onDestroy()
     }
 

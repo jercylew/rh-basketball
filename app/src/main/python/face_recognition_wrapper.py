@@ -20,8 +20,43 @@ CONST_NUM_JITTERS = 1
 CONST_TOLERANCE = 0.6
 
 
-def register_face(image_path):
-    """Add a new image to the model"""
+def register_face(image_path, pickle_file_path="."):
+    """
+        Add the new image to the model, note that the image path should be the same path of loaded image files
+        TODO: Support adding image from different directory, change prototype to:
+                register_face(image_path, registered_image_dir, pickle_file_path=".")
+
+
+        :param image_path: The path of the image file to be added
+        :param pickle_file_path: The path to which pickle file will be saved
+        :return: None
+    """
+    pre_encodings_pickle_file = f"{pickle_file_path}/{CONST_KNOWN_FACE_ENCODINGS_PICKLE_FILE}"
+    pre_labels_pickle_file_path = f"{pickle_file_path}/{CONST_KNOWN_FACE_LABELS_PICKLE_FILE}"
+
+    print(f"Trying to register new face: {image_path}")
+    image_data = face_recognition.load_image_file(image_path)
+    face_locations = face_recognition.face_locations(image_data, model=CONST_LOCATION_MODEL)
+    all_face_encodings = face_recognition.face_encodings(face_image=image_data, known_face_locations=face_locations,
+                                                         num_jitters=CONST_NUM_JITTERS, model=CONST_ENCODING_MODEL)
+
+    if len(all_face_encodings) == 0:
+        print(f"Error, cannot get encoding for the image: {image_path}")
+        return False
+
+    face_encoding = all_face_encodings[0]  # Assume this training image has only one face in each image
+    g_known_face_encodings.append(face_encoding)
+    slash_pos = image_path.rindex("/")
+    dot_pos = image_path.rindex(".")
+    label = image_path[slash_pos + 1:dot_pos]
+    g_known_face_names.append(label)
+
+    with open(pre_encodings_pickle_file, 'ab') as known_encodings_pickle_out_file:
+        pickle.dump(g_known_face_encodings, known_encodings_pickle_out_file)
+
+    with open(pre_labels_pickle_file_path, 'ab') as known_labels_pickle_out_file:
+        pickle.dump(g_known_face_names, known_labels_pickle_out_file)
+
     return True
 
 

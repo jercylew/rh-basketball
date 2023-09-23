@@ -1,7 +1,6 @@
 package com.ruihao.basketball
 
 import android.Manifest
-import android.R.attr.value
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -16,12 +15,15 @@ import android.os.CountDownTimer
 import android.os.Environment
 import android.provider.BaseColumns
 import android.provider.MediaStore
+import android.util.Base64
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.Button
 import android.widget.GridView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
@@ -68,6 +70,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mTVGreeting: TextView
     private lateinit var mBtnBorrow: Button
     private lateinit var mBtnReturn: Button
+    private lateinit var mAdminActivityLauncher: ActivityResultLauncher<Intent>
     private var mTotalBallsQty: Array<Int> = arrayOf<Int>(12, 12)
     private var mRemainBallsQty: Array<Int> = arrayOf<Int>(0, 0)
     private var mUser: User? = null
@@ -77,6 +80,7 @@ class MainActivity : AppCompatActivity() {
     private var dispQueue: DispQueueThread? = null
     private var comPort: SerialControl? = null
     private var mModbusOk: Boolean = false
+
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
 
     //Camera
@@ -84,6 +88,8 @@ class MainActivity : AppCompatActivity() {
     private var mFaceRecogModelLoaded: Boolean = false
     private val mAppDataFile: File = File(Environment.getExternalStorageDirectory().path
             + "/RhBasketball")
+
+    private var mAdminActivityRunning: Boolean = false
 
     private var videoCapture: VideoCapture<Recorder>? = null
     private var recording: Recording? = null
@@ -263,6 +269,17 @@ class MainActivity : AppCompatActivity() {
             startCamera()
         } else {
             requestPermissions()
+        }
+
+        mAdminActivityLauncher = registerForActivityResult<Intent, ActivityResult>(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result: ActivityResult ->
+            if (RESULT_OK != result.resultCode) {
+                return@registerForActivityResult
+            }
+            val intent = result.data ?: return@registerForActivityResult
+
+            mAdminActivityRunning = false
         }
     }
 
@@ -577,7 +594,7 @@ class MainActivity : AppCompatActivity() {
                     val label: String = faceInfoJson.getString("label")
                     val posRect = faceInfoJson.getJSONArray("rect")
 
-//                    Log.d(TAG, "Face recognized as $label")
+                    Log.d(TAG, "Face recognized as $label")
                     runOnUiThread {
 //                        Toast.makeText(this@MainActivity, "Face recognized as $label",
 //                            Toast.LENGTH_LONG).show()
@@ -664,6 +681,7 @@ class MainActivity : AppCompatActivity() {
             BasketballContract.User.COLUMN_AGE,
             BasketballContract.User.COLUMN_GENDER,
             BasketballContract.User.COLUMN_CLASS_GRADE,
+            BasketballContract.User.COLUMN_IS_ADMIN
         )
 
         val selection: String =
@@ -714,13 +732,27 @@ class MainActivity : AppCompatActivity() {
         cursor.close()
         db.close()
 
+        if (isAdmin) {
+            if (!mAdminActivityRunning)
+            {
+                val myIntent = Intent(this@MainActivity, AdminActivity::class.java)
+                myIntent.putExtra("modbusOk", mModbusOk) //Optional parameters
+                myIntent.putExtra("userNo", no)
+                myIntent.putExtra("userName", name)
+
+                mAdminActivityRunning = true
+                mAdminActivityLauncher.launch(myIntent)
+            }
+
+            return
+        }
+
         mUser = User(name = name, id = id, no = no, gender = gender, classGrade = classGrade,
             age = age, photoUrl = "", isAdmin = isAdmin)
         Log.d(TAG, "Login succeed, user: ${mUser!!.name}, ${mUser!!.id}, ${mUser!!.no}," +
                 "${mUser!!.gender}, ${mUser!!.classGrade}, ${mUser!!.age}")
         Toast.makeText(this, String.format(getString(R.string.tip_login_user_succeed), name),
             Toast.LENGTH_LONG).show()
-
 
         mTVGreeting.text = String.format(getString(R.string.welcome_text_format, name))
 
@@ -848,16 +880,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun analyze(image: ImageProxy) {
-//            Log.d(TAG, "Got bitmap buffer, plans size: ${image.planes.size}," +
-//                    "format: ${image.format}, image size: ${image.width}x${image.height}")
+            Log.d(TAG, "Got bitmap buffer, plans size: ${image.planes.size}," +
+                    "format: ${image.format}, image size: ${image.width}x${image.height}")
 
-//            val bitmap: Bitmap = image.toBitmap()
-//            val stream = ByteArrayOutputStream()
-//            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
-//            val bytes = stream.toByteArray()
-//            val base64ImageData: String = Base64.encodeToString(bytes, Base64.DEFAULT)
-//
-//            listener(base64ImageData)
+            val bitmap: Bitmap = image.toBitmap()
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+            val bytes = stream.toByteArray()
+            val base64ImageData: String = Base64.encodeToString(bytes, Base64.DEFAULT)
+
+            listener(base64ImageData)
 
             image.close()
         }

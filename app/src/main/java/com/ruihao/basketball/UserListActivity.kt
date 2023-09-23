@@ -23,6 +23,7 @@ class UserListActivity : AppCompatActivity() {
     private var mUserNo: String = ""
     private var mUserName: String = ""
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
+    private var mModbusOk: Boolean = false
 
     private val mAppDataFile: File = File(Environment.getExternalStorageDirectory().path
             + "/RhBasketball")
@@ -46,8 +47,9 @@ class UserListActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
-        mUserNo = intent.getStringExtra("loginUserNo").toString()
+        mUserNo = intent.getStringExtra("userNo").toString()
         mUserName = intent.getStringExtra("userName").toString()
+        mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(R.layout.activity_user_list)

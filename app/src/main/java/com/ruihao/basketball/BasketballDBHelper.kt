@@ -92,3 +92,12 @@ internal class BasketballDBHelper(context: Context?) :
             "DROP TABLE IF EXISTS " + BasketballContract.BorrowRecord.TABLE_NAME
     }
 }
+/**
+Test users
+1|a2020440307|张三|男|13|初一（2）班|13987235450|1
+2|a2020440308|钟工|男|32|测试班级|132309875783|0
+
+ insert into user (no, name, gender, age, class_grade, tel, is_admin) values ("a2020440307", "张三", "男", 13, "初一（2）班", "13987235450", 1)
+ insert into user (no, name, gender, age, class_grade, tel, is_admin) values ("a2020440308", "钟工", "男", 32, "测试班级", "13987235450", 0)
+ */
+

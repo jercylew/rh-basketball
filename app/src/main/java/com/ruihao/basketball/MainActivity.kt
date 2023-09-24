@@ -160,7 +160,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             // Take the photo of the borrower
-            takePhoto()
+            takePhoto("borrow")
 
             // Check which channel has balls
             val addressToWrite: Int = if (mRemainBallsQty[0] > 0) 1002 else 1003
@@ -196,16 +196,12 @@ class MainActivity : AppCompatActivity() {
         }
         mBtnReturn.setOnClickListener {
             //Only for test
-            val myIntent = Intent(this@MainActivity, AdminActivity::class.java)
-            myIntent.putExtra("modbusOk", mModbusOk) //Optional parameters
-//            myIntent.putExtra("loginUserNo", mUser.no)
-            myIntent.putExtra("loginUserNo", "a1234567890")
-            myIntent.putExtra("userName", "TestUser")
-
-            this@MainActivity.startActivity(myIntent)
-
-            return@setOnClickListener
-//            takePhoto()
+//            val myIntent = Intent(this@MainActivity, AdminActivity::class.java)
+//            myIntent.putExtra("modbusOk", mModbusOk) //Optional parameters
+//            myIntent.putExtra("userNo", "a1234567890")
+//            myIntent.putExtra("userName", "TestUser")
+//            this@MainActivity.startActivity(myIntent)
+//            return@setOnClickListener
 
             if (mUser == null) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_login),
@@ -224,6 +220,8 @@ class MainActivity : AppCompatActivity() {
                     Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
+
+            takePhoto("return")
 
             // Open the door lock
             val addressOpen: Int = if (mRemainBallsQty[0] < 12) 1006 else 1007
@@ -291,8 +289,10 @@ class MainActivity : AppCompatActivity() {
         return mAppDataFile.path + "/data"
     }
 
-    private fun borrowReturnCapturePath(): String {
-        return mAppDataFile.path + "/capture"
+    private fun borrowReturnCapturePath(type: String): String {
+        val timeSuffix = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
+            .format(System.currentTimeMillis())
+        return  "${mAppDataFile.path}/capture/${mUser?.id}_${type}_${timeSuffix}.jpg"
     }
 
     override fun onResume() {
@@ -522,26 +522,11 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun takePhoto() {
+    private fun takePhoto(photoType: String) {
         // Get a stable reference of the modifiable image capture use case
         val imageCapture = imageCapture ?: return
-
-        // Create time stamped name and MediaStore entry.
-        val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
-            .format(System.currentTimeMillis())
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            if(Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CameraX-Image")
-            }
-        }
-
-        // Create output options object which contains file + metadata
         val outputOptions = ImageCapture.OutputFileOptions
-            .Builder(contentResolver,
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                contentValues)
+            .Builder(File(borrowReturnCapturePath(photoType)))
             .build()
 
         // Set up image capture listener, which is triggered after photo has

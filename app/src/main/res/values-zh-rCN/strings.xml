@@ -11,7 +11,7 @@
     <string name="welcome_user_name">游客</string>
     <string name="footer_technique_support">技术支持: 深圳瑞昊科技有限公司</string>
     <string name="footer_tel">电话: 0755–8423987</string>
-    <string name="tip_login">请先刷卡或扫码登陆</string>
+    <string name="tip_login">请先刷卡或刷脸登陆</string>
     <string name="tip_take_basketball">请尽快取走篮球</string>
     <string name="tip_return_basketball">请将篮球放入已打开的通道中</string>
     <string name="tip_no_basketball">本机球已借完, 请试试其它机器</string>
@@ -32,7 +32,7 @@
     <string name="admin_borrow_log">借球记录</string>
     <string name="admin_user_list">用户列表</string>
     <string name="admin_load_balls">装球</string>
-    <string name="admin_user_register_title">用户注册</string>
+    <string name="admin_user_register_title">添加用户</string>
     <string name="admin_user_register_hint_name">姓名</string>
     <string name="admin_user_register_hint_number">账号</string>
     <string name="admin_user_register_hint_gender">性别</string>
@@ -44,7 +44,9 @@
     <string name="admin_user_register_hint_aqddress">地址</string>
     <string name="admin_user_register_hint_phone">手机号码</string>
     <string name="admin_user_register_hint_class_grade">班级</string>
-    <string name="admin_user_register_alert_name_number_null">姓名和账号（学号）不能为空</string>
+    <string name="admin_user_register_alert_name_null">姓名不能为空</string>
+    <string name="admin_user_register_alert_number_photo_null">账号和人脸至少要录入一项</string>
+    <string name="admin_user_register_alert_face_not_found">照片没有录入人脸，请将脸正对摄像头</string>
     <string name="admin_user_register_terms_conditions">我已阅读，理解并接受用户注册有关协议</string>
     <string name="admin_user_register_tip_user_register_succeed">注册新用户成功!</string>
     <string name="admin_user_register_submit">提交</string>

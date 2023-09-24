@@ -291,6 +291,10 @@ class MainActivity : AppCompatActivity() {
         return mAppDataFile.path + "/data"
     }
 
+    private fun borrowReturnCapturePath(): String {
+        return mAppDataFile.path + "/capture"
+    }
+
     override fun onResume() {
         super.onResume()
         //Fetch data from controller via modbus
@@ -394,7 +398,8 @@ class MainActivity : AppCompatActivity() {
         }
 //        Toast.makeText(this, result, Toast.LENGTH_LONG).show();
 
-        loginUser(result)
+        // Login with IC card number
+        loginUser(BasketballContract.User.COLUMN_NO, result)
 
         mScanBarQRCodeBytes.clear();
         mScanBarQRCodeTimer = null
@@ -598,8 +603,8 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread {
 //                        Toast.makeText(this@MainActivity, "Face recognized as $label",
 //                            Toast.LENGTH_LONG).show()
-                        if (mUser == null) {
-                            loginUser(label)
+                        if (mUser == null) { // Login with face label (UUID)
+                            loginUser(BaseColumns._ID, label)
                         }
                     }
                 })
@@ -654,7 +659,7 @@ class MainActivity : AppCompatActivity() {
         sMsg.append(comRecData.bRec?.let { String(it) })
 //        Toast.makeText(this, sMsg.toString(), Toast.LENGTH_LONG).show();
 
-        loginUser(comRecData.bRec?.let { String(it) })
+        loginUser(BasketballContract.User.COLUMN_NO, comRecData.bRec?.let { String(it) })
     }
 
     private fun openComPort(comPort: SerialHelper) {
@@ -671,7 +676,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun loginUser(userNo: String?): Unit {
+    private fun loginUser(withField: String, withValue: String?): Unit {
         val db = mDbHelper.readableDatabase
 
         val projection = arrayOf<String>(
@@ -681,12 +686,13 @@ class MainActivity : AppCompatActivity() {
             BasketballContract.User.COLUMN_AGE,
             BasketballContract.User.COLUMN_GENDER,
             BasketballContract.User.COLUMN_CLASS_GRADE,
-            BasketballContract.User.COLUMN_IS_ADMIN
+            BasketballContract.User.COLUMN_IS_ADMIN,
+            BasketballContract.User.COLUMN_PHOTO_URL,
         )
 
         val selection: String =
-            BasketballContract.User.COLUMN_NO + " = ?"
-        val selectionArgs = arrayOf(userNo)
+            "$withField = ?"
+        val selectionArgs = arrayOf(withValue)
 
         val sortOrder: String =
             BasketballContract.User.COLUMN_NAME + " DESC"
@@ -702,31 +708,33 @@ class MainActivity : AppCompatActivity() {
         )
 
         if (cursor.count == 0) {
-            Log.d(TAG, "User not found: $userNo")
+            Log.d(TAG, "User not found, with $withField: $withValue")
             Toast.makeText(this, getString(R.string.tip_login_user_not_found),
                 Toast.LENGTH_LONG).show()
             return
         }
 
         if (cursor.count > 1) {
-            Log.w(TAG, "Multiple user found for this user number: $userNo")
+            Log.w(TAG, "Multiple user found for this user, $withField: $withValue")
             return
         }
 
         var name: String = ""
         var no: String = ""
-        var id: Int = -1
+        var id: String = ""
         var gender: String = ""
         var classGrade: String = ""
         var age: Int = 0
         var isAdmin: Boolean = false
+        var photoUrl: String = ""
         while (cursor.moveToNext()) {
             name = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_NAME))
             no = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_NO))
-            id = cursor.getInt(cursor.getColumnIndexOrThrow(BaseColumns._ID))
+            id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
             gender = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_GENDER))
             classGrade = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_CLASS_GRADE))
             isAdmin = (cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_IS_ADMIN)) == 1)
+            photoUrl = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_PHOTO_URL))
             break
         }
         cursor.close()
@@ -748,7 +756,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         mUser = User(name = name, id = id, no = no, gender = gender, classGrade = classGrade,
-            age = age, photoUrl = "", isAdmin = isAdmin)
+            age = age, photoUrl = photoUrl, isAdmin = false)
         Log.d(TAG, "Login succeed, user: ${mUser!!.name}, ${mUser!!.id}, ${mUser!!.no}," +
                 "${mUser!!.gender}, ${mUser!!.classGrade}, ${mUser!!.age}")
         Toast.makeText(this, String.format(getString(R.string.tip_login_user_succeed), name),

@@ -112,6 +112,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             }
              */
             updateBallsQuantity()
+            updateSharedPreferencesFromController()
 
             // Inform the user toc (Play audio)
             Toast.makeText(this@AdminActivity, getString(R.string.tip_take_basketball),
@@ -160,6 +161,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
                 Toast.LENGTH_LONG).show()
             updateBallsQuantity()
+            updateSharedPreferencesFromController()
         }
         mCardUserRegister.setOnClickListener{
             val myIntent = Intent(this@AdminActivity, UserRegisterActivity::class.java)
@@ -180,7 +182,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             }
 
             // Set the lock door close time: to large enough
-            writeModbusRegister(1015, 65000) //进球口门锁关闭时长: 65 seconds TODO： Support lock time by the user themselves
+//            writeModbusRegister(1015, 65000) //进球口门锁关闭时长: 65 seconds TODO： Support lock time by the user themselves
 
             // Open Lock
             if (!writeModbusRegister(1006, 1)) {
@@ -199,8 +201,6 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             // Close the lock TODO： The user click a button to lock the doors
         }
         mCardSettings.setOnClickListener{
-            Toast.makeText(this@AdminActivity, "Settings",
-                Toast.LENGTH_LONG).show()
             val intent = Intent(this@AdminActivity, SettingsActivity::class.java)
             intent.putExtra("modbusOk", mModbusOk)
             intent.putExtra("userNo", mUserNo)
@@ -208,8 +208,6 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             startActivity(intent)
         }
         mCardUserList.setOnClickListener{
-            Toast.makeText(this@AdminActivity, "View user list",
-                Toast.LENGTH_LONG).show()
             val myIntent = Intent(this@AdminActivity, UserListActivity::class.java)
             myIntent.putExtra("modbusOk", mModbusOk)
             myIntent.putExtra("loginUserNo", mUserNo)
@@ -226,9 +224,25 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         setupSharedPreferences()
     }
 
+    private fun updateSharedPreferencesFromController() {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        with (sharedPreferences.edit()) {
+            putString("left_balls_qty", readModbusRegister(1000).toString())
+            putString("right_balls_qty", readModbusRegister(1001).toString())
+            putString("left_balls_qty_max", readModbusRegister(1008).toString())
+            putString("right_balls_qty_max", readModbusRegister(1009).toString())
+            putString("ball_release_interval", readModbusRegister(1014).toString())
+            putString("ball_entry_lock_time", readModbusRegister(1015).toString())
+
+            apply()
+        }
+    }
+
     private fun setupSharedPreferences() {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         sharedPreferences.registerOnSharedPreferenceChangeListener(this)
+
+        updateSharedPreferencesFromController()
     }
 
     override fun onResume() {
@@ -273,6 +287,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 Toast.LENGTH_LONG).show()
             return
         }
+        Log.d(TAG, "onSharedPreferenceChanged key: $key")
 
         val qty = sharedPreferences.getString(key, "0")?.toInt()
         var address = -1

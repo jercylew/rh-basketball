@@ -1,24 +1,27 @@
 package com.ruihao.basketball
 
 import android.content.Context
+import android.graphics.BitmapFactory
+import android.os.Environment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import java.io.File
 
-class UserListAdapter(context: Context, courseImg: ArrayList<*>, courseName: ArrayList<*>) :
+class UserListAdapter(context: Context, usersList: ArrayList<User>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    var courseImg: ArrayList<*>
-    var courseName: ArrayList<*>
+    private lateinit var mUsersList: ArrayList<User>
     var context: Context
+    private val mPhotoSavePath: String = Environment.getExternalStorageDirectory().path +
+            "/RhBasketball/data/"
 
     // Constructor for initialization
     init {
         this.context = context
-        this.courseImg = courseImg
-        this.courseName = courseName
+        this.mUsersList = usersList
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -31,32 +34,40 @@ class UserListAdapter(context: Context, courseImg: ArrayList<*>, courseName: Arr
         return ViewHolder(view)
     }
 
-//    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-//        TODO("Not yet implemented")
-//    }
-
     // Binding data to the into specified position
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        // TypeCast Object to int type
-        val res = courseImg[position] as Int
+        val userInfo: User = mUsersList[position]
 
-        (holder as UserListAdapter.ViewHolder).images.setImageResource(res)
-        holder.text.text = courseName[position] as String
+        // Photo
+        val userPhotoUrl = "$mPhotoSavePath/${userInfo.id}.jpg"
+        if (File(userPhotoUrl).exists()) {
+            val imgBitmap = BitmapFactory.decodeFile(userPhotoUrl)
+            (holder as UserListAdapter.ViewHolder).mIVPhoto.setImageBitmap(imgBitmap)
+        }
+        (holder as UserListAdapter.ViewHolder).mTVClassGrade.text = userInfo.classGrade
+        (holder as UserListAdapter.ViewHolder).mTVName.text = userInfo.name
+        (holder as UserListAdapter.ViewHolder).mTVGender.text = userInfo.gender
+        (holder as UserListAdapter.ViewHolder).mTVNumber.text = userInfo.no
     }
 
     override fun getItemCount(): Int {
         // Returns number of items
         // currently available in Adapter
-        return courseImg.size
+        return mUsersList.size
     }
 
-    // Initializing the Views
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        var images: ImageView
-        var text: TextView
+        var mIVPhoto: ImageView
+        var mTVName: TextView
+        var mTVNumber: TextView
+        var mTVGender: TextView
+        var mTVClassGrade: TextView
         init {
-            images = view.findViewById<View>(R.id.courseImg) as ImageView
-            text = view.findViewById<View>(R.id.courseName) as TextView
+            mIVPhoto = view.findViewById<View>(R.id.userPhoto) as ImageView
+            mTVName = view.findViewById<View>(R.id.userName) as TextView
+            mTVNumber = view.findViewById<View>(R.id.userNo) as TextView
+            mTVGender = view.findViewById<View>(R.id.userGender) as TextView
+            mTVClassGrade = view.findViewById<View>(R.id.userClassGrade) as TextView
         }
     }
 }

@@ -2,7 +2,7 @@ package com.ruihao.basketball
 
 data class User(
     val name: String,
-    val id: Int,
+    val id: String,
     val no: String,
     val age: Int,
     val gender: String,

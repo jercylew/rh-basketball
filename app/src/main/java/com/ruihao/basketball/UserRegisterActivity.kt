@@ -27,6 +27,7 @@ import com.ruihao.basketball.databinding.ActivityMainBinding
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.UUID
 
 
 class UserRegisterActivity : AppCompatActivity() {
@@ -47,12 +48,14 @@ class UserRegisterActivity : AppCompatActivity() {
     private var mUserName: String = ""
     private var mGender: Int = 0
     private var mModbusOk: Boolean = false
+    private var mTempUUID: String = ""
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
     private lateinit var mPhotoImageView: ImageView
 
     private val mPhotoSavePath: String = Environment.getExternalStorageDirectory().path +
             "/RhBasketball/data/"
-    private var mSavedCaptureImagePath: String = ""
+    private val mFaceRecognitionModelPath = Environment.getExternalStorageDirectory().path +
+            "/RhBasketball/model"
 
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,17 +88,17 @@ class UserRegisterActivity : AppCompatActivity() {
         mBtnUserRegisterBack = findViewById(R.id.ibtnUserRegisterBack)
 
         mPhotoImageView.setOnClickListener{
-            val number: String = mEditTextNumber.text.toString()
-            if (number == "") {
-                Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_name_number_null),
-                    Toast.LENGTH_LONG).show()
-                return@setOnClickListener
-            }
+//            val number: String = mEditTextNumber.text.toString()
+//            if (number == "") {
+//                Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_name_number_null),
+//                    Toast.LENGTH_LONG).show()
+//                return@setOnClickListener
+//            }
 
             val imageCapture = mImageCapture ?: return@setOnClickListener
-
+            mTempUUID = UUID.randomUUID().toString()
             val outputOptions = ImageCapture.OutputFileOptions
-                .Builder(File(mPhotoSavePath + mEditTextNumber.text + ".jpg"))
+                .Builder(File(getSavedCapturedImagePath()))
                 .build()
 
             imageCapture.takePicture(
@@ -104,7 +107,6 @@ class UserRegisterActivity : AppCompatActivity() {
                 object : ImageCapture.OnImageSavedCallback {
                     override fun onError(exc: ImageCaptureException) {
                         Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
-                        mSavedCaptureImagePath = ""
                     }
 
                     override fun onImageSaved(output: ImageCapture.OutputFileResults){
@@ -114,7 +116,6 @@ class UserRegisterActivity : AppCompatActivity() {
                         if (imgFile.exists()) {
                             val imgBitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
                             mPhotoImageView.setImageBitmap(imgBitmap)
-                            mSavedCaptureImagePath = imgFile.absolutePath
                         }
                     }
                 }
@@ -124,38 +125,53 @@ class UserRegisterActivity : AppCompatActivity() {
             val name: String = mEditTextName.text.toString()
             val number: String = mEditTextNumber.text.toString()
 
-            if (name == "" || number == "") {
-                Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_name_number_null),
+            if (name == "") {
+                Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_name_null),
                     Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
 
-            val imgFile = File(mSavedCaptureImagePath)
-            if (!imgFile.exists()) {
-                Toast.makeText(baseContext, "Capture image not exists", Toast.LENGTH_SHORT).show()
+            val imgFile = File(getSavedCapturedImagePath())
+            Log.d(TAG, "Now check the photo file: ${imgFile.absolutePath}")
+            if (number == "" && !imgFile.exists()) {
+                Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_number_photo_null),
+                    Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
 
-            val py = Python.getInstance()
-            val module = py.getModule("face_recognition_wrapper")
-            val retResult: Boolean = module.callAttr("register_face",
-                imgFile.absolutePath)
-                .toBoolean()
+            var insertPhotoUrl: String = ""
+            if (imgFile.exists()) {
+                val py = Python.getInstance()
+                val module = py.getModule("face_recognition_wrapper")
+                val retResult: Boolean = module.callAttr("register_face",
+                    imgFile.absolutePath, mFaceRecognitionModelPath)
+                    .toBoolean()
 
-            if (!retResult) {
-                Log.e(TAG, "Failed to register user, adding user face to model failed")
-                return@setOnClickListener
+                if (retResult) {
+                    insertPhotoUrl = imgFile.absolutePath
+                }
+                else {
+                    Log.e(TAG, "Failed to register user, adding user face to model failed")
+                    Toast.makeText(baseContext, getString(R.string.admin_user_register_alert_face_not_found),
+                        Toast.LENGTH_SHORT).show()
+
+                    if (number == "") {
+                        return@setOnClickListener
+                    }
+                }
             }
 
             val tel: String = mEditTextPhone.text.toString()
             val age: Int = mEditTextAge.text.toString().toInt()
-            val classGrade: String = mEditTextClassGrade.toString()
+            val classGrade: String = mEditTextClassGrade.text.toString()
+            val newUUID: String = if (mTempUUID == "") UUID.randomUUID().toString() else mTempUUID
 
-            mDbHelper.addNewUser(name = name, number = number, age = age, gender = mGender,
-                tel = tel, classGrade = classGrade)
+            mDbHelper.addNewUser(id = newUUID, name = name, number = number, age = age, gender = mGender,
+                tel = tel, classGrade = classGrade, photoUrl = insertPhotoUrl)
 
             Toast.makeText(baseContext, getString(R.string.admin_user_register_tip_user_register_succeed),
-                Toast.LENGTH_SHORT).show()
+                Toast.LENGTH_LONG).show()
+            finish()
         }
         mBtnUserRegisterBack.setOnClickListener{
             finish()
@@ -205,6 +221,9 @@ class UserRegisterActivity : AppCompatActivity() {
         cameraProvider.bindToLifecycle(this, cameraSelector, mImageCapture)
     }
 
+    private fun getSavedCapturedImagePath(): String {
+        return "$mPhotoSavePath$mTempUUID.jpg"
+    }
 
     companion object {
         private const val TAG = "RH-Basketball"

@@ -1,6 +1,7 @@
 package com.ruihao.basketball
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -12,6 +13,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.ruihao.basketball.databinding.ActivityMainBinding
 import java.io.File
 import java.util.Arrays
@@ -19,6 +21,7 @@ import java.util.Arrays
 
 class UserListActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+    private lateinit var mBtnAddUser: FloatingActionButton
 
     private var mUserNo: String = ""
     private var mUserName: String = ""
@@ -58,6 +61,14 @@ class UserListActivity : AppCompatActivity() {
         mBtnBack.setOnClickListener{
             finish()
         }
+        mBtnAddUser = findViewById(R.id.fabAddNewUser)
+        mBtnAddUser.setOnClickListener{
+            val myIntent = Intent(this@UserListActivity, UserRegisterActivity::class.java)
+            myIntent.putExtra("modbusOk", mModbusOk)
+            myIntent.putExtra("userNo", mUserNo)
+            myIntent.putExtra("userName", mUserName)
+            this@UserListActivity.startActivity(myIntent)
+        }
     }
 
     override fun onResume() {
@@ -68,15 +79,8 @@ class UserListActivity : AppCompatActivity() {
         recyclerView!!.layoutManager = linearLayoutManager
 
         //Update data
-        courseImg?.add(R.drawable.user_photo)
-        courseImg?.add(R.drawable.user_photo)
-        courseImg?.add(R.drawable.user_photo)
-
-        courseName.add("测试用户1")
-        courseName.add("测试用户2")
-        courseName.add("测试用户3")
-
-        val adapter = courseImg?.let { UserListAdapter(this@UserListActivity, it, courseName) }
+        val userList: ArrayList<User> = mDbHelper.getAllUsers()
+        val adapter =  UserListAdapter(this@UserListActivity, userList)
         recyclerView!!.adapter = adapter
     }
 

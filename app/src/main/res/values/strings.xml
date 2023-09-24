@@ -44,7 +44,9 @@
     <string name="admin_user_register_hint_phone">Phone</string>
     <string name="admin_user_register_hint_class_grade">Class Grade</string>
     <string name="admin_user_register_terms_conditions">I have read, understood and accept the user registration rules</string>
-    <string name="admin_user_register_alert_name_number_null">User name and number cannot be null</string>
+    <string name="admin_user_register_alert_name_null">User name cannot be null</string>
+    <string name="admin_user_register_alert_number_photo_null">User number and photo cannot be both null</string>
+    <string name="admin_user_register_alert_face_not_found">Face not found, please make sure your face right to the camera</string>
     <string name="admin_user_register_tip_user_register_succeed">Register user succeed!</string>
     <string name="admin_user_register_submit">Submit</string>
     <string name="admin_user_register_optional">Optional</string>

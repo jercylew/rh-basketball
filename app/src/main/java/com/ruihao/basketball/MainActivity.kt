@@ -1,7 +1,8 @@
 package com.ruihao.basketball
 
 import android.Manifest
-import android.content.ContentValues
+import android.content.ContentResolver
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -9,12 +10,13 @@ import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.graphics.Rect
 import android.graphics.YuvImage
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Environment
 import android.provider.BaseColumns
-import android.provider.MediaStore
 import android.util.Base64
 import android.util.Log
 import android.view.KeyEvent
@@ -80,6 +82,7 @@ class MainActivity : AppCompatActivity() {
     private var dispQueue: DispQueueThread? = null
     private var comPort: SerialControl? = null
     private var mModbusOk: Boolean = false
+    private var mMediaPlayer: MediaPlayer? = null
 
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
 
@@ -130,7 +133,6 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-//        setContentView(R.layout.activity_admin)
 
         initGridView()
         mTVTotalQty = findViewById(R.id.tvTotalQty)
@@ -144,11 +146,13 @@ class MainActivity : AppCompatActivity() {
             if (mUser == null) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_login),
                     Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_login)
                 return@setOnClickListener
             }
             if (!mModbusOk) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
 
@@ -156,6 +160,7 @@ class MainActivity : AppCompatActivity() {
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 0) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_no_basketball),
                     Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_no_basketball)
                 return@setOnClickListener
             }
 
@@ -189,6 +194,7 @@ class MainActivity : AppCompatActivity() {
             // Inform the user toc (Play audio)
             Toast.makeText(this@MainActivity, getString(R.string.tip_take_basketball),
                 Toast.LENGTH_LONG).show()
+            playAudio(R.raw.tip_take_basketball)
 
             // Save borrow record (DO not do this now)
 
@@ -206,18 +212,21 @@ class MainActivity : AppCompatActivity() {
             if (mUser == null) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_login),
                     Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_login)
                 return@setOnClickListener
             }
 
             if (!mModbusOk) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
 
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 24) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_no_space),
                     Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_no_space)
                 return@setOnClickListener
             }
 
@@ -232,6 +241,7 @@ class MainActivity : AppCompatActivity() {
 
             Toast.makeText(this@MainActivity, getString(R.string.tip_return_basketball),
                 Toast.LENGTH_LONG).show()
+            playAudio(R.raw.tip_return_basketball)
 
             // Check if the ball entered
             var tryCount = 0
@@ -250,6 +260,7 @@ class MainActivity : AppCompatActivity() {
             // Inform user to return the ball
             Toast.makeText(this@MainActivity, getString(R.string.tip_return_succeed),
                 Toast.LENGTH_LONG).show()
+            playAudio(R.raw.tip_return_succeed)
             updateBallsQuantity()
             updateGridView()
 
@@ -696,6 +707,7 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "User not found, with $withField: $withValue")
             Toast.makeText(this, getString(R.string.tip_login_user_not_found),
                 Toast.LENGTH_LONG).show()
+            playAudio(R.raw.tip_login_user_not_found)
             return
         }
 
@@ -746,6 +758,7 @@ class MainActivity : AppCompatActivity() {
                 "${mUser!!.gender}, ${mUser!!.classGrade}, ${mUser!!.age}")
         Toast.makeText(this, String.format(getString(R.string.tip_login_user_succeed), name),
             Toast.LENGTH_LONG).show()
+        playAudio(R.raw.tip_login_user_succeed)
 
         mTVGreeting.text = String.format(getString(R.string.welcome_text_format, name))
 
@@ -776,6 +789,32 @@ class MainActivity : AppCompatActivity() {
             mUserLoginTimer!!.cancel()
             mUserLoginTimer = null
         }
+    }
+
+    private fun playAudio(src: Int): Unit {
+        if (mMediaPlayer == null) {
+            mMediaPlayer = MediaPlayer.create(this, src)
+            mMediaPlayer?.start()
+        }
+        else {
+            if (mMediaPlayer!!.isPlaying) {
+                return
+            }
+            mMediaPlayer!!.reset()
+
+            resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this, it) }
+            mMediaPlayer!!.prepare()
+            mMediaPlayer!!.start()
+        }
+    }
+
+    private fun resourceToUri(resID: Int): Uri? {
+        return Uri.parse(
+            ContentResolver.SCHEME_ANDROID_RESOURCE + "://" +
+                    this.resources.getResourcePackageName(resID) + '/' +
+                    this.resources.getResourceTypeName(resID) + '/' +
+                    this.resources.getResourceEntryName(resID)
+        )
     }
 
     private inner class SerialControl

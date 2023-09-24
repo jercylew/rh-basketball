@@ -1,9 +1,12 @@
 package com.ruihao.basketball
 
 import android.Manifest
+import android.content.ContentResolver
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -42,6 +45,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     private var mUserName: String = ""
     private var mModbusOk: Boolean = false
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
+    private var mMediaPlayer: MediaPlayer? = null
 
     private val mAppDataFile: File = File(
         Environment.getExternalStorageDirectory().path
@@ -80,6 +84,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             if (!mModbusOk) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
 
@@ -87,6 +92,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 0) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_no_basketball),
                     Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_no_basketball)
                 return@setOnClickListener
             }
 
@@ -117,6 +123,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             // Inform the user toc (Play audio)
             Toast.makeText(this@AdminActivity, getString(R.string.tip_take_basketball),
                 Toast.LENGTH_LONG).show()
+            playAudio(R.raw.tip_take_basketball)
 
             // Save borrow record (DO not do this now)
         }
@@ -124,12 +131,14 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             if (!mModbusOk) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
 
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 24) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_no_space),
                     Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_no_space)
                 return@setOnClickListener
             }
 
@@ -142,6 +151,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
             Toast.makeText(this@AdminActivity, getString(R.string.tip_return_basketball),
                 Toast.LENGTH_LONG).show()
+            playAudio(R.raw.tip_return_basketball)
 
             // Check if the ball entered
             var tryCount = 0
@@ -160,6 +170,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             // Inform user to return the ball
             Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
                 Toast.LENGTH_LONG).show()
+            playAudio(R.raw.tip_return_succeed)
             updateBallsQuantity()
             updateSharedPreferencesFromController()
         }
@@ -171,13 +182,13 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             this@AdminActivity.startActivity(myIntent)
         }
         mCardBorrowLog.setOnClickListener{
-            Toast.makeText(this@AdminActivity, "View borrow log",
-                Toast.LENGTH_LONG).show()
+
         }
         mCardLoadBalls.setOnClickListener{
             if (!mModbusOk) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
 
@@ -197,6 +208,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             // Inform the user to load balls
             Toast.makeText(this@AdminActivity, getString(R.string.admin_tip_load_balls),
                 Toast.LENGTH_LONG).show()
+            playAudio(R.raw.admin_tip_load_balls)
 
             // Close the lock TODO： The user click a button to lock the doors
         }
@@ -314,6 +326,32 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             Log.d(TAG, "Write setting at $address: $qty")
             writeModbusRegister(address, qty)
         }
+    }
+
+    private fun playAudio(src: Int): Unit {
+        if (mMediaPlayer == null) {
+            mMediaPlayer = MediaPlayer.create(this, src)
+            mMediaPlayer?.start()
+        }
+        else {
+            if (mMediaPlayer!!.isPlaying) {
+                return
+            }
+            mMediaPlayer!!.reset()
+
+            resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this, it) }
+            mMediaPlayer!!.prepare()
+            mMediaPlayer!!.start()
+        }
+    }
+
+    private fun resourceToUri(resID: Int): Uri? {
+        return Uri.parse(
+            ContentResolver.SCHEME_ANDROID_RESOURCE + "://" +
+                    this.resources.getResourcePackageName(resID) + '/' +
+                    this.resources.getResourceTypeName(resID) + '/' +
+                    this.resources.getResourceEntryName(resID)
+        )
     }
 
     /**

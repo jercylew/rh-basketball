@@ -1,7 +1,10 @@
 package com.ruihao.basketball
 
 import android.Manifest
+import android.content.ContentResolver
 import android.graphics.BitmapFactory
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -50,6 +53,7 @@ class UserRegisterActivity : AppCompatActivity() {
     private var mModbusOk: Boolean = false
     private var mTempUUID: String = ""
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
+    private var mMediaPlayer: MediaPlayer? = null
     private lateinit var mPhotoImageView: ImageView
 
     private val mPhotoSavePath: String = Environment.getExternalStorageDirectory().path +
@@ -88,13 +92,6 @@ class UserRegisterActivity : AppCompatActivity() {
         mBtnUserRegisterBack = findViewById(R.id.ibtnUserRegisterBack)
 
         mPhotoImageView.setOnClickListener{
-//            val number: String = mEditTextNumber.text.toString()
-//            if (number == "") {
-//                Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_name_number_null),
-//                    Toast.LENGTH_LONG).show()
-//                return@setOnClickListener
-//            }
-
             val imageCapture = mImageCapture ?: return@setOnClickListener
             mTempUUID = UUID.randomUUID().toString()
             val outputOptions = ImageCapture.OutputFileOptions
@@ -128,6 +125,7 @@ class UserRegisterActivity : AppCompatActivity() {
             if (name == "") {
                 Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_name_null),
                     Toast.LENGTH_LONG).show()
+                playAudio(R.raw.admin_user_register_alert_name_null)
                 return@setOnClickListener
             }
 
@@ -136,6 +134,7 @@ class UserRegisterActivity : AppCompatActivity() {
             if (number == "" && !imgFile.exists()) {
                 Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_number_photo_null),
                     Toast.LENGTH_LONG).show()
+                playAudio(R.raw.admin_user_register_alert_number_photo_null)
                 return@setOnClickListener
             }
 
@@ -154,6 +153,7 @@ class UserRegisterActivity : AppCompatActivity() {
                     Log.e(TAG, "Failed to register user, adding user face to model failed")
                     Toast.makeText(baseContext, getString(R.string.admin_user_register_alert_face_not_found),
                         Toast.LENGTH_SHORT).show()
+                    playAudio(R.raw.admin_user_register_alert_face_not_found)
 
                     if (number == "") {
                         return@setOnClickListener
@@ -171,6 +171,7 @@ class UserRegisterActivity : AppCompatActivity() {
 
             Toast.makeText(baseContext, getString(R.string.admin_user_register_tip_user_register_succeed),
                 Toast.LENGTH_LONG).show()
+            playAudio(R.raw.admin_user_register_tip_user_register_succeed)
             finish()
         }
         mBtnUserRegisterBack.setOnClickListener{
@@ -190,19 +191,17 @@ class UserRegisterActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    fun radioButtonhandler(view: View?) {
+    fun radioButtonHandler(view: View?) {
         if (view == null) {
             return
         }
 
-        if (view.id == R.id.female) {
-            mGender = 0
-        }
-        else if (view.id == R.id.male) {
-            mGender = 1
-        }
-        else {
-            mGender = -1
+        mGender = if (view.id == R.id.female) {
+            0
+        } else if (view.id == R.id.male) {
+            1
+        } else {
+            -1
         }
     }
 
@@ -223,6 +222,32 @@ class UserRegisterActivity : AppCompatActivity() {
 
     private fun getSavedCapturedImagePath(): String {
         return "$mPhotoSavePath$mTempUUID.jpg"
+    }
+
+    private fun playAudio(src: Int): Unit {
+        if (mMediaPlayer == null) {
+            mMediaPlayer = MediaPlayer.create(this, src)
+            mMediaPlayer?.start()
+        }
+        else {
+            if (mMediaPlayer!!.isPlaying) {
+                return
+            }
+            mMediaPlayer!!.reset()
+
+            resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this, it) }
+            mMediaPlayer!!.prepare()
+            mMediaPlayer!!.start()
+        }
+    }
+
+    private fun resourceToUri(resID: Int): Uri? {
+        return Uri.parse(
+            ContentResolver.SCHEME_ANDROID_RESOURCE + "://" +
+                    this.resources.getResourcePackageName(resID) + '/' +
+                    this.resources.getResourceTypeName(resID) + '/' +
+                    this.resources.getResourceEntryName(resID)
+        )
     }
 
     companion object {

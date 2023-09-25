@@ -273,7 +273,7 @@ class MainActivity : AppCompatActivity() {
 
         cameraExecutor = Executors.newSingleThreadExecutor()
         if (allPermissionsGranted()) {
-            startCamera()
+//            startCamera()
         } else {
             requestPermissions()
         }
@@ -306,6 +306,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+
+        startCamera()
 
         openComPort(comPort!!)
         dispQueue = DispQueueThread()
@@ -824,7 +826,7 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private inner class SerialControl
+    inner class SerialControl
         : SerialHelper() {
         override fun onDataReceived(comRecData: ComBean?) {
             //数据接收量大或接收时弹出软键盘，界面会卡顿,可能和6410的显示性能有关
@@ -838,7 +840,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private inner class DispQueueThread() : Thread() {
+    inner class DispQueueThread() : Thread() {
         private val queueList: Queue<ComBean> = LinkedList()
 
         override fun run() {

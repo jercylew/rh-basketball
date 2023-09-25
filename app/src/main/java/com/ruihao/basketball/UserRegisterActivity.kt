@@ -25,12 +25,17 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.chaquo.python.Python
 import com.ruihao.basketball.databinding.ActivityUserRegisterBinding
 import java.io.File
+import java.io.IOException
+import java.security.InvalidParameterException
+import java.util.LinkedList
+import java.util.Queue
 import java.util.UUID
 
 
 class UserRegisterActivity : AppCompatActivity() {
     private lateinit var binding: ActivityUserRegisterBinding
     private lateinit var mImageCapture: ImageCapture
+    private lateinit var mPreview: Preview
 
     private var mUserNo: String = ""
     private var mUserName: String = ""
@@ -39,6 +44,8 @@ class UserRegisterActivity : AppCompatActivity() {
     private var mTempUUID: String = ""
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
     private var mMediaPlayer: MediaPlayer? = null
+    private var dispQueue: DispQueueThread? = null
+    private var comPort: SerialControl? = null
 
     private val mPhotoSavePath: String = Environment.getExternalStorageDirectory().path +
             "/RhBasketball/data/"
@@ -164,17 +171,48 @@ class UserRegisterActivity : AppCompatActivity() {
             finish()
         }
 
+        comPort = SerialControl()
+
         startCamera()
     }
 
     override fun onResume() {
         super.onResume()
 
+        openComPort(comPort!!)
+        dispQueue = DispQueueThread()
+        dispQueue!!.start()
+
         binding.adminUserRegisterView.requestFocus()
     }
 
+    override fun onPause() {
+        comPort?.close()
+        dispQueue?.interrupt()
+
+        super.onPause()
+    }
+
     override fun onDestroy() {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+        val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+        cameraProvider.unbindAll()
+
         super.onDestroy()
+    }
+
+    private fun openComPort(comPort: SerialHelper) {
+        try {
+            comPort.open()
+//            Toast.makeText(this, "Open serial port succeed: ${comPort.sPort}",
+//                Toast.LENGTH_LONG).show();
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Unable to open serial port, permission denied!")
+        } catch (e: IOException) {
+            Log.e(TAG, "Unable to open serial port, IO error!")
+        } catch (e: InvalidParameterException) {
+            Log.e(TAG, "Unable to open serial port, Parameter error!")
+        }
     }
 
     fun radioButtonHandler(view: View?) {
@@ -201,7 +239,7 @@ class UserRegisterActivity : AppCompatActivity() {
         cameraProviderFuture.addListener({
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-            val preview = Preview.Builder()
+            mPreview = Preview.Builder()
                 .build()
                 .also {
                     it.setSurfaceProvider(binding.prvUserRegisterPhoto.surfaceProvider)
@@ -212,7 +250,7 @@ class UserRegisterActivity : AppCompatActivity() {
             try {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, mImageCapture)
+                    this, cameraSelector, mPreview, mImageCapture)
 
             } catch(exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
@@ -223,6 +261,22 @@ class UserRegisterActivity : AppCompatActivity() {
 
     private fun getSavedCapturedImagePath(): String {
         return "$mPhotoSavePath$mTempUUID.jpg"
+    }
+
+    private fun dispRecData(comRecData: ComBean) {
+        val strReceived: String? = comRecData.bRec?.let { serialPortBytesToString(it) }
+        binding.etICCardNo.text.clear()
+        binding.etICCardNo.setText(strReceived)
+    }
+
+    private fun serialPortBytesToString(bytes: ByteArray): String {
+        var strText: String = ""
+
+        for (ch in bytes) {
+            strText += "${ch.toUInt().toString(16)}"
+        }
+
+        return strText
     }
 
     private fun playAudio(src: Int): Unit {
@@ -251,8 +305,48 @@ class UserRegisterActivity : AppCompatActivity() {
         )
     }
 
+    //TODO: Move to a separate class later
+    inner class SerialControl
+        : SerialHelper() {
+        override fun onDataReceived(comRecData: ComBean?) {
+            if (comRecData != null) {
+                Log.d(TAG, "onDataReceived $comRecData")
+                dispQueue?.addQueue(comRecData)
+            }
+        }
+    }
+
+    inner class DispQueueThread() : Thread() {
+        private val queueList: Queue<ComBean> = LinkedList()
+
+        override fun run() {
+            super.run()
+            while (!isInterrupted) {
+                val comData: ComBean
+                if (queueList == null || queueList.isEmpty()) {
+                    continue
+                }
+
+                while (queueList.poll().also { comData = it } != null) {
+                    this@UserRegisterActivity.runOnUiThread(Runnable { dispRecData(comData) })
+                    try {
+                        sleep(100)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                    break
+                }
+            }
+        }
+
+        @Synchronized
+        fun addQueue(comData: ComBean) {
+            queueList.add(comData)
+        }
+    }
+
     companion object {
-        private const val TAG = "RH-Basketball"
+        private const val TAG = "RH-UserRegisterActivity"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private val REQUIRED_PERMISSIONS =
             mutableListOf (

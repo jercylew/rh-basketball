@@ -316,6 +316,7 @@ class MainActivity : AppCompatActivity() {
         updateBallsQuantity()
         val userName: String = mUser?.name ?: getString(R.string.welcome_user_name)
         mTVGreeting.text = String.format(getString(R.string.welcome_text_format, userName))
+        binding.basketballHome.requestFocus()
     }
 
     override fun onPause() {
@@ -413,7 +414,7 @@ class MainActivity : AppCompatActivity() {
             result += keyCodeToChar(keyCode, hasShift);
             hasShift = (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT);
         }
-//        Toast.makeText(this, result, Toast.LENGTH_LONG).show();
+        Toast.makeText(this, result, Toast.LENGTH_LONG).show();
 
         // Login with IC card number
         loginUser(BasketballContract.User.COLUMN_BAR_QR_NO, result)
@@ -475,6 +476,7 @@ class MainActivity : AppCompatActivity() {
             KeyEvent.KEYCODE_GRAVE -> return if (hasShift)  "~" else "`"
             KeyEvent.KEYCODE_EQUALS -> return if (hasShift)  "+" else "="
             KeyEvent.KEYCODE_MINUS -> return if (hasShift)  "_" else "-"
+            KeyEvent.KEYCODE_ENTER -> return ""
             else -> {
                 return "?"
             }

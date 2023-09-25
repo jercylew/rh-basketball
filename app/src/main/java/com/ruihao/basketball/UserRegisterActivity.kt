@@ -7,8 +7,10 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.os.Environment
 import android.util.Log
+import android.view.KeyEvent
 import android.view.View
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -27,6 +29,7 @@ import com.ruihao.basketball.databinding.ActivityUserRegisterBinding
 import java.io.File
 import java.io.IOException
 import java.security.InvalidParameterException
+import java.util.ArrayList
 import java.util.LinkedList
 import java.util.Queue
 import java.util.UUID
@@ -46,6 +49,8 @@ class UserRegisterActivity : AppCompatActivity() {
     private var mMediaPlayer: MediaPlayer? = null
     private var dispQueue: DispQueueThread? = null
     private var comPort: SerialControl? = null
+    private var mScanBarQRCodeTimer: CountDownTimer? = null
+    private var mScanBarQRCodeBytes: ArrayList<Int> = ArrayList<Int>()
 
     private val mPhotoSavePath: String = Environment.getExternalStorageDirectory().path +
             "/RhBasketball/data/"
@@ -199,6 +204,105 @@ class UserRegisterActivity : AppCompatActivity() {
         cameraProvider.unbindAll()
 
         super.onDestroy()
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        mScanBarQRCodeBytes.add(keyCode)
+        Log.d(TAG, "Received Key: $keyCode")
+
+        if (mScanBarQRCodeTimer != null) {
+            Log.d(TAG, "Key receive not completed, continue receive")
+            mScanBarQRCodeTimer!!.cancel()
+            mScanBarQRCodeTimer = null
+        }
+        mScanBarQRCodeTimer = object : CountDownTimer(350, 350) {
+            override fun onTick(millisUntilFinished: Long) {
+                // Do nothing
+            }
+            override fun onFinish() {
+                handleScanICOrQRCard()
+            }
+        }
+
+        (mScanBarQRCodeTimer as CountDownTimer).start()
+
+        return super.onKeyDown(keyCode, event)
+    }
+
+    private fun handleScanICOrQRCard(): Unit {
+        Log.d(TAG, "Bar / QR code receive completed, now check it!")
+        var result: String = ""
+        var hasShift: Boolean = false
+        for(keyCode in mScanBarQRCodeBytes){
+            result += keyCodeToChar(keyCode, hasShift);
+            hasShift = (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT);
+        }
+        Toast.makeText(this, result, Toast.LENGTH_LONG).show();
+
+        binding.etBarQRNo.setText(result)
+
+        mScanBarQRCodeBytes.clear();
+        mScanBarQRCodeTimer = null
+    }
+
+    private fun keyCodeToChar(keyCode: Int, hasShift: Boolean): String {
+        when (keyCode) {
+            KeyEvent.KEYCODE_SHIFT_LEFT -> return ""
+
+            KeyEvent.KEYCODE_0 -> return if (hasShift)  ")" else "0"
+            KeyEvent.KEYCODE_1 -> return if (hasShift)  "！" else "1"
+            KeyEvent.KEYCODE_2 -> return if (hasShift)  "@" else "2"
+            KeyEvent.KEYCODE_3 -> return if (hasShift)  "#" else "3"
+            KeyEvent.KEYCODE_4 -> return if (hasShift)  "$" else "4"
+            KeyEvent.KEYCODE_5 -> return if (hasShift)  "%" else "5"
+            KeyEvent.KEYCODE_6 -> return if (hasShift)  "^" else "6"
+            KeyEvent.KEYCODE_7 -> return if (hasShift)  "&" else "7"
+            KeyEvent.KEYCODE_8 -> return if (hasShift)  "*" else "8"
+            KeyEvent.KEYCODE_9 -> return if (hasShift)  "(" else "9"
+
+            KeyEvent.KEYCODE_A -> return if (hasShift)  "A" else "a"
+            KeyEvent.KEYCODE_B -> return if (hasShift)  "B" else "b"
+            KeyEvent.KEYCODE_C -> return if (hasShift)  "C" else "c"
+            KeyEvent.KEYCODE_D -> return if (hasShift)  "D" else "d"
+            KeyEvent.KEYCODE_E -> return if (hasShift)  "E" else "e"
+            KeyEvent.KEYCODE_F -> return if (hasShift)  "F" else "f"
+            KeyEvent.KEYCODE_G -> return if (hasShift)  "G" else "g"
+            KeyEvent.KEYCODE_H -> return if (hasShift)  "H" else "h"
+            KeyEvent.KEYCODE_I -> return if (hasShift)  "I" else "i"
+            KeyEvent.KEYCODE_J -> return if (hasShift)  "J" else "j"
+            KeyEvent.KEYCODE_K -> return if (hasShift)  "K" else "k"
+            KeyEvent.KEYCODE_L -> return if (hasShift)  "L" else "l"
+            KeyEvent.KEYCODE_M -> return if (hasShift)  "M" else "m"
+            KeyEvent.KEYCODE_N -> return if (hasShift)  "N" else "n"
+            KeyEvent.KEYCODE_O -> return if (hasShift)  "O" else "o"
+            KeyEvent.KEYCODE_P -> return if (hasShift)  "P" else "p"
+            KeyEvent.KEYCODE_Q -> return if (hasShift)  "Q" else "q"
+            KeyEvent.KEYCODE_R -> return if (hasShift)  "R" else "r"
+            KeyEvent.KEYCODE_S -> return if (hasShift)  "S" else "s"
+            KeyEvent.KEYCODE_T -> return if (hasShift)  "T" else "t"
+            KeyEvent.KEYCODE_U -> return if (hasShift)  "U" else "u"
+            KeyEvent.KEYCODE_V -> return if (hasShift)  "V" else "v"
+            KeyEvent.KEYCODE_W -> return if (hasShift)  "W" else "w"
+            KeyEvent.KEYCODE_X -> return if (hasShift)  "X" else "x"
+            KeyEvent.KEYCODE_Y -> return if (hasShift)  "Y" else "y"
+            KeyEvent.KEYCODE_Z -> return if (hasShift)  "Z" else "z"
+
+            KeyEvent.KEYCODE_COMMA -> return if (hasShift)  "<" else ","
+            KeyEvent.KEYCODE_PERIOD -> return if (hasShift)  ">" else "."
+            KeyEvent.KEYCODE_SLASH -> return if (hasShift)  "?" else "/"
+            KeyEvent.KEYCODE_BACKSLASH -> return if (hasShift)  "|" else "\\"
+            KeyEvent.KEYCODE_APOSTROPHE -> return if (hasShift)  "\"" else "'"
+            KeyEvent.KEYCODE_SEMICOLON -> return if (hasShift)  ":" else ";"
+            KeyEvent.KEYCODE_LEFT_BRACKET -> return if (hasShift)  "{" else "["
+            KeyEvent.KEYCODE_RIGHT_BRACKET -> return if (hasShift)  "}" else "]"
+            KeyEvent.KEYCODE_GRAVE -> return if (hasShift)  "~" else "`"
+            KeyEvent.KEYCODE_EQUALS -> return if (hasShift)  "+" else "="
+            KeyEvent.KEYCODE_MINUS -> return if (hasShift)  "_" else "-"
+            KeyEvent.KEYCODE_ENTER -> return ""
+            else -> {
+                return "?"
+            }
+        }
     }
 
     private fun openComPort(comPort: SerialHelper) {

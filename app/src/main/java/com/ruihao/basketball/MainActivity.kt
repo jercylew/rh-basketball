@@ -645,17 +645,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun dispRecData(comRecData: ComBean) {
-        val sMsg = StringBuilder()
-        sMsg.append(comRecData.sRecTime)
-        sMsg.append("[")
-        sMsg.append(comRecData.sComPort)
-        sMsg.append("]")
+        val strReceived: String? = comRecData.bRec?.let { serialPortBytesToString(it) }
+        Toast.makeText(this, strReceived, Toast.LENGTH_LONG).show()
 
-        sMsg.append("[Txt] ")
-        sMsg.append(comRecData.bRec?.let { String(it) })
-//        Toast.makeText(this, sMsg.toString(), Toast.LENGTH_LONG).show();
+        loginUser(BasketballContract.User.COLUMN_NO, strReceived)
+    }
 
-        loginUser(BasketballContract.User.COLUMN_NO, comRecData.bRec?.let { String(it) })
+    private fun serialPortBytesToString(bytes: ByteArray): String {
+        var strText: String = ""
+
+        for (ch in bytes) {
+            strText += "${ch.toUInt().toString(16)}"
+        }
+
+        return strText
     }
 
     private fun openComPort(comPort: SerialHelper) {

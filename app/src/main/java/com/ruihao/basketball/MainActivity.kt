@@ -164,8 +164,8 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Take the photo of the borrower
-            takePhoto("borrow")
+            val savedCaptureImagePath = borrowReturnCapturePath("borrow")
+            takePhoto(savedCaptureImagePath)
 
             // Check which channel has balls
             val addressToWrite: Int = if (mRemainBallsQty[0] > 0) 1002 else 1003
@@ -230,7 +230,8 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            takePhoto("return")
+            val savedCaptureImagePath = borrowReturnCapturePath("return")
+            takePhoto(savedCaptureImagePath)
 
             // Open the door lock
             val addressOpen: Int = if (mRemainBallsQty[0] < 12) 1006 else 1007
@@ -536,15 +537,12 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun takePhoto(photoType: String) {
-        // Get a stable reference of the modifiable image capture use case
+    private fun takePhoto(saveImagePath: String) {
         val imageCapture = imageCapture ?: return
         val outputOptions = ImageCapture.OutputFileOptions
-            .Builder(File(borrowReturnCapturePath(photoType)))
+            .Builder(File(saveImagePath))
             .build()
 
-        // Set up image capture listener, which is triggered after photo has
-        // been taken
         imageCapture.takePicture(
             outputOptions,
             ContextCompat.getMainExecutor(this),

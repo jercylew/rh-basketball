@@ -17,8 +17,15 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -26,6 +33,8 @@ import androidx.preference.PreferenceManager
 import com.ruihao.basketball.databinding.ActivityAdminBinding
 import com.ruihao.basketball.databinding.ActivityMainBinding
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 
 class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
@@ -41,10 +50,11 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     private lateinit var mCardBorrowLog: CardView
     private lateinit var mCardUserList: CardView
     private lateinit var mCardLoadBalls: CardView
+    private lateinit var mImageCapture: ImageCapture
 
     private var mTotalBallsQty: Array<Int> = arrayOf<Int>(12, 12)
     private var mRemainBallsQty: Array<Int> = arrayOf<Int>(0, 0)
-    private var mUserNo: String = ""
+    private var mUserId: String = ""
     private var mUserName: String = ""
     private var mModbusOk: Boolean = false
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
@@ -54,6 +64,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         Environment.getExternalStorageDirectory().path
             + "/RhBasketball")
 
+    @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         actionBar?.hide()
         val windowInsetsController =
@@ -64,7 +75,11 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
         super.onCreate(savedInstanceState)
 
-        mUserNo = intent.getStringExtra("userNo").toString()
+        if (!File("${mAppDataFile.path}/capture").exists()) {
+            File("${mAppDataFile.path}/capture").mkdirs()
+        }
+
+        mUserId = intent.getStringExtra("userId").toString()
         mUserName = intent.getStringExtra("userName").toString()
         mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
@@ -84,7 +99,6 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         mBtnBack = findViewById(R.id.ibtnAdminBack)
 
         mBtnBorrow.setOnClickListener {
-//            return@setOnClickListener
             if (!mModbusOk) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()
@@ -99,6 +113,9 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 playAudio(R.raw.tip_no_basketball)
                 return@setOnClickListener
             }
+
+            val savedCaptureImagePath = borrowReturnCapturePath("borrow")
+            takePhoto(savedCaptureImagePath)
 
             // Check which channel has balls
             val addressToWrite: Int = if (mRemainBallsQty[0] > 0) 1002 else 1003
@@ -128,7 +145,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 Toast.LENGTH_LONG).show()
             playAudio(R.raw.tip_take_basketball)
 
-            // Save borrow record (DO not do this now)
+            // Save borrow record (DO not do this now): must add taken photo: savedCaptureImagePath
         }
         mBtnReturn.setOnClickListener {
             if (!mModbusOk) {
@@ -144,6 +161,9 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 playAudio(R.raw.tip_no_space)
                 return@setOnClickListener
             }
+
+            val savedCaptureImagePath = borrowReturnCapturePath("return")
+            takePhoto(savedCaptureImagePath)
 
             // Open the door lock
             val addressOpen: Int = if (mRemainBallsQty[0] < 12) 1006 else 1007
@@ -180,12 +200,11 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         mCardUserRegister.setOnClickListener{
             val myIntent = Intent(this@AdminActivity, UserRegisterActivity::class.java)
             myIntent.putExtra("modbusOk", mModbusOk)
-            myIntent.putExtra("userNo", mUserNo)
+            myIntent.putExtra("userId", mUserId)
             myIntent.putExtra("userName", mUserName)
             this@AdminActivity.startActivity(myIntent)
         }
         mCardBorrowLog.setOnClickListener{
-
         }
         mCardLoadBalls.setOnClickListener{
             if (!mModbusOk) {
@@ -218,14 +237,14 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         mCardSettings.setOnClickListener{
             val intent = Intent(this@AdminActivity, SettingsActivity::class.java)
             intent.putExtra("modbusOk", mModbusOk)
-            intent.putExtra("userNo", mUserNo)
+            intent.putExtra("userId", mUserId)
             intent.putExtra("userName", mUserName)
             startActivity(intent)
         }
         mCardUserList.setOnClickListener{
             val myIntent = Intent(this@AdminActivity, UserListActivity::class.java)
             myIntent.putExtra("modbusOk", mModbusOk)
-            myIntent.putExtra("loginUserNo", mUserNo)
+            myIntent.putExtra("loginUserNo", mUserId)
             myIntent.putExtra("userName", mUserName)
             this@AdminActivity.startActivity(myIntent)
         }
@@ -237,6 +256,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         }
 
         setupSharedPreferences()
+        startCamera()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -338,6 +358,36 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         }
     }
 
+    private fun borrowReturnCapturePath(type: String): String {
+        val timeSuffix = SimpleDateFormat(AdminActivity.FILENAME_FORMAT, Locale.US)
+            .format(System.currentTimeMillis())
+        return  "${mAppDataFile.path}/capture/${mUserId}_${type}_${timeSuffix}.jpg"
+    }
+
+    private fun takePhoto(saveImagePath: String) {
+        val imageCapture = mImageCapture ?: return
+
+        val outputOptions = ImageCapture.OutputFileOptions
+            .Builder(File(saveImagePath))
+            .build()
+
+        imageCapture.takePicture(
+            outputOptions,
+            ContextCompat.getMainExecutor(this),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onError(exc: ImageCaptureException) {
+                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+                }
+
+                override fun onImageSaved(output: ImageCapture.OutputFileResults){
+                    val msg = "Photo capture succeeded: ${output.savedUri}"
+                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+                    Log.d(TAG, msg)
+                }
+            }
+        )
+    }
+
     private fun playAudio(src: Int): Unit {
         if (mMediaPlayer == null) {
             mMediaPlayer = MediaPlayer.create(this, src)
@@ -362,6 +412,21 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                     this.resources.getResourceTypeName(resID) + '/' +
                     this.resources.getResourceEntryName(resID)
         )
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun startCamera() {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+        mImageCapture = display?.let {
+            ImageCapture.Builder()
+                .setTargetRotation(it.rotation)
+                .build()
+        }!!
+
+        val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+        cameraProvider.bindToLifecycle(this, cameraSelector, mImageCapture)
     }
 
     /**

@@ -31,17 +31,6 @@ import java.util.UUID
 class UserRegisterActivity : AppCompatActivity() {
     private lateinit var binding: ActivityUserRegisterBinding
     private lateinit var mImageCapture: ImageCapture
-//    private lateinit var mEditTextName: EditText
-//    private lateinit var mEditTextNumber: EditText
-//    private lateinit var mEditTextHeight: EditText
-//    private lateinit var mEditTextWeight: EditText
-//    private lateinit var mEditTextAge: EditText
-//    private lateinit var mEditTextAddress: EditText
-//    private lateinit var mEditTextPhone: EditText
-//    private lateinit var mEditTextClassGrade: EditText
-//    private lateinit var mCheckBoxTermsConditions: CheckBox
-//    private lateinit var mBtnSubmit: Button
-//    private lateinit var mBtnUserRegisterBack: ImageButton
 
     private var mUserNo: String = ""
     private var mUserName: String = ""
@@ -50,7 +39,6 @@ class UserRegisterActivity : AppCompatActivity() {
     private var mTempUUID: String = ""
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
     private var mMediaPlayer: MediaPlayer? = null
-//    private lateinit var mPhotoImageView: ImageView
 
     private val mPhotoSavePath: String = Environment.getExternalStorageDirectory().path +
             "/RhBasketball/data/"
@@ -203,20 +191,6 @@ class UserRegisterActivity : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.R)
     private fun startCamera() {
-//        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-//        mImageCapture = display?.let {
-//            ImageCapture.Builder()
-//                .setTargetRotation(it.rotation)
-//                .build()
-//        }!!
-//
-//        val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-//        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-//
-//        cameraProvider.bindToLifecycle(this, cameraSelector, mImageCapture)
-
-
-        //////////////////
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         mImageCapture = display?.let {
             ImageCapture.Builder()

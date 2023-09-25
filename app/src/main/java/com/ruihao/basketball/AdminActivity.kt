@@ -9,8 +9,10 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.os.Environment
 import android.util.Log
+import android.view.KeyEvent
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
@@ -21,12 +23,13 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.preference.PreferenceManager
+import com.ruihao.basketball.databinding.ActivityAdminBinding
 import com.ruihao.basketball.databinding.ActivityMainBinding
 import java.io.File
 
 
 class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var binding: ActivityAdminBinding
     private lateinit var mTVTotalQty: TextView
     private lateinit var mTVRemainQty: TextView
     private lateinit var mTVGreeting: TextView
@@ -65,7 +68,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         mUserName = intent.getStringExtra("userName").toString()
         mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
-        binding = ActivityMainBinding.inflate(layoutInflater)
+        binding = ActivityAdminBinding.inflate(layoutInflater)
         setContentView(R.layout.activity_admin)
 
         mTVTotalQty = findViewById(R.id.tvTotalQty)
@@ -81,6 +84,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         mBtnBack = findViewById(R.id.ibtnAdminBack)
 
         mBtnBorrow.setOnClickListener {
+//            return@setOnClickListener
             if (!mModbusOk) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()
@@ -120,7 +124,6 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             updateBallsQuantity()
             updateSharedPreferencesFromController()
 
-            // Inform the user toc (Play audio)
             Toast.makeText(this@AdminActivity, getString(R.string.tip_take_basketball),
                 Toast.LENGTH_LONG).show()
             playAudio(R.raw.tip_take_basketball)
@@ -236,6 +239,12 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         setupSharedPreferences()
     }
 
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        Log.d(TAG, "Received Key: $keyCode")
+
+        return true
+    }
+
     private fun updateSharedPreferencesFromController() {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         with (sharedPreferences.edit()) {
@@ -259,6 +268,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
     override fun onResume() {
         super.onResume()
+        binding.basketballAdmin.requestFocus()
         //Fetch data from controller via modbus
         updateBallsQuantity()
 
@@ -363,7 +373,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
 
     companion object {
-        private const val TAG = "RH-Basketball"
+        private const val TAG = "RH-AdminActivity"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private val REQUIRED_PERMISSIONS =
             mutableListOf (

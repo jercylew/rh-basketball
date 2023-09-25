@@ -15,12 +15,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.ruihao.basketball.databinding.ActivityMainBinding
+import com.ruihao.basketball.databinding.ActivityUserListBinding
 import java.io.File
 import java.util.Arrays
 
 
 class UserListActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var binding: ActivityUserListBinding
     private lateinit var mBtnAddUser: FloatingActionButton
 
     private var mUserNo: String = ""
@@ -54,7 +55,7 @@ class UserListActivity : AppCompatActivity() {
         mUserName = intent.getStringExtra("userName").toString()
         mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
-        binding = ActivityMainBinding.inflate(layoutInflater)
+        binding = ActivityUserListBinding.inflate(layoutInflater)
         setContentView(R.layout.activity_user_list)
         recyclerView = findViewById<RecyclerView>(R.id.rcvUserList)
         mBtnBack = findViewById(R.id.ibtnUserListBack)
@@ -73,7 +74,7 @@ class UserListActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        val userName: String = if (mUserName == "") getString(R.string.welcome_user_name) else mUserName
+        binding.adminUserListView.requestFocus()
 
         val linearLayoutManager = LinearLayoutManager(applicationContext)
         recyclerView!!.layoutManager = linearLayoutManager

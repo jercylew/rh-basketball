@@ -12,11 +12,12 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.ruihao.basketball.databinding.ActivityMainBinding
+import com.ruihao.basketball.databinding.ActivitySettingsBinding
 import java.io.File
 
 
 class SettingsActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var binding: ActivitySettingsBinding
 
     private var mUserNo: String = ""
     private var mUserName: String = ""
@@ -41,8 +42,8 @@ class SettingsActivity : AppCompatActivity() {
         mUserName = intent.getStringExtra("userName").toString()
         mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(R.layout.activity_settings)
+        binding = ActivitySettingsBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         mBtnBack = findViewById(R.id.ibtnSettingsBack)
         mBtnBack.setOnClickListener{
@@ -54,6 +55,8 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+
+        binding.activitySettings.requestFocus()
     }
 
     override fun onDestroy() {

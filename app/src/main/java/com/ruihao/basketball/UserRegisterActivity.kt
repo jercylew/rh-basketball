@@ -10,51 +10,47 @@ import android.os.Bundle
 import android.os.Environment
 import android.util.Log
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.chaquo.python.Python
-import com.ruihao.basketball.databinding.ActivityMainBinding
+import com.ruihao.basketball.databinding.ActivityUserRegisterBinding
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Locale
 import java.util.UUID
 
 
 class UserRegisterActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var binding: ActivityUserRegisterBinding
     private lateinit var mImageCapture: ImageCapture
-    private lateinit var mEditTextName: EditText
-    private lateinit var mEditTextNumber: EditText
-    private lateinit var mEditTextHeight: EditText
-    private lateinit var mEditTextWeight: EditText
-    private lateinit var mEditTextAge: EditText
-    private lateinit var mEditTextAddress: EditText
-    private lateinit var mEditTextPhone: EditText
-    private lateinit var mEditTextClassGrade: EditText
-    private lateinit var mBtnSubmit: Button
-    private lateinit var mBtnUserRegisterBack: ImageButton
+//    private lateinit var mEditTextName: EditText
+//    private lateinit var mEditTextNumber: EditText
+//    private lateinit var mEditTextHeight: EditText
+//    private lateinit var mEditTextWeight: EditText
+//    private lateinit var mEditTextAge: EditText
+//    private lateinit var mEditTextAddress: EditText
+//    private lateinit var mEditTextPhone: EditText
+//    private lateinit var mEditTextClassGrade: EditText
+//    private lateinit var mCheckBoxTermsConditions: CheckBox
+//    private lateinit var mBtnSubmit: Button
+//    private lateinit var mBtnUserRegisterBack: ImageButton
 
     private var mUserNo: String = ""
     private var mUserName: String = ""
-    private var mGender: Int = 0
+    private var mGender: Int = -1
     private var mModbusOk: Boolean = false
     private var mTempUUID: String = ""
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
     private var mMediaPlayer: MediaPlayer? = null
-    private lateinit var mPhotoImageView: ImageView
+//    private lateinit var mPhotoImageView: ImageView
 
     private val mPhotoSavePath: String = Environment.getExternalStorageDirectory().path +
             "/RhBasketball/data/"
@@ -76,22 +72,9 @@ class UserRegisterActivity : AppCompatActivity() {
         mUserName = intent.getStringExtra("userName").toString()
         mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(R.layout.activity_user_register)
-
-        mPhotoImageView = findViewById(R.id.imvPhoto)
-        mEditTextAddress = findViewById(R.id.address)
-        mEditTextAge = findViewById(R.id.age)
-        mEditTextName = findViewById(R.id.names)
-        mEditTextHeight = findViewById(R.id.height)
-        mEditTextNumber = findViewById(R.id.etNo)
-        mEditTextWeight = findViewById(R.id.current_weight)
-        mEditTextPhone = findViewById(R.id.Phone)
-        mEditTextClassGrade = findViewById(R.id.etClassGrade)
-        mBtnSubmit = findViewById(R.id.btnSubmit)
-        mBtnUserRegisterBack = findViewById(R.id.ibtnUserRegisterBack)
-
-        mPhotoImageView.setOnClickListener{
+        binding = ActivityUserRegisterBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        binding.imvPhoto.setOnClickListener{
             val imageCapture = mImageCapture ?: return@setOnClickListener
             mTempUUID = UUID.randomUUID().toString()
             val outputOptions = ImageCapture.OutputFileOptions
@@ -112,15 +95,16 @@ class UserRegisterActivity : AppCompatActivity() {
                         val imgFile = File(output.savedUri?.path ?: "")
                         if (imgFile.exists()) {
                             val imgBitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
-                            mPhotoImageView.setImageBitmap(imgBitmap)
+                            binding.imvPhoto.setImageBitmap(imgBitmap)
                         }
                     }
                 }
             )
         }
-        mBtnSubmit.setOnClickListener{
-            val name: String = mEditTextName.text.toString()
-            val number: String = mEditTextNumber.text.toString()
+        binding.btnSubmit.setOnClickListener{
+            val name: String = binding.names.text.toString()
+            val icCardNumber: String = binding.etICCardNo.text.toString()
+            val barQRNumber: String = binding.etBarQRNo.text.toString()
 
             if (name == "") {
                 Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_name_null),
@@ -129,9 +113,23 @@ class UserRegisterActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            if (mGender == -1) {
+                Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_gender_null),
+                    Toast.LENGTH_LONG).show()
+                playAudio(R.raw.admin_user_register_alert_gender_null)
+                return@setOnClickListener
+            }
+
+            if (!binding.chkTermsConditions.isChecked) {
+                Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_terms_conditions_uncheck),
+                    Toast.LENGTH_LONG).show()
+                playAudio(R.raw.admin_user_register_alert_terms_conditions_uncheck)
+                return@setOnClickListener
+            }
+
             val imgFile = File(getSavedCapturedImagePath())
             Log.d(TAG, "Now check the photo file: ${imgFile.absolutePath}")
-            if (number == "" && !imgFile.exists()) {
+            if (barQRNumber == "" && icCardNumber == "" && !imgFile.exists()) {
                 Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_number_photo_null),
                     Toast.LENGTH_LONG).show()
                 playAudio(R.raw.admin_user_register_alert_number_photo_null)
@@ -155,26 +153,26 @@ class UserRegisterActivity : AppCompatActivity() {
                         Toast.LENGTH_SHORT).show()
                     playAudio(R.raw.admin_user_register_alert_face_not_found)
 
-                    if (number == "") {
+                    if (barQRNumber == "" && icCardNumber == "") {
                         return@setOnClickListener
                     }
                 }
             }
 
-            val tel: String = mEditTextPhone.text.toString()
-            val age: Int = mEditTextAge.text.toString().toInt()
-            val classGrade: String = mEditTextClassGrade.text.toString()
+            val tel: String = binding.etPhone.text.toString()
+            val age: Int = if (binding.age.text.toString() == "") 0 else binding.age.text.toString().toInt()
+            val classGrade: String = binding.etClassGrade.text.toString()
             val newUUID: String = if (mTempUUID == "") UUID.randomUUID().toString() else mTempUUID
 
-            mDbHelper.addNewUser(id = newUUID, name = name, number = number, age = age, gender = mGender,
-                tel = tel, classGrade = classGrade, photoUrl = insertPhotoUrl)
+            mDbHelper.addNewUser(id = newUUID, name = name, barQRNo = barQRNumber, icCardNo = icCardNumber,
+                age = age, gender = mGender,  tel = tel, classGrade = classGrade, photoUrl = insertPhotoUrl)
 
             Toast.makeText(baseContext, getString(R.string.admin_user_register_tip_user_register_succeed),
                 Toast.LENGTH_LONG).show()
             playAudio(R.raw.admin_user_register_tip_user_register_succeed)
             finish()
         }
-        mBtnUserRegisterBack.setOnClickListener{
+        binding.ibtnUserRegisterBack.setOnClickListener{
             finish()
         }
 
@@ -183,11 +181,11 @@ class UserRegisterActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        val userName: String = if (mUserName == "") getString(R.string.welcome_user_name) else mUserName
+
+        binding.adminUserRegisterView.requestFocus()
     }
 
     override fun onDestroy() {
-        // Do the cleaning work
         super.onDestroy()
     }
 
@@ -196,17 +194,29 @@ class UserRegisterActivity : AppCompatActivity() {
             return
         }
 
-        mGender = if (view.id == R.id.female) {
-            0
-        } else if (view.id == R.id.male) {
-            1
-        } else {
-            -1
+        mGender = when (view.id) {
+            R.id.female -> 1
+            R.id.male -> 0
+            else -> -1
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
     private fun startCamera() {
+//        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+//        mImageCapture = display?.let {
+//            ImageCapture.Builder()
+//                .setTargetRotation(it.rotation)
+//                .build()
+//        }!!
+//
+//        val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+//        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+//
+//        cameraProvider.bindToLifecycle(this, cameraSelector, mImageCapture)
+
+
+        //////////////////
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         mImageCapture = display?.let {
             ImageCapture.Builder()
@@ -214,10 +224,27 @@ class UserRegisterActivity : AppCompatActivity() {
                 .build()
         }!!
 
-        val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+        cameraProviderFuture.addListener({
+            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-        cameraProvider.bindToLifecycle(this, cameraSelector, mImageCapture)
+            val preview = Preview.Builder()
+                .build()
+                .also {
+                    it.setSurfaceProvider(binding.prvUserRegisterPhoto.surfaceProvider)
+                }
+
+            // Select back camera as a default
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            try {
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(
+                    this, cameraSelector, preview, mImageCapture)
+
+            } catch(exc: Exception) {
+                Log.e(TAG, "Use case binding failed", exc)
+            }
+
+        }, ContextCompat.getMainExecutor(this))
     }
 
     private fun getSavedCapturedImagePath(): String {

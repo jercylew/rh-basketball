@@ -34,7 +34,8 @@
     <string name="admin_load_balls">装球</string>
     <string name="admin_user_register_title">添加用户</string>
     <string name="admin_user_register_hint_name">姓名</string>
-    <string name="admin_user_register_hint_number">账号</string>
+    <string name="admin_user_register_hint_bar_qr_number">学号（二维码）</string>
+    <string name="admin_user_register_hint_ic_number">IC卡号</string>
     <string name="admin_user_register_hint_gender">性别</string>
     <string name="admin_user_register_hint_male">男</string>
     <string name="admin_user_register_hint_female">女</string>
@@ -45,8 +46,10 @@
     <string name="admin_user_register_hint_phone">手机号码</string>
     <string name="admin_user_register_hint_class_grade">班级</string>
     <string name="admin_user_register_alert_name_null">姓名不能为空</string>
+    <string name="admin_user_register_alert_gender_null">请选择性别</string>
     <string name="admin_user_register_alert_number_photo_null">账号和人脸至少要录入一项</string>
     <string name="admin_user_register_alert_face_not_found">照片没有录入人脸，请将脸正对摄像头</string>
+    <string name="admin_user_register_alert_terms_conditions_uncheck">请同意并勾选注册条款协议</string>
     <string name="admin_user_register_terms_conditions">我已阅读，理解并接受用户注册有关协议</string>
     <string name="admin_user_register_tip_user_register_succeed">注册新用户成功!</string>
     <string name="admin_user_register_submit">提交</string>

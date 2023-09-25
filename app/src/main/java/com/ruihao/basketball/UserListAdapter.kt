@@ -47,7 +47,7 @@ class UserListAdapter(context: Context, usersList: ArrayList<User>) :
         (holder as UserListAdapter.ViewHolder).mTVClassGrade.text = userInfo.classGrade
         (holder as UserListAdapter.ViewHolder).mTVName.text = userInfo.name
         (holder as UserListAdapter.ViewHolder).mTVGender.text = userInfo.gender
-        (holder as UserListAdapter.ViewHolder).mTVNumber.text = userInfo.no
+        (holder as UserListAdapter.ViewHolder).mTVNumber.text = userInfo.barQRNo  //Usually student number used to make bar/QR code
     }
 
     override fun getItemCount(): Int {

@@ -33,7 +33,8 @@
     <string name="admin_tip_load_balls">Please put the balls into both channels</string>
     <string name="admin_user_register_title">User Register</string>
     <string name="admin_user_register_hint_name">Name</string>
-    <string name="admin_user_register_hint_number">User number</string>
+    <string name="admin_user_register_hint_bar_qr_number">QR number(Barcode)</string>
+    <string name="admin_user_register_hint_ic_number">IC Card number</string>
     <string name="admin_user_register_hint_gender">Gender</string>
     <string name="admin_user_register_hint_male">Male</string>
     <string name="admin_user_register_hint_female">Female</string>
@@ -45,6 +46,8 @@
     <string name="admin_user_register_hint_class_grade">Class Grade</string>
     <string name="admin_user_register_terms_conditions">I have read, understood and accept the user registration rules</string>
     <string name="admin_user_register_alert_name_null">User name cannot be null</string>
+    <string name="admin_user_register_alert_gender_null">Please choose your gender</string>
+    <string name="admin_user_register_alert_terms_conditions_uncheck">Please accept and check the terms and conditions</string>
     <string name="admin_user_register_alert_number_photo_null">User number and photo cannot be both null</string>
     <string name="admin_user_register_alert_face_not_found">Face not found, please make sure your face right to the camera</string>
     <string name="admin_user_register_tip_user_register_succeed">Register user succeed!</string>

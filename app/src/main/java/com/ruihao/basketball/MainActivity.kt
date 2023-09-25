@@ -198,7 +198,7 @@ class MainActivity : AppCompatActivity() {
 
             // Save borrow record (DO not do this now)
 
-            logoutUser(mUser!!.no)
+            logoutUser(mUser!!.id)
         }
         mBtnReturn.setOnClickListener {
             //Only for test
@@ -265,13 +265,10 @@ class MainActivity : AppCompatActivity() {
             updateGridView()
 
             // Logout
-            logoutUser(mUser!!.no)
+            logoutUser(mUser!!.id)
         }
 
-        dispQueue = DispQueueThread()
         comPort = SerialControl()
-        openComPort(comPort!!)
-        dispQueue!!.start()
 
         cameraExecutor = Executors.newSingleThreadExecutor()
         if (allPermissionsGranted()) {
@@ -308,11 +305,21 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        //Fetch data from controller via modbus
-        updateBallsQuantity()
 
+        openComPort(comPort!!)
+        dispQueue = DispQueueThread()
+        dispQueue!!.start()
+
+        updateBallsQuantity()
         val userName: String = mUser?.name ?: getString(R.string.welcome_user_name)
         mTVGreeting.text = String.format(getString(R.string.welcome_text_format, userName))
+    }
+
+    override fun onPause() {
+        comPort?.close()
+        dispQueue?.interrupt()
+
+        super.onPause()
     }
 
     private fun updateBallsQuantity(): Unit {
@@ -367,12 +374,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        comPort?.close()
-        dispQueue?.interrupt()
         cameraExecutor.shutdown()
 
-        // Do the cleaning work
-        var num: Int = 10
         super.onDestroy()
     }
 
@@ -410,7 +413,7 @@ class MainActivity : AppCompatActivity() {
 //        Toast.makeText(this, result, Toast.LENGTH_LONG).show();
 
         // Login with IC card number
-        loginUser(BasketballContract.User.COLUMN_NO, result)
+        loginUser(BasketballContract.User.COLUMN_BAR_QR_NO, result)
 
         mScanBarQRCodeBytes.clear();
         mScanBarQRCodeTimer = null
@@ -648,7 +651,7 @@ class MainActivity : AppCompatActivity() {
         val strReceived: String? = comRecData.bRec?.let { serialPortBytesToString(it) }
         Toast.makeText(this, strReceived, Toast.LENGTH_LONG).show()
 
-        loginUser(BasketballContract.User.COLUMN_NO, strReceived)
+        loginUser(BasketballContract.User.COLUMN_IC_CARD_NO, strReceived)
     }
 
     private fun serialPortBytesToString(bytes: ByteArray): String {
@@ -680,7 +683,8 @@ class MainActivity : AppCompatActivity() {
 
         val projection = arrayOf<String>(
             BaseColumns._ID,
-            BasketballContract.User.COLUMN_NO,
+            BasketballContract.User.COLUMN_BAR_QR_NO,
+            BasketballContract.User.COLUMN_IC_CARD_NO,
             BasketballContract.User.COLUMN_NAME,
             BasketballContract.User.COLUMN_AGE,
             BasketballContract.User.COLUMN_GENDER,
@@ -720,7 +724,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         var name: String = ""
-        var no: String = ""
+        var barQRNo: String = ""
+        var icCardNo: String = ""
         var id: String = ""
         var gender: String = ""
         var classGrade: String = ""
@@ -729,7 +734,8 @@ class MainActivity : AppCompatActivity() {
         var photoUrl: String = ""
         while (cursor.moveToNext()) {
             name = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_NAME))
-            no = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_NO))
+            barQRNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_BAR_QR_NO))
+            icCardNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_IC_CARD_NO))
             id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
             gender = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_GENDER))
             classGrade = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_CLASS_GRADE))
@@ -745,7 +751,7 @@ class MainActivity : AppCompatActivity() {
             {
                 val myIntent = Intent(this@MainActivity, AdminActivity::class.java)
                 myIntent.putExtra("modbusOk", mModbusOk) //Optional parameters
-                myIntent.putExtra("userNo", no)
+                myIntent.putExtra("userId", id)
                 myIntent.putExtra("userName", name)
 
                 mAdminActivityRunning = true
@@ -755,9 +761,9 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        mUser = User(name = name, id = id, no = no, gender = gender, classGrade = classGrade,
+        mUser = User(name = name, id = id, barQRNo = barQRNo, icCardNo = icCardNo, gender = gender, classGrade = classGrade,
             age = age, photoUrl = photoUrl, isAdmin = false)
-        Log.d(TAG, "Login succeed, user: ${mUser!!.name}, ${mUser!!.id}, ${mUser!!.no}," +
+        Log.d(TAG, "Login succeed, user: ${mUser!!.name}, ${mUser!!.id}, ${mUser!!.barQRNo}," +
                 "${mUser!!.gender}, ${mUser!!.classGrade}, ${mUser!!.age}")
         Toast.makeText(this, String.format(getString(R.string.tip_login_user_succeed), name),
             Toast.LENGTH_LONG).show()
@@ -775,7 +781,7 @@ class MainActivity : AppCompatActivity() {
                 // Do nothing
             }
             override fun onFinish() {
-                logoutUser(no)
+                logoutUser(id)
             }
         }
         (mUserLoginTimer as CountDownTimer).start()

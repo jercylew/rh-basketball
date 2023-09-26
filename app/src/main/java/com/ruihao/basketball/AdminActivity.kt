@@ -114,38 +114,52 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 return@setOnClickListener
             }
 
+            // Check which channel has balls
+            val addressToWrite: Int = if (mRemainBallsQty[0] > 0) 1002 else 1003
+            val preBallQty: Int = if (mRemainBallsQty[0] > 0) mRemainBallsQty[0] else mRemainBallsQty[1]
+            val addressUpdateCount: Int = if (mRemainBallsQty[0] > 0) 1000 else 1001
+            if (!writeModbusRegister(addressToWrite, 1)) {
+                Log.e(TAG, "Failed to write command of releasing ball!")
+                return@setOnClickListener
+            }
             val savedCaptureImagePath = borrowReturnCapturePath("borrow")
             takePhoto(savedCaptureImagePath)
 
-            // Check which channel has balls
-            val addressToWrite: Int = if (mRemainBallsQty[0] > 0) 1002 else 1003
-            if (!writeModbusRegister(addressToWrite, 1)) {
-                Log.e(TAG, "Failed to write command of releasing ball!")
-            }
-            Thread.sleep(500)
-
-
             // Check the number of remaining balls decreased & door flag cleared
-            /*
-            numOfLoop = 6 //3 seconds
-            while (modbus_read(num_qty) == m_remainQty(selected) || modbus_read_bit(out_door) == 1 )
+            var numOfLoop: Int = 0 //3 seconds
+            var regCleared: Boolean = true
+            while (readModbusRegister(addressToWrite) == 1 ) //modbus_read(num_qty) == m_remainQty(selected) ||
             {
-                Log.d(TAG, "Still waiting for the ball released from the current channel")
-                sleep(500) //Warning: UI Freezing
+                Thread.sleep(100) //Warning: UI Freezing
 
-                if (numOfLoop >= 6) {
+                numOfLoop++
+                if (numOfLoop >= 50) {
+                    regCleared = false
                     break;
                 }
             }
-             */
-            updateBallsQuantity()
-            updateSharedPreferencesFromController()
 
+            if (!regCleared) { //Timeout
+                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
+                    Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_device_error)
+                return@setOnClickListener
+            }
+
+            // Update the counter
+            if (!writeModbusRegister(addressUpdateCount, (preBallQty-1))) {
+                Log.e(TAG, "Failed to update the ball qty to the register")
+            }
+            Thread.sleep(200)
+
+            updateBallsQuantity()
+
+            // Inform the user toc (Play audio)
             Toast.makeText(this@AdminActivity, getString(R.string.tip_take_basketball),
                 Toast.LENGTH_LONG).show()
             playAudio(R.raw.tip_take_basketball)
 
-            // Save borrow record (DO not do this now): must add taken photo: savedCaptureImagePath
+            // Save borrow record (DO not do this now)
         }
         mBtnReturn.setOnClickListener {
             if (!mModbusOk) {
@@ -162,9 +176,6 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 return@setOnClickListener
             }
 
-            val savedCaptureImagePath = borrowReturnCapturePath("return")
-            takePhoto(savedCaptureImagePath)
-
             // Open the door lock
             val addressOpen: Int = if (mRemainBallsQty[0] < 12) 1006 else 1007
             val addressBallEntered: Int = if (mRemainBallsQty[0] < 12) 1004 else 1005
@@ -176,16 +187,32 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 Toast.LENGTH_LONG).show()
             playAudio(R.raw.tip_return_basketball)
 
-            // Check if the ball entered
-            var tryCount = 0
+            val savedCaptureImagePath = borrowReturnCapturePath("return")
+            takePhoto(savedCaptureImagePath)
+
+            var numOfLoop: Int = 0
+            var regSet: Boolean = true
             while (readModbusRegister(addressBallEntered) == 0) {
                 Thread.sleep(100)
-                tryCount += 1
-                if (tryCount >= 30) {
+                Log.d(TAG, "Loop check reg state, numOfLoop: $numOfLoop")
+                numOfLoop++
+
+                if (numOfLoop % 30 == 0) {
+                    playAudio(R.raw.tip_return_basketball)
+                }
+
+                if (numOfLoop >= 178) { // waiting for tip_return_basketball audio complete
+                    regSet = false
                     break
                 }
             }
-            Thread.sleep(500)
+            if (!regSet) { //Did not detect the signal of ball entered
+                Toast.makeText(this@AdminActivity, getString(R.string.tip_return_failed),
+                    Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_return_failed)
+                return@setOnClickListener
+            }
+
 
             // The door lock will close the door itself, no need to write command
 //            writeModbusRegister(addressOpen, 0)
@@ -195,7 +222,6 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 Toast.LENGTH_LONG).show()
             playAudio(R.raw.tip_return_succeed)
             updateBallsQuantity()
-            updateSharedPreferencesFromController()
         }
         mCardUserRegister.setOnClickListener{
             val myIntent = Intent(this@AdminActivity, UserRegisterActivity::class.java)
@@ -244,7 +270,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         mCardUserList.setOnClickListener{
             val myIntent = Intent(this@AdminActivity, UserListActivity::class.java)
             myIntent.putExtra("modbusOk", mModbusOk)
-            myIntent.putExtra("loginUserNo", mUserId)
+            myIntent.putExtra("userId", mUserId)
             myIntent.putExtra("userName", mUserName)
             this@AdminActivity.startActivity(myIntent)
         }

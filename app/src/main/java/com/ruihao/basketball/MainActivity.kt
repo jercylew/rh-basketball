@@ -170,7 +170,6 @@ class MainActivity : AppCompatActivity() {
             val addressUpdateCount: Int = if (mRemainBallsQty[0] > 0) 1000 else 1001
             if (!writeModbusRegister(addressToWrite, 1)) {
                 Log.e(TAG, "Failed to write command of releasing ball!")
-                // Remove the captured image file
                 return@setOnClickListener
             }
             val savedCaptureImagePath = borrowReturnCapturePath("borrow")
@@ -181,7 +180,6 @@ class MainActivity : AppCompatActivity() {
             var regCleared: Boolean = true
             while (readModbusRegister(addressToWrite) == 1 ) //modbus_read(num_qty) == m_remainQty(selected) ||
             {
-//                Log.d(TAG, "Still waiting for the ball released from the current channel")
                 Thread.sleep(100) //Warning: UI Freezing
 
                 numOfLoop++

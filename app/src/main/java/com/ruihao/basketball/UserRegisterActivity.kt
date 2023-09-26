@@ -40,7 +40,7 @@ class UserRegisterActivity : AppCompatActivity() {
     private lateinit var mImageCapture: ImageCapture
     private lateinit var mPreview: Preview
 
-    private var mUserNo: String = ""
+    private var mUserId: String = ""
     private var mUserName: String = ""
     private var mGender: Int = -1
     private var mModbusOk: Boolean = false
@@ -68,7 +68,7 @@ class UserRegisterActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
-        mUserNo = intent.getStringExtra("userNo").toString()
+        mUserId = intent.getStringExtra("userId").toString()
         mUserName = intent.getStringExtra("userName").toString()
         mModbusOk = intent.getBooleanExtra("modbusOk", false)
 

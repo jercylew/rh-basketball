@@ -24,7 +24,7 @@ class UserListActivity : AppCompatActivity() {
     private lateinit var binding: ActivityUserListBinding
     private lateinit var mBtnAddUser: FloatingActionButton
 
-    private var mUserNo: String = ""
+    private var mUserId: String = ""
     private var mUserName: String = ""
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
     private var mModbusOk: Boolean = false
@@ -51,7 +51,7 @@ class UserListActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
-        mUserNo = intent.getStringExtra("userNo").toString()
+        mUserId = intent.getStringExtra("userId").toString()
         mUserName = intent.getStringExtra("userName").toString()
         mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
@@ -66,7 +66,7 @@ class UserListActivity : AppCompatActivity() {
         mBtnAddUser.setOnClickListener{
             val myIntent = Intent(this@UserListActivity, UserRegisterActivity::class.java)
             myIntent.putExtra("modbusOk", mModbusOk)
-            myIntent.putExtra("userNo", mUserNo)
+            myIntent.putExtra("userId", mUserId)
             myIntent.putExtra("userName", mUserName)
             this@UserListActivity.startActivity(myIntent)
         }

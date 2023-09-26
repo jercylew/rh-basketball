@@ -19,7 +19,7 @@ import java.io.File
 class SettingsActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingsBinding
 
-    private var mUserNo: String = ""
+    private var mUserId: String = ""
     private var mUserName: String = ""
     private lateinit var mBtnBack: ImageButton
     private var mModbusOk: Boolean = false
@@ -38,7 +38,7 @@ class SettingsActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
-        mUserNo = intent.getStringExtra("userNo").toString()
+        mUserId = intent.getStringExtra("userId").toString()
         mUserName = intent.getStringExtra("userName").toString()
         mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
@@ -72,7 +72,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val TAG = "RH-Basketball"
+        private const val TAG = "RH-SettingsActivity"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private val REQUIRED_PERMISSIONS =
             mutableListOf (

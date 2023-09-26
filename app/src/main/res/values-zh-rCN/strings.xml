@@ -20,6 +20,7 @@
     <string name="tip_login_user_succeed">用户%s登录成功！</string>
     <string name="tip_device_error">不好意思，设备有点小问题，请连续技术人员</string>
     <string name="tip_return_succeed">还球成功，谢谢使用</string>
+    <string name="tip_return_failed">还球失败，麻烦请再试一次</string>
     <string name="view_borrow_records">借阅记录</string>
     <string name="load_basketballs">请装载篮球</string>
 

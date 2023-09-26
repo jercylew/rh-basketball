@@ -164,30 +164,46 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            // Check which channel has balls
+            val addressToWrite: Int = if (mRemainBallsQty[0] > 0) 1002 else 1003
+            val preBallQty: Int = if (mRemainBallsQty[0] > 0) mRemainBallsQty[0] else mRemainBallsQty[1]
+            val addressUpdateCount: Int = if (mRemainBallsQty[0] > 0) 1000 else 1001
+            if (!writeModbusRegister(addressToWrite, 1)) {
+                Log.e(TAG, "Failed to write command of releasing ball!")
+                // Remove the captured image file
+                return@setOnClickListener
+            }
             val savedCaptureImagePath = borrowReturnCapturePath("borrow")
             takePhoto(savedCaptureImagePath)
 
-            // Check which channel has balls
-            val addressToWrite: Int = if (mRemainBallsQty[0] > 0) 1002 else 1003
-            if (!writeModbusRegister(addressToWrite, 1)) {
-                Log.e(TAG, "Failed to write command of releasing ball!")
-            }
-            Thread.sleep(500)
-
-
             // Check the number of remaining balls decreased & door flag cleared
-            /*
-            numOfLoop = 6 //3 seconds
-            while (modbus_read(num_qty) == m_remainQty(selected) || modbus_read_bit(out_door) == 1 )
+            var numOfLoop: Int = 0 //3 seconds
+            var regCleared: Boolean = true
+            while (readModbusRegister(addressToWrite) == 1 ) //modbus_read(num_qty) == m_remainQty(selected) ||
             {
-                Log.d(TAG, "Still waiting for the ball released from the current channel")
-                sleep(500) //Warning: UI Freezing
+//                Log.d(TAG, "Still waiting for the ball released from the current channel")
+                Thread.sleep(100) //Warning: UI Freezing
 
-                if (numOfLoop >= 6) {
+                numOfLoop++
+                if (numOfLoop >= 50) {
+                    regCleared = false
                     break;
                 }
             }
-             */
+
+            if (!regCleared) { //Timeout
+                Toast.makeText(this@MainActivity, getString(R.string.tip_device_error),
+                    Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_device_error)
+                return@setOnClickListener
+            }
+
+            // Update the counter
+            if (!writeModbusRegister(addressUpdateCount, (preBallQty-1))) {
+                Log.e(TAG, "Failed to update the ball qty to the register")
+            }
+            Thread.sleep(200)
+
             updateBallsQuantity()
             updateGridView()
 
@@ -201,14 +217,6 @@ class MainActivity : AppCompatActivity() {
             logoutUser(mUser!!.id)
         }
         mBtnReturn.setOnClickListener {
-            //Only for test
-//            val myIntent = Intent(this@MainActivity, AdminActivity::class.java)
-//            myIntent.putExtra("modbusOk", mModbusOk) //Optional parameters
-//            myIntent.putExtra("userNo", "a1234567890")
-//            myIntent.putExtra("userName", "TestUser")
-//            this@MainActivity.startActivity(myIntent)
-//            return@setOnClickListener
-
             if (mUser == null) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_login),
                     Toast.LENGTH_LONG).show()
@@ -230,9 +238,6 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            val savedCaptureImagePath = borrowReturnCapturePath("return")
-            takePhoto(savedCaptureImagePath)
-
             // Open the door lock
             val addressOpen: Int = if (mRemainBallsQty[0] < 12) 1006 else 1007
             val addressBallEntered: Int = if (mRemainBallsQty[0] < 12) 1004 else 1005
@@ -244,16 +249,32 @@ class MainActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG).show()
             playAudio(R.raw.tip_return_basketball)
 
-            // Check if the ball entered
-            var tryCount = 0
+            val savedCaptureImagePath = borrowReturnCapturePath("return")
+            takePhoto(savedCaptureImagePath)
+
+            var numOfLoop: Int = 0
+            var regSet: Boolean = true
             while (readModbusRegister(addressBallEntered) == 0) {
                 Thread.sleep(100)
-                tryCount += 1
-                if (tryCount >= 30) {
+                Log.d(TAG, "Loop check reg state, numOfLoop: $numOfLoop")
+                numOfLoop++
+
+                if (numOfLoop % 30 == 0) {
+                    playAudio(R.raw.tip_return_basketball)
+                }
+
+                if (numOfLoop >= 178) { // waiting for tip_return_basketball audio complete
+                    regSet = false
                     break
                 }
             }
-            Thread.sleep(500)
+            if (!regSet) { //Did not detect the signal of ball entered
+                Toast.makeText(this@MainActivity, getString(R.string.tip_return_failed),
+                    Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_return_failed)
+                return@setOnClickListener
+            }
+
 
             // The door lock will close the door itself, no need to write command
 //            writeModbusRegister(addressOpen, 0)
@@ -803,19 +824,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun playAudio(src: Int): Unit {
-        if (mMediaPlayer == null) {
-            mMediaPlayer = MediaPlayer.create(this, src)
-            mMediaPlayer?.start()
-        }
-        else {
-            if (mMediaPlayer!!.isPlaying) {
-                return
+        GlobalScope.launch {
+            if (mMediaPlayer == null) {
+                mMediaPlayer = MediaPlayer.create(this@MainActivity, src)
+                mMediaPlayer?.start()
             }
-            mMediaPlayer!!.reset()
+            else {
+                if (mMediaPlayer!!.isPlaying) {
+                    return@launch
+                }
+                mMediaPlayer!!.reset()
 
-            resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this, it) }
-            mMediaPlayer!!.prepare()
-            mMediaPlayer!!.start()
+                resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this@MainActivity, it) }
+                mMediaPlayer!!.prepare()
+                mMediaPlayer!!.start()
+            }
         }
     }
 
@@ -952,7 +975,7 @@ class MainActivity : AppCompatActivity() {
 
 
     companion object {
-        private const val TAG = "RH-Basketball"
+        private const val TAG = "RH-MainActivity"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private val REQUIRED_PERMISSIONS =
             mutableListOf (

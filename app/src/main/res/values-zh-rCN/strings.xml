@@ -34,6 +34,7 @@
     <string name="admin_user_list">用户列表</string>
     <string name="admin_load_balls">装球</string>
     <string name="admin_user_register_title">添加用户</string>
+    <string name="admin_user_edit_title">编辑用户</string>
     <string name="admin_user_register_hint_name">姓名</string>
     <string name="admin_user_register_hint_bar_qr_number">学号（二维码）</string>
     <string name="admin_user_register_hint_ic_number">IC卡号</string>
@@ -55,6 +56,9 @@
     <string name="admin_user_register_tip_user_register_succeed">注册新用户成功!</string>
     <string name="admin_user_register_submit">提交</string>
     <string name="admin_user_register_optional">可选</string>
+
+    <string name="user_list_menu_item_edit">编辑</string>
+    <string name="user_list_menu_item_remove">删除</string>
 
     <string name="settings_title_left_balls_qty">左通道球数量</string>
     <string name="settings_title_right_balls_qty">右通道球数量</string>

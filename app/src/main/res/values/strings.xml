@@ -33,6 +33,7 @@
     <string name="admin_return">Return</string>
     <string name="admin_tip_load_balls">Please put the balls into both channels</string>
     <string name="admin_user_register_title">User Register</string>
+    <string name="admin_user_edit_title">User Edit</string>
     <string name="admin_user_register_hint_name">Name</string>
     <string name="admin_user_register_hint_bar_qr_number">QR number(Barcode)</string>
     <string name="admin_user_register_hint_ic_number">IC Card number</string>
@@ -62,6 +63,10 @@
     <string name="settings_title_right_balls_qty_max">Maximum of the right Channel Balls Qty</string>
     <string name="settings_title_ball_release_interval">Interval of release balls (ms)</string>
     <string name="settings_title_ball_entry_lock_time">Time of lock opening for returning ball (ms)</string>
+
+    <!-- User List -->
+    <string name="user_list_menu_item_edit">Edit</string>
+    <string name="user_list_menu_item_remove">Remove</string>
 
     <!-- Test only -->
     <!-- Key name for color preference in SharedPreferences -->

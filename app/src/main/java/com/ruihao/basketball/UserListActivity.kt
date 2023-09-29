@@ -33,13 +33,7 @@ class UserListActivity : AppCompatActivity() {
             + "/RhBasketball")
 
     private lateinit var mBtnBack: ImageButton
-    // RecyclerView
     private var recyclerView: RecyclerView? = null
-    private var courseImg: ArrayList<Int> = ArrayList<Int>()
-    private var courseName: ArrayList<String> = ArrayList(
-        mutableListOf()
-    )
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         actionBar?.hide()
@@ -53,7 +47,6 @@ class UserListActivity : AppCompatActivity() {
 
         mUserId = intent.getStringExtra("userId").toString()
         mUserName = intent.getStringExtra("userName").toString()
-        mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
         binding = ActivityUserListBinding.inflate(layoutInflater)
         setContentView(R.layout.activity_user_list)
@@ -65,9 +58,8 @@ class UserListActivity : AppCompatActivity() {
         mBtnAddUser = findViewById(R.id.fabAddNewUser)
         mBtnAddUser.setOnClickListener{
             val myIntent = Intent(this@UserListActivity, UserRegisterActivity::class.java)
-            myIntent.putExtra("modbusOk", mModbusOk)
             myIntent.putExtra("userId", mUserId)
-            myIntent.putExtra("userName", mUserName)
+            myIntent.putExtra("actionType", "add")
             this@UserListActivity.startActivity(myIntent)
         }
     }
@@ -83,6 +75,26 @@ class UserListActivity : AppCompatActivity() {
         val userList: ArrayList<User> = mDbHelper.getAllUsers()
         val adapter =  UserListAdapter(this@UserListActivity, userList)
         recyclerView!!.adapter = adapter
+
+        adapter.setOnClickEditListener(object :
+            UserListAdapter.OnClickEditListener {
+            override fun onClick(position: Int, model: User) {
+                val intent = Intent(this@UserListActivity, UserRegisterActivity::class.java)
+                intent.putExtra("editUser", model)
+                intent.putExtra("userId", mUserId) // Who updates?
+                intent.putExtra("actionType", "edit")
+                startActivity(intent)
+            }
+        })
+        adapter.setOnClickRemoveListener(object :
+            UserListAdapter.OnClickRemoveListener {
+            override fun onClick(position: Int, model: User) {
+                //Remove the user from db and cloud, adapter side will remove it itself
+                mDbHelper.removeUser(model.id)
+
+                //HTTP request
+            }
+        })
     }
 
     override fun onDestroy() {
@@ -90,7 +102,7 @@ class UserListActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val TAG = "RH-Basketball"
+        private const val TAG = "RH-UserListActivity"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private val REQUIRED_PERMISSIONS =
             mutableListOf (

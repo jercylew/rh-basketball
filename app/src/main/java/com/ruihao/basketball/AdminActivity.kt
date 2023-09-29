@@ -223,11 +223,10 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             playAudio(R.raw.tip_return_succeed)
             updateBallsQuantity()
         }
-        mCardUserRegister.setOnClickListener{
+        mCardUserRegister.setOnClickListener{  // TODO: Deprecated this soon
             val myIntent = Intent(this@AdminActivity, UserRegisterActivity::class.java)
-            myIntent.putExtra("modbusOk", mModbusOk)
             myIntent.putExtra("userId", mUserId)
-            myIntent.putExtra("userName", mUserName)
+            myIntent.putExtra("actionType", "add")
             this@AdminActivity.startActivity(myIntent)
         }
         mCardBorrowLog.setOnClickListener{

@@ -143,6 +143,14 @@ class MainActivity : AppCompatActivity() {
         mBtnReturn = findViewById(R.id.btnReturn)
 
         mBtnBorrow.setOnClickListener {
+            //Only for test
+            val myIntent = Intent(this@MainActivity, AdminActivity::class.java)
+            myIntent.putExtra("modbusOk", mModbusOk) //Optional parameters
+            myIntent.putExtra("userNo", "a1234567890")
+            myIntent.putExtra("userName", "TestUser")
+            this@MainActivity.startActivity(myIntent)
+            return@setOnClickListener
+
             if (mUser == null) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_login),
                     Toast.LENGTH_LONG).show()
@@ -894,28 +902,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private class LuminosityAnalyzer(private val listener: LumaListener) : ImageAnalysis.Analyzer {
-
-        private fun ByteBuffer.toByteArray(): ByteArray {
-            rewind()    // Rewind the buffer to zero
-            val data = ByteArray(remaining())
-            get(data)   // Copy the buffer into a byte array
-            return data // Return the byte array
-        }
-
-        override fun analyze(image: ImageProxy) {
-
-            val buffer = image.planes[0].buffer
-            val data = buffer.toByteArray()
-            val pixels = data.map { it.toInt() and 0xFF }
-            val luma = pixels.average()
-
-            listener(luma)
-
-            image.close()
-        }
-    }
-
     private class FaceAnalyzer(private val listener: FaceCheckListener) : ImageAnalysis.Analyzer {
         private fun ByteBuffer.toByteArray(): ByteArray {
             rewind()    // Rewind the buffer to zero
@@ -947,13 +933,13 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "Got bitmap buffer, plans size: ${image.planes.size}," +
                     "format: ${image.format}, image size: ${image.width}x${image.height}")
 
-            val bitmap: Bitmap = image.toBitmap()
-            val stream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
-            val bytes = stream.toByteArray()
-            val base64ImageData: String = Base64.encodeToString(bytes, Base64.DEFAULT)
-
-            listener(base64ImageData)
+//            val bitmap: Bitmap = image.toBitmap()
+//            val stream = ByteArrayOutputStream()
+//            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+//            val bytes = stream.toByteArray()
+//            val base64ImageData: String = Base64.encodeToString(bytes, Base64.DEFAULT)
+//
+//            listener(base64ImageData)
 
             image.close()
         }

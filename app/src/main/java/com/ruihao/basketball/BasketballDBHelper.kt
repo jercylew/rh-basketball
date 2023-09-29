@@ -72,6 +72,37 @@ internal class BasketballDBHelper(context: Context?) :
         db.close()
     }
 
+    fun updateUser(id: String, name: String?, barQRNo: String?, icCardNo: String?, age: Int?,
+                   gender: Int?, tel: String?, classGrade: String?, photoUrl: String?) {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        val genderText: String = if(gender == 0) "男"  else "女"
+
+        values.put(BasketballContract.User.COLUMN_NAME, name)
+        values.put(BasketballContract.User.COLUMN_BAR_QR_NO, barQRNo)
+        values.put(BasketballContract.User.COLUMN_IC_CARD_NO, icCardNo)
+        values.put(BasketballContract.User.COLUMN_IS_ADMIN, 0)
+        values.put(BasketballContract.User.COLUMN_GENDER, genderText)
+        values.put(BasketballContract.User.COLUMN_CLASS_GRADE, classGrade)
+        values.put(BasketballContract.User.COLUMN_AGE, age)
+        values.put(BasketballContract.User.COLUMN_TEL, tel)
+        values.put(BasketballContract.User.COLUMN_PHOTO_URL, photoUrl)
+
+        val where = "_id = ?"
+        val whereArgs = arrayOf(id)
+
+        db.update(BasketballContract.User.TABLE_NAME, values, where, whereArgs)
+        db.close()
+    }
+
+    fun removeUser(id: String) {
+        val db = this.writableDatabase
+        val where = "_id = ?"
+        val whereArgs = arrayOf(id)
+        db.delete(BasketballContract.User.TABLE_NAME, where, whereArgs)
+        db.close()
+    }
+
     fun getAllUsers(): ArrayList<User> {
         var users: ArrayList<User> = ArrayList<User>()
 

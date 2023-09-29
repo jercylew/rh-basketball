@@ -40,10 +40,9 @@ class UserRegisterActivity : AppCompatActivity() {
     private lateinit var mImageCapture: ImageCapture
     private lateinit var mPreview: Preview
 
-    private var mUserId: String = ""
-    private var mUserName: String = ""
+    private var mUserId: String = "" //The administrator's ID, not used so far
+    private var mActionType: String = ""
     private var mGender: Int = -1
-    private var mModbusOk: Boolean = false
     private var mTempUUID: String = ""
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
     private var mMediaPlayer: MediaPlayer? = null
@@ -51,6 +50,7 @@ class UserRegisterActivity : AppCompatActivity() {
     private var comPort: SerialControl? = null
     private var mScanBarQRCodeTimer: CountDownTimer? = null
     private var mScanBarQRCodeBytes: ArrayList<Int> = ArrayList<Int>()
+    private var mUserToEdit: User? = null
 
     private val mPhotoSavePath: String = Environment.getExternalStorageDirectory().path +
             "/RhBasketball/data/"
@@ -69,8 +69,16 @@ class UserRegisterActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         mUserId = intent.getStringExtra("userId").toString()
-        mUserName = intent.getStringExtra("userName").toString()
-        mModbusOk = intent.getBooleanExtra("modbusOk", false)
+        mActionType = intent.getStringExtra("actionType").toString()
+        if (mActionType == "edit") {
+            if(intent.hasExtra("editUser")){
+                mUserToEdit = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getSerializableExtra("editUser", User::class.java)
+                } else {
+                    intent.getSerializableExtra("editUser") as User
+                }
+            }
+        }
 
         binding = ActivityUserRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -152,6 +160,8 @@ class UserRegisterActivity : AppCompatActivity() {
                     Toast.makeText(baseContext, getString(R.string.admin_user_register_alert_face_not_found),
                         Toast.LENGTH_SHORT).show()
                     playAudio(R.raw.admin_user_register_alert_face_not_found)
+                    imgFile.delete()
+                    binding.imvPhoto.setImageResource(R.drawable.user_photo)
 
                     if (barQRNumber == "" && icCardNumber == "") {
                         return@setOnClickListener
@@ -164,8 +174,16 @@ class UserRegisterActivity : AppCompatActivity() {
             val classGrade: String = binding.etClassGrade.text.toString()
             val newUUID: String = if (mTempUUID == "") UUID.randomUUID().toString() else mTempUUID
 
-            mDbHelper.addNewUser(id = newUUID, name = name, barQRNo = barQRNumber, icCardNo = icCardNumber,
-                age = age, gender = mGender,  tel = tel, classGrade = classGrade, photoUrl = insertPhotoUrl)
+            if (mActionType == "edit") {
+                mUserToEdit?.let { it1 ->
+                    mDbHelper.updateUser(id = it1.id, name = name, barQRNo = barQRNumber, icCardNo = icCardNumber,
+                        age = age, gender = mGender,  tel = tel, classGrade = classGrade, photoUrl = insertPhotoUrl)
+                }
+            }
+            else {
+                mDbHelper.addNewUser(id = newUUID, name = name, barQRNo = barQRNumber, icCardNo = icCardNumber,
+                    age = age, gender = mGender,  tel = tel, classGrade = classGrade, photoUrl = insertPhotoUrl)
+            }
 
             Toast.makeText(baseContext, getString(R.string.admin_user_register_tip_user_register_succeed),
                 Toast.LENGTH_LONG).show()
@@ -189,6 +207,38 @@ class UserRegisterActivity : AppCompatActivity() {
         dispQueue!!.start()
 
         binding.adminUserRegisterView.requestFocus()
+        if (mActionType == "edit") {
+            binding.names.setText(mUserToEdit?.name)
+            binding.etICCardNo.setText(mUserToEdit?.icCardNo)
+            binding.etBarQRNo.setText(mUserToEdit?.barQRNo)
+            binding.address.setText("") //TODO: Add later
+            binding.etPhone.setText("") //TODO: Add later
+            when (mUserToEdit?.gender) {
+                "男" -> {
+                    binding.male.isChecked = true
+                    binding.female.isChecked = false
+                }
+                "女" -> {
+                    binding.male.isChecked = false
+                    binding.female.isChecked = true
+                }
+                else -> {
+                    binding.male.isChecked = false
+                    binding.female.isChecked = false
+                }
+            }
+            binding.age.setText(mUserToEdit?.age.toString())
+            binding.height.setText("")
+            binding.currentWeight.setText("")
+            binding.etClassGrade.setText(mUserToEdit?.classGrade)
+            binding.title.text = getString(R.string.admin_user_edit_title)
+
+            val userPhotoUrl = "$mPhotoSavePath/${mUserToEdit?.id}.jpg"
+            if (File(userPhotoUrl).exists()) {
+                val imgBitmap = BitmapFactory.decodeFile(userPhotoUrl)
+                binding.imvPhoto.setImageBitmap(imgBitmap)
+            }
+        }
     }
 
     override fun onPause() {

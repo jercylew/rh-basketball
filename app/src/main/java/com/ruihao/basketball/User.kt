@@ -10,4 +10,4 @@ data class User(
     val classGrade: String,
     val photoUrl: String,
     val isAdmin: Boolean,
-)
+) : java.io.Serializable

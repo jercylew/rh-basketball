@@ -126,6 +126,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvGreeting" />
 
+    <com.ruihao.basketball.BoundingBoxView
+        android:id="@+id/boundingBoxView"
+        android:layout_width="175dp"
+        android:layout_height="327dp"
+        android:layout_marginTop="32dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.967"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvGreeting"
+        android:layout_alignStart="@+id/viewFinder"
+        android:layout_alignTop="@+id/viewFinder"
+        android:layout_alignEnd="@+id/viewFinder"
+        android:layout_alignBottom="@+id/viewFinder"
+        />
+
     <TextView
         android:id="@+id/tvFooterTechSupport"
         android:layout_width="376dp"

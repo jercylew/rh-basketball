@@ -2,7 +2,6 @@ package com.ruihao.basketball
 
 import android.Manifest
 import android.content.ContentResolver
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -611,14 +610,24 @@ class MainActivity : AppCompatActivity() {
                         return@FaceAnalyzer
                     }
 
+                    var facesRecs: MutableList<VisionDetRet> =  mutableListOf()
+                    for (i in 1..facesInfo.length()) {
+                        val faceInfoJson: JSONObject = facesInfo.getJSONObject(0)
+                        val faceRec: JSONArray = faceInfoJson.getJSONArray("rect")
+
+                        val rec = VisionDetRet(l = faceRec.getInt(3), t = faceRec.getInt(0),
+                            r = faceRec.getInt(1), b = faceRec.getInt(2))
+                        facesRecs.add(rec)
+                    }
+
+                    // Draw rectangle into the bound view
+                    binding.boundingBoxView.setResults(facesRecs)
                     if (facesInfo.length() > 1) {
                         Log.d(TAG,
                             "Recognized multiple faces, please borrow the ball one by one")
                     }
                     val faceInfoJson: JSONObject = facesInfo.getJSONObject(0)
                     val label: String = faceInfoJson.getString("label")
-                    val posRect = faceInfoJson.getJSONArray("rect")
-
                     Log.d(TAG, "Face recognized as $label")
                     runOnUiThread {
 //                        Toast.makeText(this@MainActivity, "Face recognized as $label",
@@ -925,13 +934,13 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "Got bitmap buffer, plans size: ${image.planes.size}," +
                     "format: ${image.format}, image size: ${image.width}x${image.height}")
 
-//            val bitmap: Bitmap = image.toBitmap()
-//            val stream = ByteArrayOutputStream()
-//            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
-//            val bytes = stream.toByteArray()
-//            val base64ImageData: String = Base64.encodeToString(bytes, Base64.DEFAULT)
-//
-//            listener(base64ImageData)
+            val bitmap: Bitmap = image.toBitmap()
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+            val bytes = stream.toByteArray()
+            val base64ImageData: String = Base64.encodeToString(bytes, Base64.DEFAULT)
+
+            listener(base64ImageData)
 
             image.close()
         }

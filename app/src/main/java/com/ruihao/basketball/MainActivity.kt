@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity() {
             // Handle Permission granted/rejected
             var permissionGranted = true
             permissions.entries.forEach {
-                if (it.key in REQUIRED_PERMISSIONS && it.value == false)
+                if (it.key in REQUIRED_PERMISSIONS && !it.value)
                     permissionGranted = false
             }
             if (!permissionGranted) {
@@ -143,14 +143,6 @@ class MainActivity : AppCompatActivity() {
         mBtnReturn = findViewById(R.id.btnReturn)
 
         mBtnBorrow.setOnClickListener {
-            //Only for test
-            val myIntent = Intent(this@MainActivity, AdminActivity::class.java)
-            myIntent.putExtra("modbusOk", mModbusOk) //Optional parameters
-            myIntent.putExtra("userNo", "a1234567890")
-            myIntent.putExtra("userName", "TestUser")
-            this@MainActivity.startActivity(myIntent)
-            return@setOnClickListener
-
             if (mUser == null) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_login),
                     Toast.LENGTH_LONG).show()
@@ -363,8 +355,8 @@ class MainActivity : AppCompatActivity() {
             mRemainBallsQty[1] = 0
         }
 
-        var total: Int = mTotalBallsQty[0] + mTotalBallsQty[1]
-        var remain: Int = mRemainBallsQty[0] + mRemainBallsQty[1]
+        val total: Int = mTotalBallsQty[0] + mTotalBallsQty[1]
+        val remain: Int = mRemainBallsQty[0] + mRemainBallsQty[1]
         mTVTotalQty.text = String.format(getString(R.string.total_basketballs), total)
         mTVRemainQty.text = String.format(getString(R.string.remain_basketballs), remain)
     }
@@ -687,7 +679,7 @@ class MainActivity : AppCompatActivity() {
         var strText: String = ""
 
         for (ch in bytes) {
-            strText += "${ch.toUInt().toString(16)}"
+            strText += ch.toUInt().toString(16)
         }
 
         return strText
@@ -758,7 +750,7 @@ class MainActivity : AppCompatActivity() {
         var id: String = ""
         var gender: String = ""
         var classGrade: String = ""
-        var age: Int = 0
+        val age: Int = 0
         var isAdmin: Boolean = false
         var photoUrl: String = ""
         while (cursor.moveToNext()) {
@@ -878,7 +870,7 @@ class MainActivity : AppCompatActivity() {
             super.run()
             while (!isInterrupted) {
                 val comData: ComBean
-                if (queueList == null || queueList.isEmpty()) {
+                if (queueList.isEmpty()) {
                     continue
                 }
 

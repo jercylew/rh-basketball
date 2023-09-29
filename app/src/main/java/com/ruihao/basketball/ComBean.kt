@@ -5,9 +5,9 @@ import java.util.Date
 
 
 class ComBean(sPort: String, buffer: ByteArray, size: Int) {
-    public var bRec: ByteArray? = null
-    public var sRecTime = ""
-    public var sComPort = ""
+    var bRec: ByteArray? = null
+    var sRecTime = ""
+    var sComPort = ""
 
     init {
         sComPort = sPort

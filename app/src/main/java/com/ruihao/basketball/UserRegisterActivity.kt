@@ -427,7 +427,7 @@ class UserRegisterActivity : AppCompatActivity() {
         var strText: String = ""
 
         for (ch in bytes) {
-            strText += "${ch.toUInt().toString(16)}"
+            strText += ch.toUInt().toString(16)
         }
 
         return strText
@@ -477,7 +477,7 @@ class UserRegisterActivity : AppCompatActivity() {
             super.run()
             while (!isInterrupted) {
                 val comData: ComBean
-                if (queueList == null || queueList.isEmpty()) {
+                if (queueList.isEmpty()) {
                     continue
                 }
 

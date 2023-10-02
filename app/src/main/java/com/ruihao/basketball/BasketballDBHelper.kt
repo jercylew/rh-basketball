@@ -4,10 +4,16 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.os.Build
 import android.provider.BaseColumns
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
+import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.util.Locale
 
+private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
 
 internal class BasketballContract
 private constructor() {
@@ -27,13 +33,15 @@ private constructor() {
     object BorrowRecord : BaseColumns {
         const val TABLE_NAME = "borrow_record"
         const val COLUMN_BORROWER_ID = "borrower_id"
-        const val COLUMN_BORROW_TIME = "borrow_time"
-        const val COLUMN_RETURN_TIME = "return_time"
+        const val COLUMN_CREATED_TIME = "time"
+        const val COLUMN_RECORD_TYPE = "type"
+        const val COLUMN_CAPTURE_IMAGE_PATH = "capture_image_path"
     }
 }
 
 internal class BasketballDBHelper(context: Context?) :
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(SQL_CREATE_TABLE_USER)
         db.execSQL(SQL_CREATE_TABLE_BORROW_RECORD)
@@ -164,6 +172,99 @@ internal class BasketballDBHelper(context: Context?) :
         return users
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun addNewBorrowRecord(id: String, borrowerId: String?, type: Int?, captureImagePath: String?) {
+        val db = this.writableDatabase
+        val values = ContentValues()
+
+        val dateTimeText = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
+            .format(System.currentTimeMillis())
+
+        values.put(BaseColumns._ID, id)
+        values.put(BasketballContract.BorrowRecord.COLUMN_BORROWER_ID, borrowerId)
+        values.put(BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE, type)
+        values.put(BasketballContract.BorrowRecord.COLUMN_CREATED_TIME, dateTimeText)
+        values.put(BasketballContract.BorrowRecord.COLUMN_CAPTURE_IMAGE_PATH, captureImagePath)
+
+        db.insert(BasketballContract.User.TABLE_NAME, null, values)
+        db.close()
+    }
+
+    fun updateBorrowRecord(id: String, borrowerId: String?, type: Int?, captureImagePath: String?) {
+        val db = this.writableDatabase
+        val values = ContentValues()
+
+        val dateTimeText = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
+            .format(System.currentTimeMillis())
+
+        //Do not update created time !!!
+        values.put(BasketballContract.BorrowRecord.COLUMN_BORROWER_ID, borrowerId)
+        values.put(BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE, type)
+        values.put(BasketballContract.BorrowRecord.COLUMN_CAPTURE_IMAGE_PATH, captureImagePath)
+
+        val where = "_id = ?"
+        val whereArgs = arrayOf(id)
+
+        db.update(BasketballContract.User.TABLE_NAME, values, where, whereArgs)
+        db.close()
+    }
+
+    fun removeBorrowRecord(id: String) {
+        val db = this.writableDatabase
+        val where = "_id = ?"
+        val whereArgs = arrayOf(id)
+        db.delete(BasketballContract.BorrowRecord.TABLE_NAME, where, whereArgs)
+        db.close()
+    }
+
+    fun getAllBorrowRecords(): ArrayList<BorrowRecord> {
+        var records: ArrayList<BorrowRecord> = ArrayList<BorrowRecord>()
+
+        val db = this.readableDatabase
+
+        val projection = arrayOf<String>(
+            BaseColumns._ID,
+            BasketballContract.BorrowRecord.COLUMN_BORROWER_ID,
+            BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE,
+            BasketballContract.BorrowRecord.COLUMN_CAPTURE_IMAGE_PATH,
+            BasketballContract.BorrowRecord.COLUMN_CREATED_TIME,
+        )
+
+        val sortOrder: String =
+            BasketballContract.BorrowRecord.COLUMN_CREATED_TIME + " DESC"
+
+        val cursor = db.query(
+            BasketballContract.BorrowRecord.TABLE_NAME,  // The table to query
+            projection,  // The array of columns to return (pass null to get all)
+            null,  // The columns for the WHERE clause
+            null,  // The values for the WHERE clause
+            null,  // don't group the rows
+            null,  // don't filter by row groups
+            sortOrder // The sort order
+        )
+
+        var id: String = ""
+        var borrowerId: String = ""
+        var type: Int = -1
+        var captureImagePath: String = ""
+        var createdTime: String = ""
+        while (cursor.moveToNext()) {
+            id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
+            borrowerId = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_BORROWER_ID))
+            type = cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE))
+            captureImagePath = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_CAPTURE_IMAGE_PATH))
+            createdTime = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_CREATED_TIME))
+
+            val record = BorrowRecord(id = id, borrowerId = borrowerId,
+                type = type, createdTime = createdTime, captureImagePath = captureImagePath)
+            records.add(record)
+        }
+        cursor.close()
+        db.close()
+
+        return records
+    }
+
     companion object {
         const val DATABASE_VERSION = 2
         const val DATABASE_NAME = "Basketball.db"
@@ -186,9 +287,10 @@ internal class BasketballDBHelper(context: Context?) :
         private const val SQL_CREATE_TABLE_BORROW_RECORD =
             "CREATE TABLE " + BasketballContract.BorrowRecord.TABLE_NAME + " (" +
                     BaseColumns._ID + " TEXT PRIMARY KEY," +
-                    BasketballContract.BorrowRecord.COLUMN_BORROWER_ID + " INTEGER," +
-                    BasketballContract.BorrowRecord.COLUMN_BORROW_TIME + " TEXT," +  //YYYY-MM-DD HH:MM:SS.SSS
-                    BasketballContract.BorrowRecord.COLUMN_RETURN_TIME + " TEXT)"
+                    BasketballContract.BorrowRecord.COLUMN_BORROWER_ID + " TEXT," +
+                    BasketballContract.BorrowRecord.COLUMN_CREATED_TIME + " TEXT," +  //ISO_LOCAL_DATE_TIME format, eg: 2022-01-06T21:30:10
+                    BasketballContract.BorrowRecord.COLUMN_CAPTURE_IMAGE_PATH + " TEXT," +
+                    BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE + " INTEGER)"
         private const val SQL_DELETE_TABLE_BORROW_RECORD =
             "DROP TABLE IF EXISTS " + BasketballContract.BorrowRecord.TABLE_NAME
     }

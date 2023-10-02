@@ -148,6 +148,8 @@ class MainActivity : AppCompatActivity() {
                 playAudio(R.raw.tip_login)
                 return@setOnClickListener
             }
+            // Check if the user has already borrowed
+
             if (!mModbusOk) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()

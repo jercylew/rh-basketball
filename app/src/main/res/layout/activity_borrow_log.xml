@@ -5,7 +5,28 @@
     android:id="@+id/adminBorrowLogView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".AdminActivity">
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    tools:context=".BorrowLogActivity">
 
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rcvBorrowRecordList"
+        android:layout_width="750dp"
+        android:layout_height="811dp"
+        android:layout_marginTop="40dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.509"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
+    <ImageButton
+        android:id="@+id/ibtnUserListBack"
+        android:layout_width="146dp"
+        android:layout_height="86dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/rcvBorrowRecordList"
+        app:layout_constraintVertical_bias="0.134"
+        app:srcCompat="@drawable/back" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -84,7 +84,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
         binding = ActivityAdminBinding.inflate(layoutInflater)
-        setContentView(R.layout.activity_admin)
+        setContentView(binding.root)
 
         mTVTotalQty = findViewById(R.id.tvTotalQty)
         mTVRemainQty = findViewById(R.id.tvRemainQty)
@@ -230,6 +230,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             this@AdminActivity.startActivity(myIntent)
         }
         mCardBorrowLog.setOnClickListener{
+
         }
         mCardLoadBalls.setOnClickListener{
             if (!mModbusOk) {

@@ -22,7 +22,6 @@ import java.util.Arrays
 
 class UserListActivity : AppCompatActivity() {
     private lateinit var binding: ActivityUserListBinding
-    private lateinit var mBtnAddUser: FloatingActionButton
 
     private var mUserId: String = ""
     private var mUserName: String = ""
@@ -49,14 +48,13 @@ class UserListActivity : AppCompatActivity() {
         mUserName = intent.getStringExtra("userName").toString()
 
         binding = ActivityUserListBinding.inflate(layoutInflater)
-        setContentView(R.layout.activity_user_list)
-        recyclerView = findViewById<RecyclerView>(R.id.rcvUserList)
+        setContentView(binding.root)
+        recyclerView = findViewById(R.id.rcvUserList)
         mBtnBack = findViewById(R.id.ibtnUserListBack)
         mBtnBack.setOnClickListener{
             finish()
         }
-        mBtnAddUser = findViewById(R.id.fabAddNewUser)
-        mBtnAddUser.setOnClickListener{
+        binding.fabAddNewUser.setOnClickListener{
             val myIntent = Intent(this@UserListActivity, UserRegisterActivity::class.java)
             myIntent.putExtra("userId", mUserId)
             myIntent.putExtra("actionType", "add")

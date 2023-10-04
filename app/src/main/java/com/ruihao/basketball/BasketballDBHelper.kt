@@ -2,6 +2,7 @@ package com.ruihao.basketball
 
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.os.Build
@@ -170,6 +171,73 @@ internal class BasketballDBHelper(context: Context?) :
         db.close()
 
         return users
+    }
+
+    fun getUser(id: String): User? {
+        val db = this.readableDatabase
+
+        val projection = arrayOf<String>(
+            BaseColumns._ID,
+            BasketballContract.User.COLUMN_BAR_QR_NO,
+            BasketballContract.User.COLUMN_IC_CARD_NO,
+            BasketballContract.User.COLUMN_NAME,
+            BasketballContract.User.COLUMN_AGE,
+            BasketballContract.User.COLUMN_GENDER,
+            BasketballContract.User.COLUMN_CLASS_GRADE,
+            BasketballContract.User.COLUMN_IS_ADMIN,
+            BasketballContract.User.COLUMN_PHOTO_URL,
+        )
+
+        val selection: String =
+            "${BaseColumns._ID} = ?"
+        val selectionArgs = arrayOf(id)
+
+        val sortOrder: String =
+            BasketballContract.User.COLUMN_NAME + " DESC"
+
+        val cursor = db.query(
+            BasketballContract.User.TABLE_NAME,  // The table to query
+            projection,  // The array of columns to return (pass null to get all)
+            selection,  // The columns for the WHERE clause
+            selectionArgs,  // The values for the WHERE clause
+            null,  // don't group the rows
+            null,  // don't filter by row groups
+            sortOrder // The sort order
+        )
+
+        if (cursor.count == 0) {
+            return null
+        }
+
+        if (cursor.count > 1) {
+            Log.w("RH-DBHelper", "Multiple user found for this user, ${BaseColumns._ID}: $id")
+        }
+
+        var name: String = ""
+        var barQRNo: String = ""
+        var icCardNo: String = ""
+        var id: String = ""
+        var gender: String = ""
+        var classGrade: String = ""
+        val age: Int = 0
+        var isAdmin: Boolean = false
+        var photoUrl: String = ""
+        while (cursor.moveToNext()) {
+            name = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_NAME))
+            barQRNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_BAR_QR_NO))
+            icCardNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_IC_CARD_NO))
+            id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
+            gender = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_GENDER))
+            classGrade = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_CLASS_GRADE))
+            isAdmin = (cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_IS_ADMIN)) == 1)
+            photoUrl = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_PHOTO_URL))
+            break
+        }
+        cursor.close()
+        db.close()
+
+        return User(name = name, id = id, barQRNo = barQRNo, icCardNo = icCardNo, gender = gender, classGrade = classGrade,
+            age = age, photoUrl = photoUrl, isAdmin = isAdmin)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

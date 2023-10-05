@@ -1,17 +1,23 @@
 package com.ruihao.basketball
 
+import android.app.Dialog
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Environment
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.ImageView
 import android.widget.PopupMenu
+import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
+
 
 class BorrowLogAdapter(context: Context, borrowRecordList: ArrayList<BorrowRecord>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -51,6 +57,25 @@ class BorrowLogAdapter(context: Context, borrowRecordList: ArrayList<BorrowRecor
         if (File(record.captureImagePath).exists()) {
             val imgBitmap = BitmapFactory.decodeFile(record.captureImagePath)
             holder.mTVCaptureImage.setImageBitmap(imgBitmap)
+        }
+        holder.mTVCaptureImage.setOnClickListener{
+            val builder = Dialog(context)
+            builder.requestWindowFeature(Window.FEATURE_NO_TITLE)
+            builder.window!!.setBackgroundDrawable(
+                ColorDrawable(Color.TRANSPARENT)
+            )
+            builder.setOnDismissListener {
+                //nothing;
+            }
+            val imageView = ImageView(context)
+            val imgBitmap = BitmapFactory.decodeFile(record.captureImagePath)
+            imageView.setImageBitmap(imgBitmap)
+//            PicassoTrustAll.getInstance(context)
+//                .load(imageUrls.get(position))
+//                .placeholder(R.drawable.vector_app_logo_profile)
+//                .into(imageView)
+            builder.addContentView(imageView, RelativeLayout.LayoutParams(550, 550))
+            builder.show()
         }
 
         holder.itemView.setOnLongClickListener {

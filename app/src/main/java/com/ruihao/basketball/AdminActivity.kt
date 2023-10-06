@@ -35,6 +35,7 @@ import com.ruihao.basketball.databinding.ActivityMainBinding
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.UUID
 
 
 class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
@@ -114,6 +115,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 return@setOnClickListener
             }
 
+            //Do not check the number of balls the admin borrowed, the admin can borrow (clear) all basketballs in the machine
+
             // Check which channel has balls
             val addressToWrite: Int = if (mRemainBallsQty[0] > 0) 1002 else 1003
             val preBallQty: Int = if (mRemainBallsQty[0] > 0) mRemainBallsQty[0] else mRemainBallsQty[1]
@@ -160,6 +163,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             playAudio(R.raw.tip_take_basketball)
 
             // Save borrow record (DO not do this now)
+            val recordId: String = UUID.randomUUID().toString()
+            mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUserId, type = 0, captureImagePath = savedCaptureImagePath)
         }
         mBtnReturn.setOnClickListener {
             if (!mModbusOk) {
@@ -222,6 +227,9 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 Toast.LENGTH_LONG).show()
             playAudio(R.raw.tip_return_succeed)
             updateBallsQuantity()
+
+            val recordId: String = UUID.randomUUID().toString()
+            mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUserId, type = 1, captureImagePath = savedCaptureImagePath)
         }
         mCardUserRegister.setOnClickListener{  // TODO: Deprecated this soon
             val myIntent = Intent(this@AdminActivity, UserRegisterActivity::class.java)

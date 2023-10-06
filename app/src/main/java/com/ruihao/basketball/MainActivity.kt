@@ -26,6 +26,7 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -57,10 +58,13 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.collections.ArrayList
 
 
 typealias LumaListener = (luma: Double) -> Unit
 typealias FaceCheckListener = (imageDataBase64: String) -> Unit
+
+private const val MAX_BORROW_QTY_ALLOWED: Int = 1
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -117,6 +121,7 @@ class MainActivity : AppCompatActivity() {
         }
 
 
+//    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         actionBar?.hide()
         val windowInsetsController =
@@ -148,7 +153,6 @@ class MainActivity : AppCompatActivity() {
                 playAudio(R.raw.tip_login)
                 return@setOnClickListener
             }
-            // Check if the user has already borrowed
 
             if (!mModbusOk) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_device_error),
@@ -162,6 +166,14 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_no_basketball),
                     Toast.LENGTH_LONG).show()
                 playAudio(R.raw.tip_no_basketball)
+                return@setOnClickListener
+            }
+
+            // Check if the user has already borrowed
+            if (!canUserBorrow()) {
+                Toast.makeText(this@MainActivity, getString(R.string.tip_borrowed_exceed_limit),
+                    Toast.LENGTH_LONG).show()
+                playAudio(R.raw.tip_borrowed_exceed_limit)
                 return@setOnClickListener
             }
 
@@ -212,6 +224,8 @@ class MainActivity : AppCompatActivity() {
             playAudio(R.raw.tip_take_basketball)
 
             // Save borrow record (DO not do this now)
+            val recordId: String = UUID.randomUUID().toString()
+            mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUser!!.id, type = 0, captureImagePath = savedCaptureImagePath)
 
             logoutUser(mUser!!.id)
         }
@@ -285,6 +299,9 @@ class MainActivity : AppCompatActivity() {
             updateBallsQuantity()
             updateGridView()
 
+            val recordId: String = UUID.randomUUID().toString()
+            mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUser!!.id, type = 1, captureImagePath = savedCaptureImagePath)
+
             // Logout
             logoutUser(mUser!!.id)
         }
@@ -322,6 +339,18 @@ class MainActivity : AppCompatActivity() {
         val timeSuffix = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
             .format(System.currentTimeMillis())
         return  "${mAppDataFile.path}/capture/${mUser?.id}_${type}_${timeSuffix}.jpg"
+    }
+
+    private fun canUserBorrow(): Boolean {
+        if (mUser == null) {
+            return false
+        }
+
+        // Already borrowed maximum number of balls
+        val borrowRecords = mDbHelper.getBorrowRecordsForUser(mUser!!.id, 0)
+        val returnRecords = mDbHelper.getBorrowRecordsForUser(mUser!!.id, 1)
+
+        return (borrowRecords.size - returnRecords.size < MAX_BORROW_QTY_ALLOWED)
     }
 
     override fun onResume() {

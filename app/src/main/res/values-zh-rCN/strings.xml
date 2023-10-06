@@ -16,6 +16,7 @@
     <string name="tip_return_basketball">请将篮球放入已打开的通道中</string>
     <string name="tip_no_basketball">本机球已借完, 请试试其它机器</string>
     <string name="tip_no_space">本机已装满，请试试其它机器</string>
+    <string name="tip_borrowed_exceed_limit">你已借了一球，不能再借</string>
     <string name="tip_login_user_not_found">用户未注册！</string>
     <string name="tip_login_user_succeed">用户%s登录成功！</string>
     <string name="tip_device_error">不好意思，设备有点小问题，请连续技术人员</string>

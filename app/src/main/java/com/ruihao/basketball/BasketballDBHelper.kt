@@ -240,7 +240,7 @@ internal class BasketballDBHelper(context: Context?) :
             age = age, photoUrl = photoUrl, isAdmin = isAdmin)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+//    @RequiresApi(Build.VERSION_CODES.O)
     fun addNewBorrowRecord(id: String, borrowerId: String?, type: Int?, captureImagePath: String?) {
         val db = this.writableDatabase
         val values = ContentValues()
@@ -306,6 +306,58 @@ internal class BasketballDBHelper(context: Context?) :
             projection,  // The array of columns to return (pass null to get all)
             null,  // The columns for the WHERE clause
             null,  // The values for the WHERE clause
+            null,  // don't group the rows
+            null,  // don't filter by row groups
+            sortOrder // The sort order
+        )
+
+        var id: String = ""
+        var borrowerId: String = ""
+        var type: Int = -1
+        var captureImagePath: String = ""
+        var createdTime: String = ""
+        while (cursor.moveToNext()) {
+            id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
+            borrowerId = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_BORROWER_ID))
+            type = cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE))
+            captureImagePath = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_CAPTURE_IMAGE_PATH))
+            createdTime = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_CREATED_TIME))
+
+            val record = BorrowRecord(id = id, borrowerId = borrowerId,
+                type = type, createdTime = createdTime, captureImagePath = captureImagePath)
+            records.add(record)
+        }
+        cursor.close()
+        db.close()
+
+        return records
+    }
+
+    fun getBorrowRecordsForUser(id: String, type: Int): ArrayList<BorrowRecord> {
+        var records: ArrayList<BorrowRecord> = ArrayList<BorrowRecord>()
+
+        val db = this.readableDatabase
+
+        val projection = arrayOf<String>(
+            BaseColumns._ID,
+            BasketballContract.BorrowRecord.COLUMN_BORROWER_ID,
+            BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE,
+            BasketballContract.BorrowRecord.COLUMN_CAPTURE_IMAGE_PATH,
+            BasketballContract.BorrowRecord.COLUMN_CREATED_TIME,
+        )
+
+        val sortOrder: String =
+            BasketballContract.BorrowRecord.COLUMN_CREATED_TIME + " DESC"
+
+        val selection =
+            "${BaseColumns._ID} = ? and ${BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE}=?"
+        val selectionArgs = arrayOf(id, type.toString())
+
+        val cursor = db.query(
+            BasketballContract.BorrowRecord.TABLE_NAME,  // The table to query
+            projection,  // The array of columns to return (pass null to get all)
+            selection,  // The columns for the WHERE clause
+            selectionArgs,  // The values for the WHERE clause
             null,  // don't group the rows
             null,  // don't filter by row groups
             sortOrder // The sort order

@@ -26,7 +26,6 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -121,7 +120,6 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-//    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         actionBar?.hide()
         val windowInsetsController =
@@ -638,6 +636,7 @@ class MainActivity : AppCompatActivity() {
                     val facesInfo: JSONArray = reader.getJSONArray("found_faces")
                     if (facesInfo.length() == 0) {
 //                        Log.d(TAG, "No faces found!")
+                        binding.boundingBoxView.setResults(mutableListOf())
                         return@FaceAnalyzer
                     }
 
@@ -651,8 +650,6 @@ class MainActivity : AppCompatActivity() {
                         facesRecs.add(rec)
                     }
 
-                    // Draw rectangle into the bound view
-                    binding.boundingBoxView.setResults(facesRecs)
                     if (facesInfo.length() > 1) {
                         Log.d(TAG,
                             "Recognized multiple faces, please borrow the ball one by one")
@@ -663,6 +660,7 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread {
 //                        Toast.makeText(this@MainActivity, "Face recognized as $label",
 //                            Toast.LENGTH_LONG).show()
+                        binding.boundingBoxView.setResults(facesRecs)
                         if (mUser == null) { // Login with face label (UUID)
                             loginUser(BaseColumns._ID, label)
                         }

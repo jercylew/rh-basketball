@@ -1,12 +1,15 @@
 package com.ruihao.basketball
 
+import android.Manifest
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.PorterDuff
 import android.graphics.Rect
+import android.os.Build
 import android.util.AttributeSet
+import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 
@@ -21,9 +24,9 @@ class BoundingBoxView(context: Context?, attrs: AttributeSet?) :
         mSurfaceHolder.setFormat(PixelFormat.TRANSPARENT)
         setZOrderOnTop(true)
         mPaint = Paint()
-        mPaint.isAntiAlias = true
-        mPaint.color = Color.RED
-        mPaint.strokeWidth = 5f
+        mPaint.isAntiAlias = false
+        mPaint.color = Color.GREEN
+        mPaint.strokeWidth = 3f
         mPaint.style = Paint.Style.STROKE
     }
 
@@ -53,12 +56,22 @@ class BoundingBoxView(context: Context?, attrs: AttributeSet?) :
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
         canvas.drawColor(Color.TRANSPARENT)
         for (detRet in detRets) {
+            if (detRet != null) {
+                Log.d(TAG, "Draw rec (left=${detRet.left}, top=${detRet.top}," +
+                        "right=${detRet.right}, bottom=${detRet.bottom})")
+            }
+//            val rect =
+//                detRet?.let { Rect(it.left, it.top, it.right, it.bottom) }
             val rect =
-                detRet?.let { Rect(it.left, it.top, it.right, it.bottom) }
+                detRet?.let { Rect(it.left-220, it.top - 150, it.right-230, it.bottom - 220) }
             if (rect != null) {
                 canvas.drawRect(rect, mPaint)
             }
         }
         mSurfaceHolder.unlockCanvasAndPost(canvas)
+    }
+
+    companion object {
+        private const val TAG = "RH-BoundingBoxView"
     }
 }

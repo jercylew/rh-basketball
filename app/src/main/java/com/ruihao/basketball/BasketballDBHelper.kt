@@ -9,12 +9,11 @@ import android.os.Build
 import android.provider.BaseColumns
 import android.util.Log
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.util.Locale
 
-private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
+private const val FILENAME_FORMAT = "yyyy-MM-dd HH:mm:ss.SSS"
 
 internal class BasketballContract
 private constructor() {
@@ -240,7 +239,6 @@ internal class BasketballDBHelper(context: Context?) :
             age = age, photoUrl = photoUrl, isAdmin = isAdmin)
     }
 
-//    @RequiresApi(Build.VERSION_CODES.O)
     fun addNewBorrowRecord(id: String, borrowerId: String?, type: Int?, captureImagePath: String?) {
         val db = this.writableDatabase
         val values = ContentValues()
@@ -254,7 +252,7 @@ internal class BasketballDBHelper(context: Context?) :
         values.put(BasketballContract.BorrowRecord.COLUMN_CREATED_TIME, dateTimeText)
         values.put(BasketballContract.BorrowRecord.COLUMN_CAPTURE_IMAGE_PATH, captureImagePath)
 
-        db.insert(BasketballContract.User.TABLE_NAME, null, values)
+        db.insert(BasketballContract.BorrowRecord.TABLE_NAME, null, values)
         db.close()
     }
 
@@ -273,7 +271,7 @@ internal class BasketballDBHelper(context: Context?) :
         val where = "_id = ?"
         val whereArgs = arrayOf(id)
 
-        db.update(BasketballContract.User.TABLE_NAME, values, where, whereArgs)
+        db.update(BasketballContract.BorrowRecord.TABLE_NAME, values, where, whereArgs)
         db.close()
     }
 

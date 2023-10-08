@@ -238,7 +238,9 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             this@AdminActivity.startActivity(myIntent)
         }
         mCardBorrowLog.setOnClickListener{
-
+            val myIntent = Intent(this@AdminActivity, BorrowLogActivity::class.java)
+            myIntent.putExtra("userId", mUserId)
+            this@AdminActivity.startActivity(myIntent)
         }
         mCardLoadBalls.setOnClickListener{
             if (!mModbusOk) {

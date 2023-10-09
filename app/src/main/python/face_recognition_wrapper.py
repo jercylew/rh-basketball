@@ -17,7 +17,7 @@ CONST_KNOWN_FACE_LABELS_PICKLE_FILE = "known_face_labels.pkl"
 CONST_LOCATION_MODEL = "hog"  # "hog"
 CONST_ENCODING_MODEL = "small"  # "small"
 CONST_NUM_JITTERS = 1
-CONST_TOLERANCE = 0.6
+CONST_TOLERANCE = 0.55
 
 
 def register_face(image_path, pickle_file_path="."):
@@ -81,10 +81,15 @@ def search_face_with_raw_data(image_data):
         name = "Unknown"
 
         # Or instead, use the known face with the smallest distance to the new face
-        face_distances = face_recognition.face_distance(g_known_face_encodings, face_encoding)
-        best_match_index = np.argmin(face_distances)
-        if matches[best_match_index]:
-            name = g_known_face_names[best_match_index]
+        # face_distances = face_recognition.face_distance(g_known_face_encodings, face_encoding)
+        # best_match_index = np.argmin(face_distances)
+
+        for i in range(0, len(matches)):
+            if matches[i]:
+                name = g_known_face_names[i]
+                break
+        # if matches[best_match_index]:
+        #     name = g_known_face_names[best_match_index]
 
         found_face = {
             "label": name,

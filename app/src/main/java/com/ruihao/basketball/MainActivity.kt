@@ -50,14 +50,17 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
-import java.nio.ByteBuffer
 import java.security.InvalidParameterException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.LinkedList
+import java.util.Locale
+import java.util.Queue
+import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import kotlin.collections.ArrayList
 
 
 typealias LumaListener = (luma: Double) -> Unit
@@ -645,8 +648,8 @@ class MainActivity : AppCompatActivity() {
                         val faceInfoJson: JSONObject = facesInfo.getJSONObject(0)
                         val faceRec: JSONArray = faceInfoJson.getJSONArray("rect")
 
-                        val rec = VisionDetRet(l = faceRec.getInt(3), t = faceRec.getInt(0),
-                            r = faceRec.getInt(1), b = faceRec.getInt(2))
+                        val rec = VisionDetRet(l = (faceRec.getInt(3) * 4), t = (faceRec.getInt(0) * 4),
+                            r = (faceRec.getInt(1) * 4), b = (faceRec.getInt(2) * 4))
                         facesRecs.add(rec)
                     }
 
@@ -661,7 +664,7 @@ class MainActivity : AppCompatActivity() {
 //                        Toast.makeText(this@MainActivity, "Face recognized as $label",
 //                            Toast.LENGTH_LONG).show()
                         binding.boundingBoxView.setResults(facesRecs)
-                        if (mUser == null) { // Login with face label (UUID)
+                        if (mUser == null) {
                             loginUser(BaseColumns._ID, label)
                         }
                     }
@@ -933,11 +936,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private class FaceAnalyzer(private val listener: FaceCheckListener) : ImageAnalysis.Analyzer {
-        private fun ByteBuffer.toByteArray(): ByteArray {
-            rewind()    // Rewind the buffer to zero
-            val data = ByteArray(remaining())
-            get(data)   // Copy the buffer into a byte array
-            return data // Return the byte array
+        private fun ImageProxy.toByteArray(): ByteArray {
+            val yBuffer = planes[0].buffer // Y
+            val vuBuffer = planes[2].buffer // VU
+
+            val ySize = yBuffer.remaining()
+            val vuSize = vuBuffer.remaining()
+
+            val nv21 = ByteArray(ySize + vuSize)
+
+            yBuffer.get(nv21, 0, ySize)
+            vuBuffer.get(nv21, ySize, vuSize)
+
+            val yuvImage = YuvImage(nv21, ImageFormat.NV21, this.width, this.height, null)
+            val out = ByteArrayOutputStream()
+            yuvImage.compressToJpeg(Rect(0, 0, yuvImage.width, yuvImage.height), 100, out)
+
+            return out.toByteArray()
         }
 
         private fun ImageProxy.toBitmap(): Bitmap {
@@ -954,22 +969,45 @@ class MainActivity : AppCompatActivity() {
 
             val yuvImage = YuvImage(nv21, ImageFormat.NV21, this.width, this.height, null)
             val out = ByteArrayOutputStream()
-            yuvImage.compressToJpeg(Rect(0, 0, yuvImage.width, yuvImage.height), 50, out)
+            yuvImage.compressToJpeg(Rect(0, 0, yuvImage.width, yuvImage.height), 100, out)
             val imageBytes = out.toByteArray()
             return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        }
+
+        private fun saveImage(finalBitmap: Bitmap) {
+            val root = Environment.getExternalStorageDirectory().toString()
+            val myDir = File("$root/rh_saved_images")
+            myDir.mkdirs()
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
+            val imageFileName = "camera_capture_$timeStamp.jpg"
+            val file = File(myDir, imageFileName)
+            if (file.exists()) file.delete()
+            try {
+                val out = FileOutputStream(file)
+                finalBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
+                out.flush()
+                out.close()
+                Log.d(TAG, "Camera capture save bitmap: ${file.absolutePath}")
+            } catch (e: java.lang.Exception) {
+                e.printStackTrace()
+            }
         }
 
         override fun analyze(image: ImageProxy) {
             Log.d(TAG, "Got bitmap buffer, plans size: ${image.planes.size}," +
                     "format: ${image.format}, image size: ${image.width}x${image.height}")
 
+//            val base64ImageData: String = Base64.encodeToString(image.toByteArray(), Base64.DEFAULT)
             val bitmap: Bitmap = image.toBitmap()
+            val smallBitmap: Bitmap = Bitmap.createScaledBitmap(bitmap, bitmap.width/4, bitmap.height/4, true)
             val stream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+            smallBitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+//            saveImage(smallBitmap)
             val bytes = stream.toByteArray()
             val base64ImageData: String = Base64.encodeToString(bytes, Base64.DEFAULT)
-
             listener(base64ImageData)
+
+//            saveImage(image.toBitmap())    //For debug only
 
             image.close()
         }

@@ -631,9 +631,12 @@ class MainActivity : AppCompatActivity() {
                     val py = Python.getInstance()
                     val module = py.getModule("face_recognition_wrapper")
 
+                    val startTime = System.currentTimeMillis()
                     val retResultJson: String = module.callAttr("get_json_string_of_face_search_with_base64",
                         imageDataBase64)
                         .toString()
+                    val endTime = System.currentTimeMillis()
+                    Log.d(TAG, "Face recognition time cost: ${(endTime - startTime) / 1000f} seconds");
 
                     val reader = JSONObject(retResultJson)
                     val facesInfo: JSONArray = reader.getJSONArray("found_faces")

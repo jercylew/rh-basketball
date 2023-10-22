@@ -8,6 +8,7 @@ import os
 import io
 import glob
 import pickle
+from datetime import datetime
 
 g_known_face_encodings = []
 g_known_face_names = []
@@ -17,7 +18,7 @@ CONST_KNOWN_FACE_LABELS_PICKLE_FILE = "known_face_labels.pkl"
 CONST_LOCATION_MODEL = "hog"  # "hog"
 CONST_ENCODING_MODEL = "small"  # "small"
 CONST_NUM_JITTERS = 1
-CONST_TOLERANCE = 0.55
+CONST_TOLERANCE = 0.45
 
 
 def register_face(image_path, pickle_file_path="."):
@@ -69,27 +70,34 @@ def search_face_with_raw_data(image_data):
     """
     found_faces = []
 
+    start = datetime.now()
     face_locations = face_recognition.face_locations(image_data, model=CONST_LOCATION_MODEL)
+    end = datetime.now()
+    print("face_recognition[face_locations] cost: ", (end - start).total_seconds() * 1000, "ms")
+
+    start = datetime.now()
     face_encodings = face_recognition.face_encodings(face_image=image_data, known_face_locations=face_locations,
                                                      num_jitters=CONST_NUM_JITTERS, model=CONST_ENCODING_MODEL)
+    end = datetime.now()
+    print("face_recognition[face_encodings] cost: ", (end - start).total_seconds() * 1000, "ms")
 
     # Loop through each face found in the unknown image
     for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
         # See if the face is a match for the known face(s)
-        matches = face_recognition.compare_faces(known_face_encodings=g_known_face_encodings,
-                                                 face_encoding_to_check=face_encoding, tolerance=CONST_TOLERANCE)
+        # matches = face_recognition.compare_faces(known_face_encodings=g_known_face_encodings,
+        #                                          face_encoding_to_check=face_encoding, tolerance=CONST_TOLERANCE)
         name = "Unknown"
 
         # Or instead, use the known face with the smallest distance to the new face
-        # face_distances = face_recognition.face_distance(g_known_face_encodings, face_encoding)
-        # best_match_index = np.argmin(face_distances)
+        start = datetime.now()
+        face_distances = face_recognition.face_distance(g_known_face_encodings, face_encoding)
+        end = datetime.now()
+        print("face_recognition[face_distance] cost: ", (end - start).total_seconds() * 1000, "ms")
+        print("face_distance:", face_distances)
 
-        for i in range(0, len(matches)):
-            if matches[i]:
-                name = g_known_face_names[i]
-                break
-        # if matches[best_match_index]:
-        #     name = g_known_face_names[best_match_index]
+        best_match_index = np.argmin(face_distances)
+        if face_distances[best_match_index] <= CONST_TOLERANCE:
+            name = g_known_face_names[best_match_index]
 
         found_face = {
             "label": name,
@@ -111,6 +119,7 @@ def get_json_string_of_face_search_with_base64(image_base64):
     image_decoded = Image.open(io.BytesIO(base64_decoded))
     image_np = np.array(image_decoded)
     search_found_faces = search_face_with_raw_data(image_np)
+    # search_found_faces = search_face_with_path("/storage/emulated/0/rh_saved_images/camera_capture_20231009_122909.jpg")
 
     output_json = {
         "found_faces": search_found_faces

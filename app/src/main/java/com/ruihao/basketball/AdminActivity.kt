@@ -60,6 +60,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     private var mModbusOk: Boolean = false
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
     private var mMediaPlayer: MediaPlayer? = null
+    private var mReturnBallTimer: CountDownTimer? = null
 
     private val mAppDataFile: File = File(
         Environment.getExternalStorageDirectory().path
@@ -87,19 +88,19 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         binding = ActivityAdminBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        mTVTotalQty = findViewById(R.id.tvTotalQty)
-        mTVRemainQty = findViewById(R.id.tvRemainQty)
-        mTVGreeting = findViewById(R.id.tvGreeting)
-        mBtnBorrow = findViewById(R.id.btnBorrow)
-        mBtnReturn = findViewById(R.id.btnReturn)
-        mCardBorrowLog = findViewById(R.id.cardBorrowLog)
-        mCardLoadBalls = findViewById(R.id.cardLoadBalls)
-        mCardSettings = findViewById(R.id.cardSettings)
-        mCardUserList = findViewById(R.id.cardUserList)
-        mCardUserRegister = findViewById(R.id.cardUserRegister)
-        mBtnBack = findViewById(R.id.ibtnAdminBack)
+//        mTVTotalQty = findViewById(R.id.tvTotalQty)
+//        mTVRemainQty = findViewById(R.id.tvRemainQty)
+//        mTVGreeting = findViewById(R.id.tvGreeting)
+//        mBtnBorrow = findViewById(R.id.btnBorrow)
+//        mBtnReturn = findViewById(R.id.btnReturn)
+//        mCardBorrowLog = findViewById(R.id.cardBorrowLog)
+//        mCardLoadBalls = findViewById(R.id.cardLoadBalls)
+//        mCardSettings = findViewById(R.id.cardSettings)
+//        mCardUserList = findViewById(R.id.cardUserList)
+//        mCardUserRegister = findViewById(R.id.cardUserRegister)
+//        mBtnBack = findViewById(R.id.ibtnAdminBack)
 
-        mBtnBorrow.setOnClickListener {
+        binding.btnBorrow.setOnClickListener {
             if (!mModbusOk) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()
@@ -166,7 +167,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             val recordId: String = UUID.randomUUID().toString()
             mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUserId, type = 0, captureImagePath = savedCaptureImagePath)
         }
-        mBtnReturn.setOnClickListener {
+        binding.btnReturn.setOnClickListener {
             if (!mModbusOk) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()
@@ -186,6 +187,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             val addressBallEntered: Int = if (mRemainBallsQty[0] < 12) 1004 else 1005
             if (!writeModbusRegister(addressOpen, 1)) {
                 Log.e(TAG, "Failed to write command of opening the lock of the door")
+                playAudio(R.raw.tip_device_error)
+                return@setOnClickListener
             }
 
             Toast.makeText(this@AdminActivity, getString(R.string.tip_return_basketball),
@@ -195,54 +198,101 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             val savedCaptureImagePath = borrowReturnCapturePath("return")
             takePhoto(savedCaptureImagePath)
 
-            var numOfLoop: Int = 0
-            var regSet: Boolean = true
-            while (readModbusRegister(addressBallEntered) == 0) {
-                Thread.sleep(100)
-                Log.d(TAG, "Loop check reg state, numOfLoop: $numOfLoop")
-                numOfLoop++
+            mReturnBallTimer = object : CountDownTimer(15000, 1000) {
+                override fun onTick(millisUntilFinished: Long) {
+                    binding.tvReturnBallCounterDown.text = String.format("%d", (millisUntilFinished / 1000))
 
-                if (numOfLoop % 30 == 0) {
-                    playAudio(R.raw.tip_return_basketball)
+                    if (readModbusRegister(addressBallEntered) == 1) {
+                        Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
+                            Toast.LENGTH_LONG).show()
+                        playAudio(R.raw.tip_return_succeed)
+                        updateBallsQuantity()
+                        binding.tvReturnBallCounterDown.text = ""
+
+                        val recordId: String = UUID.randomUUID().toString()
+                        mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUserId,
+                            type = 1, captureImagePath = savedCaptureImagePath)
+
+                        cancel()
+                    }
+                    else {
+                        val remainSecs: Long = millisUntilFinished / 1000
+                        if (remainSecs == 10L || remainSecs == 20L) {
+                            playAudio(R.raw.tip_return_basketball)
+                        }
+                    }
                 }
+                override fun onFinish() {
+                    if (readModbusRegister(addressBallEntered) == 1) {
+                        Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
+                            Toast.LENGTH_LONG).show()
+                        playAudio(R.raw.tip_return_succeed)
+                        updateBallsQuantity()
 
-                if (numOfLoop >= 178) { // waiting for tip_return_basketball audio complete
-                    regSet = false
-                    break
+                        val recordId: String = UUID.randomUUID().toString()
+                        mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUserId, type = 1, captureImagePath = savedCaptureImagePath)
+
+                        // The user is responsible to close the door, no need to write command
+                        // writeModbusRegister(addressOpen, 0)
+                    }
+                    else {
+                        Toast.makeText(this@AdminActivity, getString(R.string.tip_return_failed),
+                            Toast.LENGTH_LONG).show()
+                        playAudio(R.raw.tip_return_failed)
+                    }
+                    binding.tvReturnBallCounterDown.text = ""
                 }
             }
-            if (!regSet) { //Did not detect the signal of ball entered
-                Toast.makeText(this@AdminActivity, getString(R.string.tip_return_failed),
-                    Toast.LENGTH_LONG).show()
-                playAudio(R.raw.tip_return_failed)
-                return@setOnClickListener
-            }
+            (mReturnBallTimer as CountDownTimer).start()
 
-
-            // The door lock will close the door itself, no need to write command
-//            writeModbusRegister(addressOpen, 0)
-
-            // Inform user to return the ball
-            Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
-                Toast.LENGTH_LONG).show()
-            playAudio(R.raw.tip_return_succeed)
-            updateBallsQuantity()
-
-            val recordId: String = UUID.randomUUID().toString()
-            mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUserId, type = 1, captureImagePath = savedCaptureImagePath)
+//            var numOfLoop: Int = 0
+//            var regSet: Boolean = true
+//            while (readModbusRegister(addressBallEntered) == 0) {
+//                Thread.sleep(100)
+//                Log.d(TAG, "Loop check reg state, numOfLoop: $numOfLoop")
+//                numOfLoop++
+//
+//                if (numOfLoop % 30 == 0) {
+//                    playAudio(R.raw.tip_return_basketball)
+//                }
+//
+//                if (numOfLoop >= 178) { // waiting for tip_return_basketball audio complete
+//                    regSet = false
+//                    break
+//                }
+//            }
+//            if (!regSet) { //Did not detect the signal of ball entered
+//                Toast.makeText(this@AdminActivity, getString(R.string.tip_return_failed),
+//                    Toast.LENGTH_LONG).show()
+//                playAudio(R.raw.tip_return_failed)
+//                return@setOnClickListener
+//            }
+//
+//
+//            // The door lock will close the door itself, no need to write command
+////            writeModbusRegister(addressOpen, 0)
+//
+//            // Inform user to return the ball
+//            Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
+//                Toast.LENGTH_LONG).show()
+//            playAudio(R.raw.tip_return_succeed)
+//            updateBallsQuantity()
+//
+//            val recordId: String = UUID.randomUUID().toString()
+//            mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUserId, type = 1, captureImagePath = savedCaptureImagePath)
         }
-        mCardUserRegister.setOnClickListener{  // TODO: Deprecated this soon
+        binding.cardUserRegister.setOnClickListener{  // TODO: Deprecated this soon
             val myIntent = Intent(this@AdminActivity, UserRegisterActivity::class.java)
             myIntent.putExtra("userId", mUserId)
             myIntent.putExtra("actionType", "add")
             this@AdminActivity.startActivity(myIntent)
         }
-        mCardBorrowLog.setOnClickListener{
+        binding.cardBorrowLog.setOnClickListener{
             val myIntent = Intent(this@AdminActivity, BorrowLogActivity::class.java)
             myIntent.putExtra("userId", mUserId)
             this@AdminActivity.startActivity(myIntent)
         }
-        mCardLoadBalls.setOnClickListener{
+        binding.cardLoadBalls.setOnClickListener{
             if (!mModbusOk) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
                     Toast.LENGTH_LONG).show()
@@ -270,21 +320,21 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
             // Close the lock TODO： The user click a button to lock the doors
         }
-        mCardSettings.setOnClickListener{
+        binding.cardSettings.setOnClickListener{
             val intent = Intent(this@AdminActivity, SettingsActivity::class.java)
             intent.putExtra("modbusOk", mModbusOk)
             intent.putExtra("userId", mUserId)
             intent.putExtra("userName", mUserName)
             startActivity(intent)
         }
-        mCardUserList.setOnClickListener{
+        binding.cardUserList.setOnClickListener{
             val myIntent = Intent(this@AdminActivity, UserListActivity::class.java)
             myIntent.putExtra("modbusOk", mModbusOk)
             myIntent.putExtra("userId", mUserId)
             myIntent.putExtra("userName", mUserName)
             this@AdminActivity.startActivity(myIntent)
         }
-        mBtnBack.setOnClickListener{
+        binding.ibtnAdminBack.setOnClickListener{
             val returnIntent = Intent()
             returnIntent.putExtra("state", "back")
             setResult(RESULT_OK, returnIntent)
@@ -329,7 +379,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         updateBallsQuantity()
 
         val userName: String = if (mUserName == "") getString(R.string.welcome_user_name) else mUserName
-        mTVGreeting.text = String.format(getString(R.string.welcome_text_format, userName))
+        binding.tvGreeting.text = String.format(getString(R.string.welcome_text_format, userName))
     }
 
     private fun updateBallsQuantity(): Unit {
@@ -344,8 +394,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
         var total: Int = mTotalBallsQty[0] + mTotalBallsQty[1]
         var remain: Int = mRemainBallsQty[0] + mRemainBallsQty[1]
-        mTVTotalQty.text = String.format(getString(R.string.total_basketballs), total)
-        mTVRemainQty.text = String.format(getString(R.string.remain_basketballs), remain)
+        binding.tvTotalQty.text = String.format(getString(R.string.total_basketballs), total)
+        binding.tvRemainQty.text = String.format(getString(R.string.remain_basketballs), remain)
     }
 
     override fun onDestroy() {
@@ -417,7 +467,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults){
                     val msg = "Photo capture succeeded: ${output.savedUri}"
-                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+//                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
                     Log.d(TAG, msg)
                 }
             }

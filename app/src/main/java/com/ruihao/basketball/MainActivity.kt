@@ -74,6 +74,7 @@ class MainActivity : AppCompatActivity() {
     private var mUser: User? = null
     private var mScanBarQRCodeBytes: ArrayList<Int> = ArrayList<Int>()
     private var mScanBarQRCodeTimer: CountDownTimer? = null
+    private var mReturnBallTimer: CountDownTimer? = null
     private var mUserLoginTimer: CountDownTimer? = null
     private var dispQueue: DispQueueThread? = null
     private var comPort: SerialControl? = null
@@ -242,6 +243,8 @@ class MainActivity : AppCompatActivity() {
             val addressBallEntered: Int = if (mRemainBallsQty[0] < 12) 1004 else 1005
             if (!writeModbusRegister(addressOpen, 1)) {
                 Log.e(TAG, "Failed to write command of opening the lock of the door")
+                playAudio(R.raw.tip_device_error)
+                return@setOnClickListener
             }
 
             Toast.makeText(this@MainActivity, getString(R.string.tip_return_basketball),
@@ -250,46 +253,57 @@ class MainActivity : AppCompatActivity() {
 
             val savedCaptureImagePath = borrowReturnCapturePath("return")
             takePhoto(savedCaptureImagePath)
+            mReturnBallTimer = object : CountDownTimer(15000, 1000) {
+                override fun onTick(millisUntilFinished: Long) {
+                    binding.tvReturnCounterDown.text = String.format("%d", (millisUntilFinished / 1000))
 
-            var numOfLoop: Int = 0
-            var regSet: Boolean = true
-            while (readModbusRegister(addressBallEntered) == 0) {
-                Thread.sleep(100)
-                Log.d(TAG, "Loop check reg state, numOfLoop: $numOfLoop")
-                numOfLoop++
+                    if (readModbusRegister(addressBallEntered) == 1) {
+                        Toast.makeText(this@MainActivity, getString(R.string.tip_return_succeed),
+                            Toast.LENGTH_LONG).show()
+                        playAudio(R.raw.tip_return_succeed)
+                        updateBallsQuantity()
+                        updateGridView()
+                        binding.tvReturnCounterDown.text = ""
 
-                if (numOfLoop % 30 == 0) {
-                    playAudio(R.raw.tip_return_basketball)
+                        val recordId: String = UUID.randomUUID().toString()
+                        mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUser!!.id, type = 1, captureImagePath = savedCaptureImagePath)
+
+                        logoutUser(mUser!!.id)
+
+                        cancel()
+                    }
+                    else {
+                        val remainSecs: Long = millisUntilFinished / 1000
+                        if (remainSecs == 10L || remainSecs == 20L) {
+                            playAudio(R.raw.tip_return_basketball)
+                        }
+                    }
                 }
+                override fun onFinish() {
+                    if (readModbusRegister(addressBallEntered) == 1) {
+                        Toast.makeText(this@MainActivity, getString(R.string.tip_return_succeed),
+                            Toast.LENGTH_LONG).show()
+                        playAudio(R.raw.tip_return_succeed)
+                        updateBallsQuantity()
+                        updateGridView()
 
-                if (numOfLoop >= 178) { // waiting for tip_return_basketball audio complete
-                    regSet = false
-                    break
+                        val recordId: String = UUID.randomUUID().toString()
+                        mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUser!!.id, type = 1, captureImagePath = savedCaptureImagePath)
+
+                        // The user is responsible to close the door, no need to write command
+                        // writeModbusRegister(addressOpen, 0)
+
+                        logoutUser(mUser!!.id)
+                    }
+                    else {
+                        Toast.makeText(this@MainActivity, getString(R.string.tip_return_failed),
+                            Toast.LENGTH_LONG).show()
+                        playAudio(R.raw.tip_return_failed)
+                    }
+                    binding.tvReturnCounterDown.text = ""
                 }
             }
-            if (!regSet) { //Did not detect the signal of ball entered
-                Toast.makeText(this@MainActivity, getString(R.string.tip_return_failed),
-                    Toast.LENGTH_LONG).show()
-                playAudio(R.raw.tip_return_failed)
-                return@setOnClickListener
-            }
-
-
-            // The door lock will close the door itself, no need to write command
-//            writeModbusRegister(addressOpen, 0)
-
-            // Inform user to return the ball
-            Toast.makeText(this@MainActivity, getString(R.string.tip_return_succeed),
-                Toast.LENGTH_LONG).show()
-            playAudio(R.raw.tip_return_succeed)
-            updateBallsQuantity()
-            updateGridView()
-
-            val recordId: String = UUID.randomUUID().toString()
-            mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUser!!.id, type = 1, captureImagePath = savedCaptureImagePath)
-
-            // Logout
-            logoutUser(mUser!!.id)
+            (mReturnBallTimer as CountDownTimer).start()
         }
 
         comPort = SerialControl()
@@ -378,7 +392,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initGridView() {
-//        mGVBalls = findViewById(R.id.gvChannelBasketballs)
         mListBalls = ArrayList<GridViewModal>()
 
         updateGridView()
@@ -452,7 +465,9 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, result, Toast.LENGTH_LONG).show();
 
         // Login with IC card number
-        loginUser(BasketballContract.User.COLUMN_BAR_QR_NO, result)
+        if (mUser == null) {
+            loginUser(BasketballContract.User.COLUMN_BAR_QR_NO, result)
+        }
 
         mScanBarQRCodeBytes.clear();
         mScanBarQRCodeTimer = null
@@ -697,9 +712,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun dispRecData(comRecData: ComBean) {
         val strReceived: String? = comRecData.bRec?.let { serialPortBytesToString(it) }
-        Toast.makeText(this, strReceived, Toast.LENGTH_LONG).show()
+//        Toast.makeText(this, strReceived, Toast.LENGTH_LONG).show()
 
-        loginUser(BasketballContract.User.COLUMN_IC_CARD_NO, strReceived)
+        if (mUser == null) {
+            loginUser(BasketballContract.User.COLUMN_IC_CARD_NO, strReceived)
+        }
     }
 
     private fun serialPortBytesToString(bytes: ByteArray): String {

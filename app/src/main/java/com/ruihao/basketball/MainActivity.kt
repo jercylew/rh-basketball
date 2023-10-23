@@ -19,9 +19,6 @@ import android.provider.BaseColumns
 import android.util.Base64
 import android.util.Log
 import android.view.KeyEvent
-import android.widget.Button
-import android.widget.GridView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -70,13 +67,7 @@ private const val MAX_BORROW_QTY_ALLOWED: Int = 1
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-    private lateinit var mGVBalls: GridView
     private lateinit var mListBalls: List<GridViewModal>
-    private lateinit var mTVTotalQty: TextView
-    private lateinit var mTVRemainQty: TextView
-    private lateinit var mTVGreeting: TextView
-    private lateinit var mBtnBorrow: Button
-    private lateinit var mBtnReturn: Button
     private lateinit var mAdminActivityLauncher: ActivityResultLauncher<Intent>
     private var mTotalBallsQty: Array<Int> = arrayOf<Int>(12, 12)
     private var mRemainBallsQty: Array<Int> = arrayOf<Int>(0, 0)
@@ -140,14 +131,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         initGridView()
-        mTVTotalQty = findViewById(R.id.tvTotalQty)
-        mTVRemainQty = findViewById(R.id.tvRemainQty)
-        mTVGreeting = findViewById(R.id.tvGreeting)
 
-        mBtnBorrow = findViewById(R.id.btnBorrow)
-        mBtnReturn = findViewById(R.id.btnReturn)
-
-        mBtnBorrow.setOnClickListener {
+        binding.btnBorrow.setOnClickListener {
             if (mUser == null) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_login),
                     Toast.LENGTH_LONG).show()
@@ -230,7 +215,7 @@ class MainActivity : AppCompatActivity() {
 
             logoutUser(mUser!!.id)
         }
-        mBtnReturn.setOnClickListener {
+        binding.btnReturn.setOnClickListener {
             if (mUser == null) {
                 Toast.makeText(this@MainActivity, getString(R.string.tip_login),
                     Toast.LENGTH_LONG).show()
@@ -365,7 +350,7 @@ class MainActivity : AppCompatActivity() {
 
         updateBallsQuantity()
         val userName: String = mUser?.name ?: getString(R.string.welcome_user_name)
-        mTVGreeting.text = String.format(getString(R.string.welcome_text_format, userName))
+        binding.tvGreeting.text = String.format(getString(R.string.welcome_text_format, userName))
         binding.basketballHome.requestFocus()
     }
 
@@ -388,12 +373,12 @@ class MainActivity : AppCompatActivity() {
 
         val total: Int = mTotalBallsQty[0] + mTotalBallsQty[1]
         val remain: Int = mRemainBallsQty[0] + mRemainBallsQty[1]
-        mTVTotalQty.text = String.format(getString(R.string.total_basketballs), total)
-        mTVRemainQty.text = String.format(getString(R.string.remain_basketballs), remain)
+        binding.tvTotalQty.text = String.format(getString(R.string.total_basketballs), total)
+        binding.tvRemainQty.text = String.format(getString(R.string.remain_basketballs), remain)
     }
 
     private fun initGridView() {
-        mGVBalls = findViewById(R.id.gvChannelBasketballs)
+//        mGVBalls = findViewById(R.id.gvChannelBasketballs)
         mListBalls = ArrayList<GridViewModal>()
 
         updateGridView()
@@ -424,7 +409,7 @@ class MainActivity : AppCompatActivity() {
         val courseAdapter = GridRVAdapter(mListBalls = mListBalls, this@MainActivity)
 
         // on below line we are setting adapter to our grid view.
-        mGVBalls.adapter = courseAdapter
+        binding.gvChannelBasketballs.adapter = courseAdapter
     }
 
     override fun onDestroy() {
@@ -587,8 +572,6 @@ class MainActivity : AppCompatActivity() {
                 Thread.sleep(3000)
             }
         }
-
-
     }
 
     private fun takePhoto(saveImagePath: String) {
@@ -834,7 +817,7 @@ class MainActivity : AppCompatActivity() {
             Toast.LENGTH_LONG).show()
         playAudio(R.raw.tip_login_user_succeed)
 
-        mTVGreeting.text = String.format(getString(R.string.welcome_text_format, name))
+        binding.tvGreeting.text = String.format(getString(R.string.welcome_text_format, name))
 
         //Countdown Timer (1 minute), logout when timeout
         if (mUserLoginTimer != null) {
@@ -856,7 +839,7 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "Logout user: $userNo")
 
         mUser = null
-        mTVGreeting.text = String.format(getString(R.string.welcome_text_format,
+        binding.tvGreeting.text = String.format(getString(R.string.welcome_text_format,
             getString(R.string.welcome_user_name)))
 
         if (mUserLoginTimer != null) {

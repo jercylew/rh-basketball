@@ -48,6 +48,10 @@ class BorrowLogAdapter(context: Context, borrowRecordList: ArrayList<BorrowRecor
             val imgBitmap = BitmapFactory.decodeFile(userPhotoUrl)
             (holder as BorrowLogAdapter.ViewHolder).mIVPhoto.setImageBitmap(imgBitmap)
         }
+        else {
+            val imgBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.user_photo)
+            (holder as BorrowLogAdapter.ViewHolder).mIVPhoto.setImageBitmap(imgBitmap)
+        }
 
         val borrowerInfo: User = mDbHelper.getUser(record.borrowerId) ?: return
 

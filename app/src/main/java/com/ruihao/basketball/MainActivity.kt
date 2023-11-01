@@ -49,6 +49,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.net.URI
 import java.security.InvalidParameterException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -69,6 +70,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var mListBalls: List<GridViewModal>
     private lateinit var mAdminActivityLauncher: ActivityResultLauncher<Intent>
+    private lateinit var webSocketClient: ChatWebSocketClient
     private var mTotalBallsQty: Array<Int> = arrayOf<Int>(12, 12)
     private var mRemainBallsQty: Array<Int> = arrayOf<Int>(0, 0)
     private var mUser: User? = null
@@ -325,6 +327,16 @@ class MainActivity : AppCompatActivity() {
 
             mAdminActivityRunning = false
         }
+
+        val serverUri = URI("ws://isbn2024.fengjingsmarts.com.cn/websocket/e6b14d3e-19e1-41a1-baf7-cf9a64ff2a58")
+        webSocketClient = ChatWebSocketClient(serverUri) { message ->
+            // display incoming message in ListView
+
+            Log.d(TAG, "Websocket message received: $message")
+
+        }
+        // connect to websocket server
+        webSocketClient.connect()
     }
 
     private fun faceRecognitionModelPath(): String {
@@ -634,7 +646,7 @@ class MainActivity : AppCompatActivity() {
                         imageDataBase64)
                         .toString()
                     val endTime = System.currentTimeMillis()
-                    Log.d(TAG, "Face recognition time cost: ${(endTime - startTime) / 1000f} seconds");
+//                    Log.d(TAG, "Face recognition time cost: ${(endTime - startTime) / 1000f} seconds")
 
                     val reader = JSONObject(retResultJson)
                     val facesInfo: JSONArray = reader.getJSONArray("found_faces")
@@ -997,8 +1009,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun analyze(image: ImageProxy) {
-            Log.d(TAG, "Got bitmap buffer, plans size: ${image.planes.size}," +
-                    "format: ${image.format}, image size: ${image.width}x${image.height}")
+//            Log.d(TAG, "Got bitmap buffer, plans size: ${image.planes.size}," +
+//                    "format: ${image.format}, image size: ${image.width}x${image.height}")
 
 //            val base64ImageData: String = Base64.encodeToString(image.toByteArray(), Base64.DEFAULT)
             val bitmap: Bitmap = image.toBitmap()

@@ -83,4 +83,5 @@ dependencies {
     implementation "androidx.preference:preference-ktx:$preference_version"
 
     implementation "androidx.recyclerview:recyclerview:1.1.0"
+    implementation 'org.java-websocket:Java-WebSocket:1.4.0'
 }

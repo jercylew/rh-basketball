@@ -44,6 +44,7 @@ import com.ruihao.basketball.databinding.ActivityMainBinding
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -70,7 +71,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var mListBalls: List<GridViewModal>
     private lateinit var mAdminActivityLauncher: ActivityResultLauncher<Intent>
-    private lateinit var webSocketClient: ChatWebSocketClient
+    private lateinit var mCloudCmdWSClient: ChatWebSocketClient
+    private lateinit var mFaceRecognitionWSClient: ChatWebSocketClient
     private var mTotalBallsQty: Array<Int> = arrayOf<Int>(12, 12)
     private var mRemainBallsQty: Array<Int> = arrayOf<Int>(0, 0)
     private var mUser: User? = null
@@ -82,7 +84,6 @@ class MainActivity : AppCompatActivity() {
     private var comPort: SerialControl? = null
     private var mModbusOk: Boolean = false
     private var mMediaPlayer: MediaPlayer? = null
-
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
 
     //Camera
@@ -90,12 +91,8 @@ class MainActivity : AppCompatActivity() {
     private var mFaceRecogModelLoaded: Boolean = false
     private val mAppDataFile: File = File(Environment.getExternalStorageDirectory().path
             + "/RhBasketball")
-
     private var mAdminActivityRunning: Boolean = false
-
-    private var videoCapture: VideoCapture<Recorder>? = null
-    private var recording: Recording? = null
-
+    private var mMachineId: String = ""
     private lateinit var cameraExecutor: ExecutorService
     private val activityResultLauncher =
         registerForActivityResult(
@@ -328,15 +325,51 @@ class MainActivity : AppCompatActivity() {
             mAdminActivityRunning = false
         }
 
-        val serverUri = URI("ws://isbn2024.fengjingsmarts.com.cn/websocket/e6b14d3e-19e1-41a1-baf7-cf9a64ff2a58")
-        webSocketClient = ChatWebSocketClient(serverUri) { message ->
-            // display incoming message in ListView
-
+        val serverUri = URI("ws://readerapp.dingcooltech.com/websocket/comm/sendMachineMsg")
+        mCloudCmdWSClient = ChatWebSocketClient(serverUri) { message ->
             Log.d(TAG, "Websocket message received: $message")
 
+            try {
+                val joCmd = JSONObject(message)
+                val cmdMacId = joCmd.getString("mid")
+
+                if (cmdMacId != mMachineId) {
+                    Log.d(TAG, "Clod command not for this machine")
+                    return@ChatWebSocketClient
+                }
+
+                val cmdType = joCmd.getString("msg")
+                if (cmdType == "000") {
+                    // Switch off device
+                    try {
+                        /* Missing read/write permission, trying to chmod the file */
+                        val su: Process = Runtime.getRuntime().exec("/system/xbin/su");
+                        val cmd: String = "reboot -p" + "\n" + "exit\n";
+                        su.outputStream.write(cmd.toByteArray());
+                        if (su.waitFor() != 0) {
+                            throw SecurityException()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        throw SecurityException()
+                    }
+                }
+                if (cmdType == "001") {
+                    // Sync user info from cloud to device
+
+                }
+                if (cmdType == "002") {
+                    // Sync info to cloud server
+                }
+                if (cmdType == "003") {
+                    // Sync to a specified client ?
+                }
+
+            } catch(exc: JSONException) {
+                Log.e(TAG, "Invalid command", exc)
+            }
         }
-        // connect to websocket server
-        webSocketClient.connect()
+        mCloudCmdWSClient.connect()
     }
 
     private fun faceRecognitionModelPath(): String {
@@ -439,16 +472,17 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         cameraExecutor.shutdown()
+        mCloudCmdWSClient.close()
 
         super.onDestroy()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         mScanBarQRCodeBytes.add(keyCode)
-        Log.d("#######RH-Basketball", "Received Key: $keyCode")
+        Log.d(TAG, "Received Key: $keyCode")
 
         if (mScanBarQRCodeTimer != null) {
-            Log.d("#######RH-Basketball", "Key receive not completed, continue receive")
+            Log.d(TAG, "Key receive not completed, continue receive")
             mScanBarQRCodeTimer!!.cancel()
             mScanBarQRCodeTimer = null
         }
@@ -551,9 +585,10 @@ class MainActivity : AppCompatActivity() {
             Python.start(AndroidPlatform(this))
         }
 
-        if (!mAppDataFile.mkdirs()) {
+        if (!mAppDataFile.exists() && !mAppDataFile.mkdirs()) {
             Log.w(TAG, "Failed to create image data directory, face recognition will not work!")
         }
+
         if (!File(faceRecognitionModelPath()).exists()) {
             File(faceRecognitionModelPath()).mkdirs()
         }

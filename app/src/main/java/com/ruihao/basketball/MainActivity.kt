@@ -87,31 +87,31 @@ class MainActivity : AppCompatActivity() {
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
 
     //Camera
-    private var imageCapture: ImageCapture? = null
-    private var mFaceRecogModelLoaded: Boolean = false
+//    private var imageCapture: ImageCapture? = null
+//    private var mFaceRecogModelLoaded: Boolean = false
     private val mAppDataFile: File = File(Environment.getExternalStorageDirectory().path
             + "/RhBasketball")
     private var mAdminActivityRunning: Boolean = false
     private var mMachineId: String = ""
-    private lateinit var cameraExecutor: ExecutorService
-    private val activityResultLauncher =
-        registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions())
-        { permissions ->
-            // Handle Permission granted/rejected
-            var permissionGranted = true
-            permissions.entries.forEach {
-                if (it.key in REQUIRED_PERMISSIONS && !it.value)
-                    permissionGranted = false
-            }
-            if (!permissionGranted) {
-                Toast.makeText(baseContext,
-                    "Permission request denied",
-                    Toast.LENGTH_SHORT).show()
-            } else {
-                startCamera()
-            }
-        }
+//    private lateinit var cameraExecutor: ExecutorService
+//    private val mPermissionActivityLauncher =
+//        registerForActivityResult(
+//            ActivityResultContracts.RequestMultiplePermissions())
+//        { permissions ->
+//            // Handle Permission granted/rejected
+//            var permissionGranted = true
+//            permissions.entries.forEach {
+//                if (it.key in REQUIRED_PERMISSIONS && !it.value)
+//                    permissionGranted = false
+//            }
+//            if (!permissionGranted) {
+//                Toast.makeText(baseContext,
+//                    "Permission request denied",
+//                    Toast.LENGTH_SHORT).show()
+//            } else {
+//                startCamera()
+//            }
+//        }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -307,12 +307,10 @@ class MainActivity : AppCompatActivity() {
 
         comPort = SerialControl()
 
-        cameraExecutor = Executors.newSingleThreadExecutor()
-        if (allPermissionsGranted()) {
-//            startCamera()
-        } else {
-            requestPermissions()
-        }
+//        cameraExecutor = Executors.newSingleThreadExecutor()
+//        if (!allPermissionsGranted()) {
+//            requestPermissions()
+//        }
 
         mAdminActivityLauncher = registerForActivityResult<Intent, ActivityResult>(
             ActivityResultContracts.StartActivityForResult()
@@ -401,7 +399,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        startCamera()
+//        startCamera()
 
         openComPort(comPort!!)
         dispQueue = DispQueueThread()
@@ -471,7 +469,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        cameraExecutor.shutdown()
+//        cameraExecutor.shutdown()
         mCloudCmdWSClient.close()
 
         super.onDestroy()
@@ -597,19 +595,19 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Load the face_recognition model
-        GlobalScope.launch {
-            val py = Python.getInstance()
-            val module = py.getModule("face_recognition_wrapper")
-            val retState: Boolean = module.callAttr("load_known_faces",
-                faceRecognitionDataPath(), faceRecognitionModelPath())
-                .toBoolean()
-
-            Log.d(TAG, "Loading face recognition model succeed: $retState")
-
-            runOnUiThread {
-                mFaceRecogModelLoaded = retState
-            }
-        }
+//        GlobalScope.launch {
+//            val py = Python.getInstance()
+//            val module = py.getModule("face_recognition_wrapper")
+//            val retState: Boolean = module.callAttr("load_known_faces",
+//                faceRecognitionDataPath(), faceRecognitionModelPath())
+//                .toBoolean()
+//
+//            Log.d(TAG, "Loading face recognition model succeed: $retState")
+//
+//            runOnUiThread {
+//                mFaceRecogModelLoaded = retState
+//            }
+//        }
     }
 
     private fun initController(): Unit {
@@ -637,120 +635,121 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun takePhoto(saveImagePath: String) {
-        val imageCapture = imageCapture ?: return
-        val outputOptions = ImageCapture.OutputFileOptions
-            .Builder(File(saveImagePath))
-            .build()
-
-        imageCapture.takePicture(
-            outputOptions,
-            ContextCompat.getMainExecutor(this),
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onError(exc: ImageCaptureException) {
-                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
-                }
-
-                override fun onImageSaved(output: ImageCapture.OutputFileResults){
-                    val msg = "Photo capture succeeded: ${output.savedUri}"
-                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-                    Log.d(TAG, msg)
-                }
-            }
-        )
+        // Using camera attached to this
+//        val imageCapture = imageCapture ?: return
+//        val outputOptions = ImageCapture.OutputFileOptions
+//            .Builder(File(saveImagePath))
+//            .build()
+//
+//        imageCapture.takePicture(
+//            outputOptions,
+//            ContextCompat.getMainExecutor(this),
+//            object : ImageCapture.OnImageSavedCallback {
+//                override fun onError(exc: ImageCaptureException) {
+//                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+//                }
+//
+//                override fun onImageSaved(output: ImageCapture.OutputFileResults){
+//                    val msg = "Photo capture succeeded: ${output.savedUri}"
+//                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+//                    Log.d(TAG, msg)
+//                }
+//            }
+//        )
     }
 
     private fun captureVideo() {}
 
-    private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        imageCapture = ImageCapture.Builder().build()
-        val imageAnalyzer = ImageAnalysis.Builder()
-            .build()
-            .also {
-                it.setAnalyzer(cameraExecutor, FaceAnalyzer { imageDataBase64 ->
-                    if (!mFaceRecogModelLoaded) {
-                        Log.d(TAG, "Face recognition model not loaded, waiting for it completes")
-                        return@FaceAnalyzer
-                    }
+//    private fun startCamera() {
+//        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+//        imageCapture = ImageCapture.Builder().build()
+//        val imageAnalyzer = ImageAnalysis.Builder()
+//            .build()
+//            .also {
+//                it.setAnalyzer(cameraExecutor, FaceAnalyzer { imageDataBase64 ->
+//                    if (!mFaceRecogModelLoaded) {
+//                        Log.d(TAG, "Face recognition model not loaded, waiting for it completes")
+//                        return@FaceAnalyzer
+//                    }
+//
+//                    val py = Python.getInstance()
+//                    val module = py.getModule("face_recognition_wrapper")
+//
+//                    val startTime = System.currentTimeMillis()
+//                    val retResultJson: String = module.callAttr("get_json_string_of_face_search_with_base64",
+//                        imageDataBase64)
+//                        .toString()
+//                    val endTime = System.currentTimeMillis()
+////                    Log.d(TAG, "Face recognition time cost: ${(endTime - startTime) / 1000f} seconds")
+//
+//                    val reader = JSONObject(retResultJson)
+//                    val facesInfo: JSONArray = reader.getJSONArray("found_faces")
+//                    if (facesInfo.length() == 0) {
+////                        Log.d(TAG, "No faces found!")
+//                        binding.boundingBoxView.setResults(mutableListOf())
+//                        return@FaceAnalyzer
+//                    }
+//
+//                    var facesRecs: MutableList<VisionDetRet> =  mutableListOf()
+//                    for (i in 1..facesInfo.length()) {
+//                        val faceInfoJson: JSONObject = facesInfo.getJSONObject(0)
+//                        val faceRec: JSONArray = faceInfoJson.getJSONArray("rect")
+//
+//                        val rec = VisionDetRet(l = (faceRec.getInt(3) * 4), t = (faceRec.getInt(0) * 4),
+//                            r = (faceRec.getInt(1) * 4), b = (faceRec.getInt(2) * 4))
+//                        facesRecs.add(rec)
+//                    }
+//
+//                    if (facesInfo.length() > 1) {
+//                        Log.d(TAG,
+//                            "Recognized multiple faces, please borrow the ball one by one")
+//                    }
+//                    val faceInfoJson: JSONObject = facesInfo.getJSONObject(0)
+//                    val label: String = faceInfoJson.getString("label")
+//                    Log.d(TAG, "Face recognized as $label")
+//                    runOnUiThread {
+////                        Toast.makeText(this@MainActivity, "Face recognized as $label",
+////                            Toast.LENGTH_LONG).show()
+//                        binding.boundingBoxView.setResults(facesRecs)
+//                        if (mUser == null) {
+//                            loginUser(BaseColumns._ID, label)
+//                        }
+//                    }
+//                })
+//            }
+//
+//        cameraProviderFuture.addListener({
+//            // Used to bind the lifecycle of cameras to the lifecycle owner
+//            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+//
+//            // Preview
+//            val preview = Preview.Builder()
+//                .build()
+//                .also {
+//                    it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
+//                }
+//
+//            // Select back camera as a default
+//            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+//
+//            try {
+//                // Unbind use cases before rebinding
+//                cameraProvider.unbindAll()
+//
+//                // Bind use cases to camera
+//                cameraProvider.bindToLifecycle(
+//                    this, cameraSelector, preview, imageCapture, imageAnalyzer)
+//
+//            } catch(exc: Exception) {
+//                Log.e(TAG, "Use case binding failed", exc)
+//            }
+//
+//        }, ContextCompat.getMainExecutor(this))
+//    }
 
-                    val py = Python.getInstance()
-                    val module = py.getModule("face_recognition_wrapper")
-
-                    val startTime = System.currentTimeMillis()
-                    val retResultJson: String = module.callAttr("get_json_string_of_face_search_with_base64",
-                        imageDataBase64)
-                        .toString()
-                    val endTime = System.currentTimeMillis()
-//                    Log.d(TAG, "Face recognition time cost: ${(endTime - startTime) / 1000f} seconds")
-
-                    val reader = JSONObject(retResultJson)
-                    val facesInfo: JSONArray = reader.getJSONArray("found_faces")
-                    if (facesInfo.length() == 0) {
-//                        Log.d(TAG, "No faces found!")
-                        binding.boundingBoxView.setResults(mutableListOf())
-                        return@FaceAnalyzer
-                    }
-
-                    var facesRecs: MutableList<VisionDetRet> =  mutableListOf()
-                    for (i in 1..facesInfo.length()) {
-                        val faceInfoJson: JSONObject = facesInfo.getJSONObject(0)
-                        val faceRec: JSONArray = faceInfoJson.getJSONArray("rect")
-
-                        val rec = VisionDetRet(l = (faceRec.getInt(3) * 4), t = (faceRec.getInt(0) * 4),
-                            r = (faceRec.getInt(1) * 4), b = (faceRec.getInt(2) * 4))
-                        facesRecs.add(rec)
-                    }
-
-                    if (facesInfo.length() > 1) {
-                        Log.d(TAG,
-                            "Recognized multiple faces, please borrow the ball one by one")
-                    }
-                    val faceInfoJson: JSONObject = facesInfo.getJSONObject(0)
-                    val label: String = faceInfoJson.getString("label")
-                    Log.d(TAG, "Face recognized as $label")
-                    runOnUiThread {
-//                        Toast.makeText(this@MainActivity, "Face recognized as $label",
-//                            Toast.LENGTH_LONG).show()
-                        binding.boundingBoxView.setResults(facesRecs)
-                        if (mUser == null) {
-                            loginUser(BaseColumns._ID, label)
-                        }
-                    }
-                })
-            }
-
-        cameraProviderFuture.addListener({
-            // Used to bind the lifecycle of cameras to the lifecycle owner
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-
-            // Preview
-            val preview = Preview.Builder()
-                .build()
-                .also {
-                    it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
-                }
-
-            // Select back camera as a default
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-            try {
-                // Unbind use cases before rebinding
-                cameraProvider.unbindAll()
-
-                // Bind use cases to camera
-                cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture, imageAnalyzer)
-
-            } catch(exc: Exception) {
-                Log.e(TAG, "Use case binding failed", exc)
-            }
-
-        }, ContextCompat.getMainExecutor(this))
-    }
-
-    private fun requestPermissions() {
-        activityResultLauncher.launch(REQUIRED_PERMISSIONS)
-    }
+//    private fun requestPermissions() {
+//        mPermissionActivityLauncher.launch(REQUIRED_PERMISSIONS)
+//    }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(

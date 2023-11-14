@@ -115,41 +115,55 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvReturnCounterDown" />
 
-    <androidx.camera.view.PreviewView
+    <!--    <com.ruihao.basketball.BoundingBoxView-->
+<!--        android:id="@+id/boundingBoxView"-->
+<!--        android:layout_width="175dp"-->
+<!--        android:layout_height="250dp"-->
+<!--        android:layout_marginTop="35dp"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintHorizontal_bias="0.967"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintTop_toBottomOf="@+id/tvGreeting"-->
+<!--        android:layout_alignStart="@+id/viewFinder"-->
+<!--        android:layout_alignTop="@+id/viewFinder"-->
+<!--        android:layout_alignEnd="@+id/viewFinder"-->
+<!--        android:layout_alignBottom="@+id/viewFinder"-->
+<!--        />-->
+
+<!--    <org.videolan.libvlc.util.VLCVideoLayout-->
+<!--        android:id="@+id/viewFinder"-->
+<!--        android:layout_width="175dp"-->
+<!--        android:layout_height="250dp"-->
+<!--        android:layout_marginTop="35dp"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintHorizontal_bias="0.967"-->
+<!--        app:layout_constraintTop_toBottomOf="@+id/tvGreeting"-->
+<!--        />-->
+
+    <org.videolan.libvlc.util.VLCVideoLayout
         android:id="@+id/viewFinder"
-        android:layout_width="175dp"
-        android:layout_height="250dp"
-        android:layout_marginTop="35dp"
+        android:layout_width="152dp"
+        android:layout_height="930dp"
+        android:layout_gravity="center"
+        android:layout_marginLeft="580dp"
+        android:layout_marginTop="750dp"
+        android:layout_marginRight="30dp"
+        android:layout_marginBottom="200dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.967"
+        app:layout_constraintHorizontal_bias="0.918"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvGreeting" />
-
-    <com.ruihao.basketball.BoundingBoxView
-        android:id="@+id/boundingBoxView"
-        android:layout_width="175dp"
-        android:layout_height="250dp"
-        android:layout_marginTop="35dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.967"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvGreeting"
-        android:layout_alignStart="@+id/viewFinder"
-        android:layout_alignTop="@+id/viewFinder"
-        android:layout_alignEnd="@+id/viewFinder"
-        android:layout_alignBottom="@+id/viewFinder"
-        />
 
     <TextView
         android:id="@+id/tvFooterTechSupport"
         android:layout_width="376dp"
         android:layout_height="25dp"
-        android:layout_marginTop="280dp"
+        android:layout_marginTop="548dp"
         android:text="@string/footer_technique_support"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.985"
+        app:layout_constraintHorizontal_bias="0.915"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/viewFinder" />
+        app:layout_constraintTop_toBottomOf="@+id/tvGreeting" />
 
     <TextView
         android:id="@+id/tvTel"

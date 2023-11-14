@@ -61,6 +61,11 @@ import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+import org.videolan.libvlc.LibVLC
+import org.videolan.libvlc.Media
+//import org.videolan.libvlc.MediaPlayer
+import org.videolan.libvlc.util.VLCVideoLayout
+
 
 typealias LumaListener = (luma: Double) -> Unit
 typealias FaceCheckListener = (imageDataBase64: String) -> Unit
@@ -89,10 +94,6 @@ class MainActivity : AppCompatActivity() {
     //Camera
 //    private var imageCapture: ImageCapture? = null
 //    private var mFaceRecogModelLoaded: Boolean = false
-    private val mAppDataFile: File = File(Environment.getExternalStorageDirectory().path
-            + "/RhBasketball")
-    private var mAdminActivityRunning: Boolean = false
-    private var mMachineId: String = ""
 //    private lateinit var cameraExecutor: ExecutorService
 //    private val mPermissionActivityLauncher =
 //        registerForActivityResult(
@@ -112,6 +113,14 @@ class MainActivity : AppCompatActivity() {
 //                startCamera()
 //            }
 //        }
+    private val mCameraRtsp = "rtsp://192.168.1.15:554/av_stream0"
+    private lateinit var libVlc: LibVLC
+    private lateinit var mediaPlayer: org.videolan.libvlc.MediaPlayer
+
+    private val mAppDataFile: File = File(Environment.getExternalStorageDirectory().path
+            + "/RhBasketball")
+    private var mAdminActivityRunning: Boolean = false
+    private var mMachineId: String = ""
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -311,6 +320,8 @@ class MainActivity : AppCompatActivity() {
 //        if (!allPermissionsGranted()) {
 //            requestPermissions()
 //        }
+        libVlc = LibVLC(this)
+        mediaPlayer = org.videolan.libvlc.MediaPlayer(libVlc)
 
         mAdminActivityLauncher = registerForActivityResult<Intent, ActivityResult>(
             ActivityResultContracts.StartActivityForResult()
@@ -396,6 +407,28 @@ class MainActivity : AppCompatActivity() {
         return (borrowRecords.size - returnRecords.size < MAX_BORROW_QTY_ALLOWED)
     }
 
+    override fun onStart() {
+        super.onStart()
+
+        mediaPlayer.attachViews(binding.viewFinder, null, false, false)
+
+        val media = Media(libVlc, Uri.parse(mCameraRtsp))
+        media.setHWDecoderEnabled(true, false)
+        media.addOption(":network-caching=600")
+
+        mediaPlayer.media = media
+        media.release()
+        mediaPlayer.play()
+    }
+
+    override fun onStop()
+    {
+        super.onStop()
+
+        mediaPlayer.stop()
+        mediaPlayer.detachViews()
+    }
+
     override fun onResume() {
         super.onResume()
 
@@ -471,6 +504,9 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
 //        cameraExecutor.shutdown()
         mCloudCmdWSClient.close()
+
+        mediaPlayer.release()
+        libVlc.release()
 
         super.onDestroy()
     }

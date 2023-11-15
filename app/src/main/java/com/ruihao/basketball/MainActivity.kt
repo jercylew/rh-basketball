@@ -1,5 +1,7 @@
 package com.ruihao.basketball
 
+//import org.videolan.libvlc.MediaPlayer
+
 import android.Manifest
 import android.content.ContentResolver
 import android.content.Intent
@@ -24,16 +26,8 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.video.Recorder
-import androidx.camera.video.Recording
-import androidx.camera.video.VideoCapture
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -44,9 +38,13 @@ import com.chaquo.python.android.AndroidPlatform
 import com.ruihao.basketball.databinding.ActivityMainBinding
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import org.json.JSONArray
+import org.java_websocket.drafts.Draft
+import org.java_websocket.drafts.Draft_6455
+import org.java_websocket.extensions.permessage_deflate.PerMessageDeflateExtension
 import org.json.JSONException
 import org.json.JSONObject
+import org.videolan.libvlc.LibVLC
+import org.videolan.libvlc.Media
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -59,13 +57,6 @@ import java.util.LinkedList
 import java.util.Locale
 import java.util.Queue
 import java.util.UUID
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-
-import org.videolan.libvlc.LibVLC
-import org.videolan.libvlc.Media
-//import org.videolan.libvlc.MediaPlayer
-import org.videolan.libvlc.util.VLCVideoLayout
 
 
 typealias LumaListener = (luma: Double) -> Unit
@@ -114,7 +105,7 @@ class MainActivity : AppCompatActivity() {
 //                startCamera()
 //            }
 //        }
-    private var mCameraRtsp = ""
+    private var mCameraIP = ""
     private lateinit var libVlc: LibVLC
     private lateinit var mediaPlayer: org.videolan.libvlc.MediaPlayer
 
@@ -144,38 +135,47 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnBorrow.setOnClickListener {
             if (mUser == null) {
-                Toast.makeText(this@MainActivity, getString(R.string.tip_login),
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@MainActivity, getString(R.string.tip_login),
+                    Toast.LENGTH_LONG
+                ).show()
                 playAudio(R.raw.tip_login)
                 return@setOnClickListener
             }
 
             if (!mModbusOk) {
-                Toast.makeText(this@MainActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@MainActivity, getString(R.string.tip_device_error),
+                    Toast.LENGTH_LONG
+                ).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
 
             // Check if there are remaining balls
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 0) {
-                Toast.makeText(this@MainActivity, getString(R.string.tip_no_basketball),
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@MainActivity, getString(R.string.tip_no_basketball),
+                    Toast.LENGTH_LONG
+                ).show()
                 playAudio(R.raw.tip_no_basketball)
                 return@setOnClickListener
             }
 
             // Check if the user has already borrowed
             if (!canUserBorrow()) {
-                Toast.makeText(this@MainActivity, getString(R.string.tip_borrowed_exceed_limit),
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@MainActivity, getString(R.string.tip_borrowed_exceed_limit),
+                    Toast.LENGTH_LONG
+                ).show()
                 playAudio(R.raw.tip_borrowed_exceed_limit)
                 return@setOnClickListener
             }
 
             // Check which channel has balls
             val addressToWrite: Int = if (mRemainBallsQty[0] > 0) 1002 else 1003
-            val preBallQty: Int = if (mRemainBallsQty[0] > 0) mRemainBallsQty[0] else mRemainBallsQty[1]
+            val preBallQty: Int =
+                if (mRemainBallsQty[0] > 0) mRemainBallsQty[0] else mRemainBallsQty[1]
             val addressUpdateCount: Int = if (mRemainBallsQty[0] > 0) 1000 else 1001
             if (!writeModbusRegister(addressToWrite, 1)) {
                 Log.e(TAG, "Failed to write command of releasing ball!")
@@ -187,7 +187,7 @@ class MainActivity : AppCompatActivity() {
             // Check the number of remaining balls decreased & door flag cleared
             var numOfLoop: Int = 0 //3 seconds
             var regCleared: Boolean = true
-            while (readModbusRegister(addressToWrite) == 1 ) //modbus_read(num_qty) == m_remainQty(selected) ||
+            while (readModbusRegister(addressToWrite) == 1) //modbus_read(num_qty) == m_remainQty(selected) ||
             {
                 Thread.sleep(100) //Warning: UI Freezing
 
@@ -199,14 +199,16 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (!regCleared) { //Timeout
-                Toast.makeText(this@MainActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@MainActivity, getString(R.string.tip_device_error),
+                    Toast.LENGTH_LONG
+                ).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
 
             // Update the counter
-            if (!writeModbusRegister(addressUpdateCount, (preBallQty-1))) {
+            if (!writeModbusRegister(addressUpdateCount, (preBallQty - 1))) {
                 Log.e(TAG, "Failed to update the ball qty to the register")
             }
             Thread.sleep(200)
@@ -215,34 +217,47 @@ class MainActivity : AppCompatActivity() {
             updateGridView()
 
             // Inform the user toc (Play audio)
-            Toast.makeText(this@MainActivity, getString(R.string.tip_take_basketball),
-                Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                this@MainActivity, getString(R.string.tip_take_basketball),
+                Toast.LENGTH_LONG
+            ).show()
             playAudio(R.raw.tip_take_basketball)
 
             // Save borrow record (DO not do this now)
             val recordId: String = UUID.randomUUID().toString()
-            mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUser!!.id, type = 0, captureImagePath = savedCaptureImagePath)
+            mDbHelper.addNewBorrowRecord(
+                id = recordId,
+                borrowerId = mUser!!.id,
+                type = 0,
+                captureImagePath = savedCaptureImagePath
+            )
 
             logoutUser(mUser!!.id)
         }
         binding.btnReturn.setOnClickListener {
             if (mUser == null) {
-                Toast.makeText(this@MainActivity, getString(R.string.tip_login),
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@MainActivity, getString(R.string.tip_login),
+                    Toast.LENGTH_LONG
+                ).show()
                 playAudio(R.raw.tip_login)
                 return@setOnClickListener
             }
 
             if (!mModbusOk) {
-                Toast.makeText(this@MainActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@MainActivity, getString(R.string.tip_device_error),
+                    Toast.LENGTH_LONG
+                ).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
 
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 24) {
-                Toast.makeText(this@MainActivity, getString(R.string.tip_no_space),
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@MainActivity, getString(R.string.tip_no_space),
+                    Toast.LENGTH_LONG
+                ).show()
                 playAudio(R.raw.tip_no_space)
                 return@setOnClickListener
             }
@@ -256,57 +271,75 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            Toast.makeText(this@MainActivity, getString(R.string.tip_return_basketball),
-                Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                this@MainActivity, getString(R.string.tip_return_basketball),
+                Toast.LENGTH_LONG
+            ).show()
             playAudio(R.raw.tip_return_basketball)
 
             val savedCaptureImagePath = borrowReturnCapturePath("return")
             takePhoto(savedCaptureImagePath)
             mReturnBallTimer = object : CountDownTimer(15000, 1000) {
                 override fun onTick(millisUntilFinished: Long) {
-                    binding.tvReturnCounterDown.text = String.format("%d", (millisUntilFinished / 1000))
+                    binding.tvReturnCounterDown.text =
+                        String.format("%d", (millisUntilFinished / 1000))
 
                     if (readModbusRegister(addressBallEntered) == 1) {
-                        Toast.makeText(this@MainActivity, getString(R.string.tip_return_succeed),
-                            Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            this@MainActivity, getString(R.string.tip_return_succeed),
+                            Toast.LENGTH_LONG
+                        ).show()
                         playAudio(R.raw.tip_return_succeed)
                         updateBallsQuantity()
                         updateGridView()
                         binding.tvReturnCounterDown.text = ""
 
                         val recordId: String = UUID.randomUUID().toString()
-                        mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUser!!.id, type = 1, captureImagePath = savedCaptureImagePath)
+                        mDbHelper.addNewBorrowRecord(
+                            id = recordId,
+                            borrowerId = mUser!!.id,
+                            type = 1,
+                            captureImagePath = savedCaptureImagePath
+                        )
 
                         logoutUser(mUser!!.id)
 
                         cancel()
-                    }
-                    else {
+                    } else {
                         val remainSecs: Long = millisUntilFinished / 1000
                         if (remainSecs == 10L || remainSecs == 20L) {
                             playAudio(R.raw.tip_return_basketball)
                         }
                     }
                 }
+
                 override fun onFinish() {
                     if (readModbusRegister(addressBallEntered) == 1) {
-                        Toast.makeText(this@MainActivity, getString(R.string.tip_return_succeed),
-                            Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            this@MainActivity, getString(R.string.tip_return_succeed),
+                            Toast.LENGTH_LONG
+                        ).show()
                         playAudio(R.raw.tip_return_succeed)
                         updateBallsQuantity()
                         updateGridView()
 
                         val recordId: String = UUID.randomUUID().toString()
-                        mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUser!!.id, type = 1, captureImagePath = savedCaptureImagePath)
+                        mDbHelper.addNewBorrowRecord(
+                            id = recordId,
+                            borrowerId = mUser!!.id,
+                            type = 1,
+                            captureImagePath = savedCaptureImagePath
+                        )
 
                         // The user is responsible to close the door, no need to write command
                         // writeModbusRegister(addressOpen, 0)
 
                         logoutUser(mUser!!.id)
-                    }
-                    else {
-                        Toast.makeText(this@MainActivity, getString(R.string.tip_return_failed),
-                            Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(
+                            this@MainActivity, getString(R.string.tip_return_failed),
+                            Toast.LENGTH_LONG
+                        ).show()
                         playAudio(R.raw.tip_return_failed)
                     }
                     binding.tvReturnCounterDown.text = ""
@@ -335,9 +368,9 @@ class MainActivity : AppCompatActivity() {
             mAdminActivityRunning = false
         }
 
-        val serverUri = URI("ws://readerapp.dingcooltech.com/websocket/comm/sendMachineMsg")
-        mCloudCmdWSClient = ChatWebSocketClient(serverUri) { message ->
-            Log.d(TAG, "Websocket message received: $message")
+        val cloudServerUri = URI("ws://readerapp.dingcooltech.com/websocket/comm/sendMachineMsg")
+        mCloudCmdWSClient = ChatWebSocketClient(cloudServerUri) { message ->
+            Log.d(TAG, "Cloud Websocket message received: $message")
 
             try {
                 val joCmd = JSONObject(message)
@@ -375,14 +408,45 @@ class MainActivity : AppCompatActivity() {
                     // Sync to a specified client ?
                 }
 
-            } catch(exc: JSONException) {
-                Log.e(TAG, "Invalid command", exc)
+            } catch (exc: JSONException) {
+//                Log.e(TAG, "Invalid command", exc)
             }
         }
         mCloudCmdWSClient.connect()
 
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-        mCameraRtsp = sharedPreferences.getString("camera_rtsp_url", "rtsp://192.168.1.15:554/av_stream0").toString()
+        mCameraIP = sharedPreferences.getString("camera_rtsp_ip", "192.168.1.15").toString()
+        val cameraServerUri = URI("ws://${mCameraIP}:9000/pushmsg")
+
+        val headersMap: MutableMap<String, String> = HashMap()
+        headersMap["Sec-WebSocket-Protocol"] = "pushmsg"
+        headersMap["Sec-WebSocket-Version"] = "13"
+        headersMap["Sec-WebSocket-Extensions"] = "permessage-deflate;client_max_window_bits"
+        headersMap["Connection"] = "Upgrade"
+        headersMap["Upgrade"] = "websocket"
+//        headersMap["Pragma"] = "no-cache"
+//        headersMap["Cache-Control"] = "no-cache"
+//        headersMap["Accept-Encoding"] = "gzip, deflate"
+//        headersMap["Accept-Language"] = "zh-CN,zh;q=0.9"
+//        headersMap["Origin"] = "null"
+//        headersMap["User-Agent"] = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36"
+
+
+        val perMessageDeflateDraft: Draft = Draft_6455(
+            PerMessageDeflateExtension()
+        )
+        mFaceRecognitionWSClient = ChatWebSocketClient(cameraServerUri, perMessageDeflateDraft, { message ->
+            Log.d(TAG, "Face Websocket message received: $message")
+
+            try {
+                val joRecogResult = JSONObject(message)
+//                val cmdMacId = joRecogResult.getString("name")
+
+            } catch (exc: JSONException) {
+//                Log.e(TAG, "Invalid recognize result", exc)
+            }
+        }, headersMap)
+        mFaceRecognitionWSClient.connect()
     }
 
     private fun faceRecognitionModelPath(): String {
@@ -416,7 +480,8 @@ class MainActivity : AppCompatActivity() {
 
         mediaPlayer.attachViews(binding.viewFinder, null, false, false)
 
-        val media = Media(libVlc, Uri.parse(mCameraRtsp))
+        val cameraRtsp = "rtsp://${mCameraIP}:554/av_stream0"
+        val media = Media(libVlc, Uri.parse(cameraRtsp))
         media.setHWDecoderEnabled(true, false)
         media.addOption(":network-caching=600")
 
@@ -508,6 +573,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
 //        cameraExecutor.shutdown()
         mCloudCmdWSClient.close()
+        mFaceRecognitionWSClient.close()
 
         mediaPlayer.release()
         libVlc.release()

@@ -26,6 +26,6 @@
         android:title="@string/settings_title_ball_entry_lock_time"/>
     <EditTextPreference
         android:defaultValue=""
-        android:key="camera_rtsp_url"
-        android:title="@string/settings_title_camera_rtsp"/>
+        android:key="camera_rtsp_ip"
+        android:title="@string/settings_title_camera_ip"/>
 </PreferenceScreen>

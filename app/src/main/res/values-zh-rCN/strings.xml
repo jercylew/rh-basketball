@@ -67,4 +67,5 @@
     <string name="settings_title_right_balls_qty_max">右通道球最大数量</string>
     <string name="settings_title_ball_release_interval">出球时长(毫秒)</string>
     <string name="settings_title_ball_entry_lock_time">进球口门锁关闭时长(毫秒)</string>
+    <string name="settings_title_camera_rtsp">摄像头RTSP地址</string>
 </resources>

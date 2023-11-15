@@ -40,17 +40,6 @@ import java.util.UUID
 
 class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     private lateinit var binding: ActivityAdminBinding
-    private lateinit var mTVTotalQty: TextView
-    private lateinit var mTVRemainQty: TextView
-    private lateinit var mTVGreeting: TextView
-    private lateinit var mBtnBorrow: Button
-    private lateinit var mBtnReturn: Button
-    private lateinit var mBtnBack: ImageButton
-    private lateinit var mCardUserRegister: CardView
-    private lateinit var mCardSettings: CardView
-    private lateinit var mCardBorrowLog: CardView
-    private lateinit var mCardUserList: CardView
-    private lateinit var mCardLoadBalls: CardView
     private lateinit var mImageCapture: ImageCapture
 
     private var mTotalBallsQty: Array<Int> = arrayOf<Int>(12, 12)
@@ -87,18 +76,6 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
         binding = ActivityAdminBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-//        mTVTotalQty = findViewById(R.id.tvTotalQty)
-//        mTVRemainQty = findViewById(R.id.tvRemainQty)
-//        mTVGreeting = findViewById(R.id.tvGreeting)
-//        mBtnBorrow = findViewById(R.id.btnBorrow)
-//        mBtnReturn = findViewById(R.id.btnReturn)
-//        mCardBorrowLog = findViewById(R.id.cardBorrowLog)
-//        mCardLoadBalls = findViewById(R.id.cardLoadBalls)
-//        mCardSettings = findViewById(R.id.cardSettings)
-//        mCardUserList = findViewById(R.id.cardUserList)
-//        mCardUserRegister = findViewById(R.id.cardUserRegister)
-//        mBtnBack = findViewById(R.id.ibtnAdminBack)
 
         binding.btnBorrow.setOnClickListener {
             if (!mModbusOk) {

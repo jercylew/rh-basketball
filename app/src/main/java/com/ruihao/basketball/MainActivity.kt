@@ -38,6 +38,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.preference.PreferenceManager
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.ruihao.basketball.databinding.ActivityMainBinding
@@ -113,7 +114,7 @@ class MainActivity : AppCompatActivity() {
 //                startCamera()
 //            }
 //        }
-    private val mCameraRtsp = "rtsp://192.168.1.15:554/av_stream0"
+    private var mCameraRtsp = ""
     private lateinit var libVlc: LibVLC
     private lateinit var mediaPlayer: org.videolan.libvlc.MediaPlayer
 
@@ -379,6 +380,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
         mCloudCmdWSClient.connect()
+
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        mCameraRtsp = sharedPreferences.getString("camera_rtsp_url", "rtsp://192.168.1.15:554/av_stream0").toString()
     }
 
     private fun faceRecognitionModelPath(): String {

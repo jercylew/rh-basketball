@@ -5,7 +5,6 @@ package com.ruihao.basketball
 import android.Manifest
 import android.content.ContentResolver
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
@@ -28,7 +27,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -45,13 +43,20 @@ import org.json.JSONException
 import org.json.JSONObject
 import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
 import java.io.BufferedReader
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.io.InputStreamReader
+import java.io.OutputStream
+import java.io.OutputStreamWriter
+import java.net.HttpURLConnection
 import java.net.URI
+import java.net.URL
 import java.security.InvalidParameterException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -402,7 +407,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 if (cmdType == "001") {
                     // Sync user info from cloud to device
-
+                    syncUserInfoFromCloud()
                 }
                 if (cmdType == "002") {
                     // Sync info to cloud server
@@ -487,6 +492,9 @@ class MainActivity : AppCompatActivity() {
         mediaPlayer.media = media
         media.release()
         mediaPlayer.play()
+
+        //For Debug only
+        syncUserInfoFromCloud()
     }
 
     override fun onStop()
@@ -1069,6 +1077,66 @@ class MainActivity : AppCompatActivity() {
                     this.resources.getResourceTypeName(resID) + '/' +
                     this.resources.getResourceEntryName(resID)
         )
+    }
+
+    private fun syncUserInfoFromCloud() {
+        GlobalScope.launch {
+            // HTTP Get
+            val postUrl = "https://readerapp.dingcooltech.com/comm/apiComm/stuentInfo.querylist?fromid=1632564838868836353&questionName=stuentInfo"
+            val joPayload = JSONObject()
+            joPayload.put("page", 1)
+            joPayload.put("fromid", "1632564838868836353")
+            joPayload.put("questionName", "studentInfo")
+            joPayload.put("rows", 10)
+
+
+            try {
+                val url = URL(postUrl)
+                val httpURLConnection = url.openConnection() as HttpURLConnection
+                httpURLConnection.requestMethod = "POST"
+                httpURLConnection.setRequestProperty("Content-Type", "application/json")
+                httpURLConnection.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ7XCJkZXB0Y29kZVwiOlwiMTAwMDEwMDA2N0QwMDAwMVwiLFwiZGVwdGlkXCI6MTgxLFwiZGVwdG5hbWVcIjpcIuWQjuWPsOeuoeeQhumDqFwiLFwiZmRlcHRjb2Rlc1wiOltcIjEwMDAxMDAwNjdEMDAwMDFcIl0sXCJmdXNlcnNcIjpbXCJcIixcIlwiLFwiXCJdLFwib3JnYW5jb2RlXCI6XCIxMDAwMTAwMDY3XCIsXCJvcmdhbmlkXCI6NjYsXCJvcmdhbm5hbWVcIjpcIueQg-aculwiLFwicGFzc3dvcmRcIjpcIlwiLFwicmVhbGFuYW1lXCI6XCJhZDAwMDZcIixcInJvbGVzXCI6W1wi566h55CG5ZGYXCJdLFwidXNlcklkXCI6MTk3LFwidXNlck5hbWVcIjpcImFkMDAwNlwifSIsImV4cCI6MTY5OTI2MjE5MCwiaWF0IjoxNjk5MjU4NTkwfQ.E39mAsPhOj4cH--tDDLpQPJlSEMtyFIcG1YhQ5IW0-g")
+
+                try {
+                    //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
+                    httpURLConnection.doOutput = true
+                    // this is used for just in case we don't know about the data size associated with our request
+                    httpURLConnection.setChunkedStreamingMode(0)
+
+                    // to write tha data in our request
+                    val outputStream: OutputStream =
+                        BufferedOutputStream(httpURLConnection.outputStream)
+                    val outputStreamWriter = OutputStreamWriter(outputStream)
+                    Log.d(TAG, "Sync users list from cloud, HTTP post: ${joPayload.toString()}")
+                    outputStreamWriter.write(joPayload.toString())
+                    outputStreamWriter.flush()
+                    outputStreamWriter.close()
+
+                    val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+                    val bufferReader: BufferedReader = BufferedReader(InputStreamReader(inputStream))
+                    val respText =  bufferReader.readText()
+
+                    Log.d(TAG, "Get user list from cloud: $respText")
+                }
+                catch (exec: Exception) {
+                    Log.d(TAG, "Exception occurred when fetching user list from cloud: ${exec.toString()}")
+                }
+                finally {
+                    httpURLConnection.disconnect();
+                }
+            }
+            catch (exc: Exception) {
+                Log.d(TAG, "Exception occurred when saving user list to local machine")
+            }
+
+            // Register to face recog machine
+        }
+    }
+
+    private fun syncBorrowRecordToCloud() {
+    }
+
+    private fun registerUserFaces() {
     }
 
     inner class SerialControl

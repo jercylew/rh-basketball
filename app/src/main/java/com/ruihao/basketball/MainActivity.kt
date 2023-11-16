@@ -483,7 +483,7 @@ class MainActivity : AppCompatActivity() {
         val cameraRtsp = "rtsp://${mCameraIP}:554/av_stream0"
         val media = Media(libVlc, Uri.parse(cameraRtsp))
         media.setHWDecoderEnabled(true, false)
-        media.addOption(":network-caching=600")
+        media.addOption(":network-caching=20")
 
         mediaPlayer.media = media
         media.release()

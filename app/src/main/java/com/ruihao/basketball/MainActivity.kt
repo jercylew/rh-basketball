@@ -45,10 +45,12 @@ import org.json.JSONException
 import org.json.JSONObject
 import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
+import java.io.BufferedReader
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStreamReader
 import java.net.URI
 import java.security.InvalidParameterException
 import java.text.SimpleDateFormat
@@ -125,6 +127,7 @@ class MainActivity : AppCompatActivity() {
 
         initController()
         initCamera()
+        loadSettings()
 
         super.onCreate(savedInstanceState)
 
@@ -407,17 +410,13 @@ class MainActivity : AppCompatActivity() {
                 if (cmdType == "003") {
                     // Sync to a specified client ?
                 }
-
             } catch (exc: JSONException) {
 //                Log.e(TAG, "Invalid command", exc)
             }
         }
         mCloudCmdWSClient.connect()
 
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-        mCameraIP = sharedPreferences.getString("camera_rtsp_ip", "192.168.1.15").toString()
         val cameraServerUri = URI("ws://${mCameraIP}:9000/pushmsg")
-
         val headersMap: MutableMap<String, String> = HashMap()
         headersMap["Sec-WebSocket-Protocol"] = "pushmsg"
         headersMap["Sec-WebSocket-Version"] = "13"
@@ -857,9 +856,36 @@ class MainActivity : AppCompatActivity() {
 //        mPermissionActivityLauncher.launch(REQUIRED_PERMISSIONS)
 //    }
 
-    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(
-            baseContext, it) == PackageManager.PERMISSION_GRANTED
+//    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
+//        ContextCompat.checkSelfPermission(
+//            baseContext, it) == PackageManager.PERMISSION_GRANTED
+//    }
+
+    private fun loadSettings() {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        mCameraIP = sharedPreferences.getString("camera_rtsp_ip", "192.168.1.15").toString()
+
+        //Get the machine ID
+        val shCommand = "su root blkid /dev/block/mmcblk2p15"
+        val runTime: Runtime = Runtime.getRuntime()
+        val result: Process = runTime.exec(shCommand)
+        val bufferReader: BufferedReader = BufferedReader(InputStreamReader(result.inputStream))
+        mMachineId =  bufferReader.readLine()
+
+        val posUUID = mMachineId.indexOf("UUID=")
+        if (posUUID < 0) {
+            mMachineId = ""
+            return
+        }
+
+        val posQuo = mMachineId.indexOf("\"", posUUID+6)
+        if (posQuo < 0) {
+            mMachineId = ""
+            return
+        }
+
+        mMachineId = mMachineId.substring(posUUID+6, posQuo)
+        Log.d(TAG, "Load settings, camera IP: $mCameraIP, machine ID: $mMachineId")
     }
 
     private fun dispRecData(comRecData: ComBean) {

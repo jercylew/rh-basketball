@@ -66,7 +66,6 @@ import java.util.Queue
 import java.util.UUID
 
 
-typealias LumaListener = (luma: Double) -> Unit
 typealias FaceCheckListener = (imageDataBase64: String) -> Unit
 
 private const val MAX_BORROW_QTY_ALLOWED: Int = 1
@@ -142,6 +141,9 @@ class MainActivity : AppCompatActivity() {
         initGridView()
 
         binding.btnBorrow.setOnClickListener {
+            //For Debug only
+            syncUserInfoFromCloud()
+
             if (mUser == null) {
                 Toast.makeText(
                     this@MainActivity, getString(R.string.tip_login),
@@ -492,9 +494,6 @@ class MainActivity : AppCompatActivity() {
         mediaPlayer.media = media
         media.release()
         mediaPlayer.play()
-
-        //For Debug only
-        syncUserInfoFromCloud()
     }
 
     override fun onStop()
@@ -768,6 +767,7 @@ class MainActivity : AppCompatActivity() {
 //                }
 //            }
 //        )
+
     }
 
     private fun captureVideo() {}
@@ -1083,52 +1083,68 @@ class MainActivity : AppCompatActivity() {
             // HTTP Get
             val postUrl = "https://readerapp.dingcooltech.com/comm/apiComm/stuentInfo.querylist?fromid=1632564838868836353&questionName=stuentInfo"
             val joPayload = JSONObject()
-            joPayload.put("page", 1)
             joPayload.put("fromid", "1632564838868836353")
             joPayload.put("questionName", "studentInfo")
             joPayload.put("rows", 10)
 
-
             try {
                 val url = URL(postUrl)
-                val httpURLConnection = url.openConnection() as HttpURLConnection
-                httpURLConnection.requestMethod = "POST"
-                httpURLConnection.setRequestProperty("Content-Type", "application/json")
-                httpURLConnection.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ7XCJkZXB0Y29kZVwiOlwiMTAwMDEwMDA2N0QwMDAwMVwiLFwiZGVwdGlkXCI6MTgxLFwiZGVwdG5hbWVcIjpcIuWQjuWPsOeuoeeQhumDqFwiLFwiZmRlcHRjb2Rlc1wiOltcIjEwMDAxMDAwNjdEMDAwMDFcIl0sXCJmdXNlcnNcIjpbXCJcIixcIlwiLFwiXCJdLFwib3JnYW5jb2RlXCI6XCIxMDAwMTAwMDY3XCIsXCJvcmdhbmlkXCI6NjYsXCJvcmdhbm5hbWVcIjpcIueQg-aculwiLFwicGFzc3dvcmRcIjpcIlwiLFwicmVhbGFuYW1lXCI6XCJhZDAwMDZcIixcInJvbGVzXCI6W1wi566h55CG5ZGYXCJdLFwidXNlcklkXCI6MTk3LFwidXNlck5hbWVcIjpcImFkMDAwNlwifSIsImV4cCI6MTY5OTI2MjE5MCwiaWF0IjoxNjk5MjU4NTkwfQ.E39mAsPhOj4cH--tDDLpQPJlSEMtyFIcG1YhQ5IW0-g")
 
-                try {
-                    //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
-                    httpURLConnection.doOutput = true
-                    // this is used for just in case we don't know about the data size associated with our request
-                    httpURLConnection.setChunkedStreamingMode(0)
+                    for (page in 1..300) { // At most 3000
+                        try {
+                            val httpURLConnection = url.openConnection() as HttpURLConnection
+                            httpURLConnection.requestMethod = "POST"
+                            httpURLConnection.setRequestProperty("Content-Type", "application/json")
+                            httpURLConnection.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ7XCJkZXB0Y29kZVwiOlwiMTAwMDEwMDA2N0QwMDAwMVwiLFwiZGVwdGlkXCI6MTgxLFwiZGVwdG5hbWVcIjpcIuWQjuWPsOeuoeeQhumDqFwiLFwiZmRlcHRjb2Rlc1wiOltcIjEwMDAxMDAwNjdEMDAwMDFcIl0sXCJmdXNlcnNcIjpbXCJcIixcIlwiLFwiXCJdLFwib3JnYW5jb2RlXCI6XCIxMDAwMTAwMDY3XCIsXCJvcmdhbmlkXCI6NjYsXCJvcmdhbm5hbWVcIjpcIueQg-aculwiLFwicGFzc3dvcmRcIjpcIlwiLFwicmVhbGFuYW1lXCI6XCJhZDAwMDZcIixcInJvbGVzXCI6W1wi566h55CG5ZGYXCJdLFwidXNlcklkXCI6MTk3LFwidXNlck5hbWVcIjpcImFkMDAwNlwifSIsImV4cCI6MTY5OTI2MjE5MCwiaWF0IjoxNjk5MjU4NTkwfQ.E39mAsPhOj4cH--tDDLpQPJlSEMtyFIcG1YhQ5IW0-g")
 
-                    // to write tha data in our request
-                    val outputStream: OutputStream =
-                        BufferedOutputStream(httpURLConnection.outputStream)
-                    val outputStreamWriter = OutputStreamWriter(outputStream)
-                    Log.d(TAG, "Sync users list from cloud, HTTP post: $joPayload")
-                    outputStreamWriter.write(joPayload.toString())
-                    outputStreamWriter.flush()
-                    outputStreamWriter.close()
+                            //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
+                            httpURLConnection.doOutput = true
+                            // this is used for just in case we don't know about the data size associated with our request
+                            httpURLConnection.setChunkedStreamingMode(0)
 
-                    val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
-                    val bufferReader: BufferedReader = BufferedReader(InputStreamReader(inputStream))
-                    val respText =  bufferReader.readText()
+                            joPayload.put("page", page)
+                            Log.d(TAG, "Sync users list from cloud, HTTP post: $joPayload")
+                            // to write tha data in our request
+                            val outputStream: OutputStream =
+                                BufferedOutputStream(httpURLConnection.outputStream)
+                            val outputStreamWriter = OutputStreamWriter(outputStream)
+                            outputStreamWriter.write(joPayload.toString())
+                            outputStreamWriter.flush()
+                            outputStreamWriter.close()
 
-                    Log.d(TAG, "Get user list from cloud: $respText")
-                }
-                catch (exec: Exception) {
-                    Log.d(TAG, "Exception occurred when fetching user list from cloud: ${exec.toString()}")
-                }
-                finally {
-                    httpURLConnection.disconnect();
-                }
+                            val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+                            val bufferReader: BufferedReader = BufferedReader(InputStreamReader(inputStream))
+                            val respText =  bufferReader.readText()
+                            bufferReader.close()
+                            httpURLConnection.disconnect()
+
+                            Log.d(TAG, "Get user list from cloud: $respText")
+                            val joResp = JSONObject(respText)
+                            if (!joResp.getBoolean("success")) {
+                                continue
+                            }
+
+                            val joRespData = joResp.getJSONObject("data")
+                            val jaList = joRespData.getJSONArray("list")
+                            if (jaList.length() == 0) {
+                                break
+                            }
+
+                            //Save to db
+
+                            //Register to face machine
+                        }
+                        catch (exc: Exception) {
+                            Log.d(TAG, "Exception occurred when fetching user list from cloud: ${exc.toString()}, page: $page")
+                        }
+                        finally {
+                        }
+                    }
+
             }
             catch (exc: Exception) {
-                Log.d(TAG, "Exception occurred when saving user list to local machine")
+                Log.d(TAG, "Exception occurred when saving user list to local machine: ${exc.toString()}")
             }
-
-            // Register to face recog machine
         }
     }
 

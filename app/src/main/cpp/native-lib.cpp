@@ -131,6 +131,14 @@ Java_com_ruihao_basketball_AdminActivity_writeModbusRegister(
     return bRet ? JNI_TRUE : JNI_FALSE;
 }
 
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_ruihao_basketball_AdminActivity_initModbus(
+        JNIEnv* env,
+        jobject /* this */) {
+    bool bRet = do_open_modbus();
+    return bRet ? JNI_TRUE : JNI_FALSE;
+}
+
 
 
 

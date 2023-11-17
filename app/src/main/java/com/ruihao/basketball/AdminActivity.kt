@@ -32,6 +32,8 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.preference.PreferenceManager
 import com.ruihao.basketball.databinding.ActivityAdminBinding
 import com.ruihao.basketball.databinding.ActivityMainBinding
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -319,7 +321,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         }
 
         setupSharedPreferences()
-        startCamera()
+//        startCamera()
+        initController()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -428,27 +431,27 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     }
 
     private fun takePhoto(saveImagePath: String) {
-        val imageCapture = mImageCapture ?: return
-
-        val outputOptions = ImageCapture.OutputFileOptions
-            .Builder(File(saveImagePath))
-            .build()
-
-        imageCapture.takePicture(
-            outputOptions,
-            ContextCompat.getMainExecutor(this),
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onError(exc: ImageCaptureException) {
-                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
-                }
-
-                override fun onImageSaved(output: ImageCapture.OutputFileResults){
-                    val msg = "Photo capture succeeded: ${output.savedUri}"
-//                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-                    Log.d(TAG, msg)
-                }
-            }
-        )
+//        val imageCapture = mImageCapture ?: return
+//
+//        val outputOptions = ImageCapture.OutputFileOptions
+//            .Builder(File(saveImagePath))
+//            .build()
+//
+//        imageCapture.takePicture(
+//            outputOptions,
+//            ContextCompat.getMainExecutor(this),
+//            object : ImageCapture.OnImageSavedCallback {
+//                override fun onError(exc: ImageCaptureException) {
+//                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+//                }
+//
+//                override fun onImageSaved(output: ImageCapture.OutputFileResults){
+//                    val msg = "Photo capture succeeded: ${output.savedUri}"
+////                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+//                    Log.d(TAG, msg)
+//                }
+//            }
+//        )
     }
 
     private fun playAudio(src: Int): Unit {
@@ -492,12 +495,35 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         cameraProvider.bindToLifecycle(this, cameraSelector, mImageCapture)
     }
 
+    private fun initController(): Unit {
+        GlobalScope.launch {
+            while(true) {
+                if (mModbusOk) {
+                    runOnUiThread {
+                        updateBallsQuantity()
+                    }
+                }
+                else {
+                    Log.d(TAG, "Trying to connect to modbus ...")
+                    mModbusOk = initModbus()
+                    if (mModbusOk) {
+                        writeModbusRegister(1014, 1000) //出球的时长(推杆动作的间隔): 1 second
+                        writeModbusRegister(1015, 3000) //进球口门锁关闭时长: 3 seconds
+                    }
+                }
+
+                Thread.sleep(3000)
+            }
+        }
+    }
+
     /**
      * A native method that is implemented by the 'basketball' native library,
      * which is packaged with this application.
      */
     private external fun writeModbusRegister(address: Int, value: Int): Boolean
     private external fun readModbusRegister(address: Int): Int
+    private external fun initModbus(): Boolean
 
 
     companion object {

@@ -726,7 +726,6 @@ class MainActivity : AppCompatActivity() {
     private fun initController(): Unit {
         GlobalScope.launch {
             while(true) {
-//                Log.d(TAG, "Doing the controller check regularly ...")
                 if (mModbusOk) {
                     runOnUiThread {
                         updateBallsQuantity()
@@ -1107,7 +1106,7 @@ class MainActivity : AppCompatActivity() {
                     val outputStream: OutputStream =
                         BufferedOutputStream(httpURLConnection.outputStream)
                     val outputStreamWriter = OutputStreamWriter(outputStream)
-                    Log.d(TAG, "Sync users list from cloud, HTTP post: ${joPayload.toString()}")
+                    Log.d(TAG, "Sync users list from cloud, HTTP post: $joPayload")
                     outputStreamWriter.write(joPayload.toString())
                     outputStreamWriter.flush()
                     outputStreamWriter.close()

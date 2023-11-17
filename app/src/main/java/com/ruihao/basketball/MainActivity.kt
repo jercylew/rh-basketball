@@ -141,9 +141,6 @@ class MainActivity : AppCompatActivity() {
         initGridView()
 
         binding.btnBorrow.setOnClickListener {
-            //For Debug only
-            syncUserInfoFromCloud()
-
             if (mUser == null) {
                 Toast.makeText(
                     this@MainActivity, getString(R.string.tip_login),
@@ -152,6 +149,8 @@ class MainActivity : AppCompatActivity() {
                 playAudio(R.raw.tip_login)
                 return@setOnClickListener
             }
+
+            Log.d(TAG, "Borrow button: mModbusOk: $mModbusOk")
 
             if (!mModbusOk) {
                 Toast.makeText(
@@ -253,6 +252,8 @@ class MainActivity : AppCompatActivity() {
                 playAudio(R.raw.tip_login)
                 return@setOnClickListener
             }
+
+            Log.d(TAG, "Return button: mModbusOk: $mModbusOk")
 
             if (!mModbusOk) {
                 Toast.makeText(
@@ -734,6 +735,7 @@ class MainActivity : AppCompatActivity() {
                 else {
                     Log.d(TAG, "Trying to connect to modbus ...")
                     mModbusOk = initModbus()
+                    Log.d(TAG, "Init modbus, result: $mModbusOk")
                     if (mModbusOk) {
                         writeModbusRegister(1014, 1000) //出球的时长(推杆动作的间隔): 1 second
                         writeModbusRegister(1015, 3000) //进球口门锁关闭时长: 3 seconds
@@ -746,6 +748,56 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun takePhoto(saveImagePath: String) {
+        GlobalScope.launch {
+            val cameraSnapUrl = "http://$mCameraIP:8086/api/v1/remoteSnapPic"
+            try {
+                val url = URL(cameraSnapUrl)
+                val httpURLConnection = url.openConnection() as HttpURLConnection
+                httpURLConnection.requestMethod = "GET"
+
+                val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+                val bufferReader: BufferedReader = BufferedReader(InputStreamReader(inputStream))
+                val respText =  bufferReader.readText()
+                bufferReader.close()
+                httpURLConnection.disconnect()
+
+//                Log.d(TAG, "Take photo: $respText")
+                val joResp = JSONObject(respText)
+                if (joResp.getInt("status") != 0) {
+                    Log.d(TAG, "Camera failed to snap photo: ${joResp.getString("detail")}")
+                    return@launch
+                }
+
+                val joRespData = joResp.getJSONObject("data")
+                val joSnapPicture = joRespData.getJSONObject("SnapPicture")
+                var snapPictureBase64Text = joSnapPicture.getString("SnapPictureBase64")
+
+                val commaPos = snapPictureBase64Text.indexOf(",")
+                if (commaPos >= 0) {
+                    snapPictureBase64Text = snapPictureBase64Text.substring(commaPos + 1)
+                }
+
+                val file = File(saveImagePath)
+                if (file.exists()) {
+                    file.delete()
+                }
+
+                val out = FileOutputStream(file)
+
+                val bos = BufferedOutputStream(out)
+                val bfile: ByteArray = Base64.decode(snapPictureBase64Text, Base64.DEFAULT)
+                bos.write(bfile)
+                bos.flush()
+                bos.close()
+                out.flush()
+                out.close()
+                Log.d(TAG, "Taken photo saved: $saveImagePath")
+            }
+            catch (exc: Exception) {
+                Log.d(TAG, "Exception occurred when taking photo: ${exc.toString()}")
+            }
+        }
+
         // Using camera attached to this
 //        val imageCapture = imageCapture ?: return
 //        val outputOptions = ImageCapture.OutputFileOptions
@@ -767,7 +819,6 @@ class MainActivity : AppCompatActivity() {
 //                }
 //            }
 //        )
-
     }
 
     private fun captureVideo() {}
@@ -1089,57 +1140,56 @@ class MainActivity : AppCompatActivity() {
 
             try {
                 val url = URL(postUrl)
+                for (page in 1..300) { // At most 3000
+                    try {
+                        val httpURLConnection = url.openConnection() as HttpURLConnection
+                        httpURLConnection.requestMethod = "POST"
+                        httpURLConnection.setRequestProperty("Content-Type", "application/json")
+                        httpURLConnection.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ7XCJkZXB0Y29kZVwiOlwiMTAwMDEwMDA2N0QwMDAwMVwiLFwiZGVwdGlkXCI6MTgxLFwiZGVwdG5hbWVcIjpcIuWQjuWPsOeuoeeQhumDqFwiLFwiZmRlcHRjb2Rlc1wiOltcIjEwMDAxMDAwNjdEMDAwMDFcIl0sXCJmdXNlcnNcIjpbXCJcIixcIlwiLFwiXCJdLFwib3JnYW5jb2RlXCI6XCIxMDAwMTAwMDY3XCIsXCJvcmdhbmlkXCI6NjYsXCJvcmdhbm5hbWVcIjpcIueQg-aculwiLFwicGFzc3dvcmRcIjpcIlwiLFwicmVhbGFuYW1lXCI6XCJhZDAwMDZcIixcInJvbGVzXCI6W1wi566h55CG5ZGYXCJdLFwidXNlcklkXCI6MTk3LFwidXNlck5hbWVcIjpcImFkMDAwNlwifSIsImV4cCI6MTY5OTI2MjE5MCwiaWF0IjoxNjk5MjU4NTkwfQ.E39mAsPhOj4cH--tDDLpQPJlSEMtyFIcG1YhQ5IW0-g")
 
-                    for (page in 1..300) { // At most 3000
-                        try {
-                            val httpURLConnection = url.openConnection() as HttpURLConnection
-                            httpURLConnection.requestMethod = "POST"
-                            httpURLConnection.setRequestProperty("Content-Type", "application/json")
-                            httpURLConnection.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ7XCJkZXB0Y29kZVwiOlwiMTAwMDEwMDA2N0QwMDAwMVwiLFwiZGVwdGlkXCI6MTgxLFwiZGVwdG5hbWVcIjpcIuWQjuWPsOeuoeeQhumDqFwiLFwiZmRlcHRjb2Rlc1wiOltcIjEwMDAxMDAwNjdEMDAwMDFcIl0sXCJmdXNlcnNcIjpbXCJcIixcIlwiLFwiXCJdLFwib3JnYW5jb2RlXCI6XCIxMDAwMTAwMDY3XCIsXCJvcmdhbmlkXCI6NjYsXCJvcmdhbm5hbWVcIjpcIueQg-aculwiLFwicGFzc3dvcmRcIjpcIlwiLFwicmVhbGFuYW1lXCI6XCJhZDAwMDZcIixcInJvbGVzXCI6W1wi566h55CG5ZGYXCJdLFwidXNlcklkXCI6MTk3LFwidXNlck5hbWVcIjpcImFkMDAwNlwifSIsImV4cCI6MTY5OTI2MjE5MCwiaWF0IjoxNjk5MjU4NTkwfQ.E39mAsPhOj4cH--tDDLpQPJlSEMtyFIcG1YhQ5IW0-g")
+                        //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
+                        httpURLConnection.doOutput = true
+                        // this is used for just in case we don't know about the data size associated with our request
+                        httpURLConnection.setChunkedStreamingMode(0)
 
-                            //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
-                            httpURLConnection.doOutput = true
-                            // this is used for just in case we don't know about the data size associated with our request
-                            httpURLConnection.setChunkedStreamingMode(0)
+                        joPayload.put("page", page)
+                        Log.d(TAG, "Sync users list from cloud, HTTP post: $joPayload")
+                        // to write tha data in our request
+                        val outputStream: OutputStream =
+                            BufferedOutputStream(httpURLConnection.outputStream)
+                        val outputStreamWriter = OutputStreamWriter(outputStream)
+                        outputStreamWriter.write(joPayload.toString())
+                        outputStreamWriter.flush()
+                        outputStreamWriter.close()
 
-                            joPayload.put("page", page)
-                            Log.d(TAG, "Sync users list from cloud, HTTP post: $joPayload")
-                            // to write tha data in our request
-                            val outputStream: OutputStream =
-                                BufferedOutputStream(httpURLConnection.outputStream)
-                            val outputStreamWriter = OutputStreamWriter(outputStream)
-                            outputStreamWriter.write(joPayload.toString())
-                            outputStreamWriter.flush()
-                            outputStreamWriter.close()
+                        val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+                        val bufferReader: BufferedReader = BufferedReader(InputStreamReader(inputStream))
+                        val respText =  bufferReader.readText()
+                        bufferReader.close()
+                        httpURLConnection.disconnect()
 
-                            val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
-                            val bufferReader: BufferedReader = BufferedReader(InputStreamReader(inputStream))
-                            val respText =  bufferReader.readText()
-                            bufferReader.close()
-                            httpURLConnection.disconnect()
-
-                            Log.d(TAG, "Get user list from cloud: $respText")
-                            val joResp = JSONObject(respText)
-                            if (!joResp.getBoolean("success")) {
-                                continue
-                            }
-
-                            val joRespData = joResp.getJSONObject("data")
-                            val jaList = joRespData.getJSONArray("list")
-                            if (jaList.length() == 0) {
-                                break
-                            }
-
-                            //Save to db
-
-                            //Register to face machine
+                        Log.d(TAG, "Get user list from cloud: $respText")
+                        val joResp = JSONObject(respText)
+                        if (!joResp.getBoolean("success")) {
+                            continue
                         }
-                        catch (exc: Exception) {
-                            Log.d(TAG, "Exception occurred when fetching user list from cloud: ${exc.toString()}, page: $page")
+
+                        val joRespData = joResp.getJSONObject("data")
+                        val jaList = joRespData.getJSONArray("list")
+                        if (jaList.length() == 0) {
+                            break
                         }
-                        finally {
-                        }
+
+                        //Save to db
+
+                        //Register to face machine
                     }
+                    catch (exc: Exception) {
+                        Log.d(TAG, "Exception occurred when fetching user list from cloud: ${exc.toString()}, page: $page")
+                    }
+                    finally {
+                    }
+                }
 
             }
             catch (exc: Exception) {

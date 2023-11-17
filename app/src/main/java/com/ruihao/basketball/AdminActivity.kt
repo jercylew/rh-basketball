@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Environment
+import android.util.Base64
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.Button
@@ -34,7 +35,16 @@ import com.ruihao.basketball.databinding.ActivityAdminBinding
 import com.ruihao.basketball.databinding.ActivityMainBinding
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.io.BufferedReader
 import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.UUID
@@ -52,6 +62,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
     private var mMediaPlayer: MediaPlayer? = null
     private var mReturnBallTimer: CountDownTimer? = null
+    private var mCameraIP = ""
 
     private val mAppDataFile: File = File(
         Environment.getExternalStorageDirectory().path
@@ -350,6 +361,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         sharedPreferences.registerOnSharedPreferenceChangeListener(this)
 
         updateSharedPreferencesFromController()
+
+        mCameraIP = sharedPreferences.getString("camera_rtsp_ip", "192.168.1.15").toString()
     }
 
     override fun onResume() {
@@ -431,6 +444,55 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     }
 
     private fun takePhoto(saveImagePath: String) {
+        GlobalScope.launch {
+            val cameraSnapUrl = "http://$mCameraIP:8086/api/v1/remoteSnapPic"
+            try {
+                val url = URL(cameraSnapUrl)
+                val httpURLConnection = url.openConnection() as HttpURLConnection
+                httpURLConnection.requestMethod = "GET"
+
+                val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+                val bufferReader: BufferedReader = BufferedReader(InputStreamReader(inputStream))
+                val respText =  bufferReader.readText()
+                bufferReader.close()
+                httpURLConnection.disconnect()
+
+//                Log.d(TAG, "Take photo: $respText")
+                val joResp = JSONObject(respText)
+                if (joResp.getInt("status") != 0) {
+                    Log.d(TAG, "Camera failed to snap photo: ${joResp.getString("detail")}")
+                    return@launch
+                }
+
+                val joRespData = joResp.getJSONObject("data")
+                val joSnapPicture = joRespData.getJSONObject("SnapPicture")
+                var snapPictureBase64Text = joSnapPicture.getString("SnapPictureBase64")
+
+                val commaPos = snapPictureBase64Text.indexOf(",")
+                if (commaPos >= 0) {
+                    snapPictureBase64Text = snapPictureBase64Text.substring(commaPos + 1)
+                }
+
+                val file = File(saveImagePath)
+                if (file.exists()) {
+                    file.delete()
+                }
+
+                val out = FileOutputStream(file)
+
+                val bos = BufferedOutputStream(out)
+                val bfile: ByteArray = Base64.decode(snapPictureBase64Text, Base64.DEFAULT)
+                bos.write(bfile)
+                bos.flush()
+                bos.close()
+                out.flush()
+                out.close()
+                Log.d(TAG, "Taken photo saved: $saveImagePath")
+            }
+            catch (exc: Exception) {
+                Log.d(TAG, "Exception occurred when taking photo: ${exc.toString()}")
+            }
+        }
 //        val imageCapture = mImageCapture ?: return
 //
 //        val outputOptions = ImageCapture.OutputFileOptions

@@ -7,7 +7,7 @@ static modbus_t *g_ptrModbusCtx = NULL;
 
 bool do_open_modbus()
 {
-    if (g_ptrModbusCtx != nullptr) {
+    if (g_ptrModbusCtx != NULL) {
         LOGD("Modbus already connected!");
         return true;
     }
@@ -39,6 +39,8 @@ bool do_open_modbus()
         g_ptrModbusCtx = NULL;
         return false;
     }
+
+    LOGD("Init modbus succeed");
 
     return true;
 }

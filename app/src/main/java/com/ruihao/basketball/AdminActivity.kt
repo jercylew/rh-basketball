@@ -403,6 +403,10 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
+        if (key == "camera_rtsp_ip") {
+            return
+        }
+
         if (!mModbusOk) {
             Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
                 Toast.LENGTH_LONG).show()
@@ -565,15 +569,6 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                         updateBallsQuantity()
                     }
                 }
-                else {
-                    Log.d(TAG, "Trying to connect to modbus ...")
-                    mModbusOk = initModbus()
-                    if (mModbusOk) {
-                        writeModbusRegister(1014, 1000) //出球的时长(推杆动作的间隔): 1 second
-                        writeModbusRegister(1015, 3000) //进球口门锁关闭时长: 3 seconds
-                    }
-                }
-
                 Thread.sleep(3000)
             }
         }

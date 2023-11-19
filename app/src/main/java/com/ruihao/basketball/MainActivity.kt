@@ -34,8 +34,11 @@ import androidx.preference.PreferenceManager
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.ruihao.basketball.databinding.ActivityMainBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.java_websocket.drafts.Draft
 import org.java_websocket.drafts.Draft_6455
 import org.java_websocket.extensions.permessage_deflate.PerMessageDeflateExtension
@@ -69,6 +72,7 @@ import java.util.UUID
 typealias FaceCheckListener = (imageDataBase64: String) -> Unit
 
 private const val MAX_BORROW_QTY_ALLOWED: Int = 1
+private const val MAX_INIT_CONTROLLER_TIMES: Int = 3
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -119,6 +123,8 @@ class MainActivity : AppCompatActivity() {
             + "/RhBasketball")
     private var mAdminActivityRunning: Boolean = false
     private var mMachineId: String = ""
+
+    private var mInitControllerTimes = 0
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -725,7 +731,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun initController(): Unit {
         GlobalScope.launch {
-            while(true) {
+            while(mInitControllerTimes >= MAX_INIT_CONTROLLER_TIMES) {
                 if (mModbusOk) {
                     runOnUiThread {
                         updateBallsQuantity()
@@ -742,7 +748,8 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                Thread.sleep(3000)
+                mInitControllerTimes++
+                delay(3000)
             }
         }
     }

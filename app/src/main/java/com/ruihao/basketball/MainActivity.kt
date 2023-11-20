@@ -453,8 +453,25 @@ class MainActivity : AppCompatActivity() {
 
             try {
                 val joRecogResult = JSONObject(message)
-//                val cmdMacId = joRecogResult.getString("name")
+                val respStatus = joRecogResult.getInt("status")
+                if (respStatus != 0) {
+                    return@ChatWebSocketClient
+                }
+                val joRespData = joRecogResult.getJSONObject("data")
+                val pushResult = joRespData.getInt("Result")
+                if (pushResult != 1) {
+                    return@ChatWebSocketClient
+                }
 
+                val pushUserId = joRespData.getString("UserID")
+                val pushUserName = joRespData.getString("UserName")
+
+                Log.d(TAG, "Face recognized, userId: $pushUserId, userName: $pushUserName")
+                runOnUiThread {
+                    if (mUser == null) {
+                        loginUser(BaseColumns._ID, pushUserId)
+                    }
+                }
             } catch (exc: JSONException) {
 //                Log.e(TAG, "Invalid recognize result", exc)
             }

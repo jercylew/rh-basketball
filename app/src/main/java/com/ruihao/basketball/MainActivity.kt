@@ -521,6 +521,7 @@ class MainActivity : AppCompatActivity() {
         dispQueue!!.start()
 
         updateBallsQuantity()
+        updateGridView()
         val userName: String = mUser?.name ?: getString(R.string.welcome_user_name)
         binding.tvGreeting.text = String.format(getString(R.string.welcome_text_format, userName))
         binding.basketballHome.requestFocus()
@@ -996,7 +997,8 @@ class MainActivity : AppCompatActivity() {
             BasketballContract.User.COLUMN_NAME,
             BasketballContract.User.COLUMN_AGE,
             BasketballContract.User.COLUMN_GENDER,
-            BasketballContract.User.COLUMN_CLASS_GRADE,
+            BasketballContract.User.COLUMN_CLASS,
+            BasketballContract.User.COLUMN_GRADE,
             BasketballContract.User.COLUMN_IS_ADMIN,
             BasketballContract.User.COLUMN_PHOTO_URL,
         )
@@ -1031,22 +1033,24 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        var name: String = ""
-        var barQRNo: String = ""
-        var icCardNo: String = ""
-        var id: String = ""
-        var gender: String = ""
-        var classGrade: String = ""
-        val age: Int = 0
-        var isAdmin: Boolean = false
-        var photoUrl: String = ""
+        var name = ""
+        var barQRNo = ""
+        var icCardNo = ""
+        var id = ""
+        var gender = ""
+        var classNo = ""
+        var gradeNo = ""
+        val age = 0
+        var isAdmin = false
+        var photoUrl = ""
         while (cursor.moveToNext()) {
             name = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_NAME))
             barQRNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_BAR_QR_NO))
             icCardNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_IC_CARD_NO))
             id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
             gender = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_GENDER))
-            classGrade = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_CLASS_GRADE))
+            classNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_CLASS))
+            gradeNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_GRADE))
             isAdmin = (cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_IS_ADMIN)) == 1)
             photoUrl = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_PHOTO_URL))
             break
@@ -1069,10 +1073,10 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        mUser = User(name = name, id = id, barQRNo = barQRNo, icCardNo = icCardNo, gender = gender, classGrade = classGrade,
-            age = age, photoUrl = photoUrl, isAdmin = false)
+        mUser = User(name = name, id = id, barQRNo = barQRNo, icCardNo = icCardNo, gender = gender, classNo = classNo,
+            gradeNo = gradeNo, age = age, photoUrl = photoUrl, isAdmin = false)
         Log.d(TAG, "Login succeed, user: ${mUser!!.name}, ${mUser!!.id}, ${mUser!!.barQRNo}," +
-                "${mUser!!.gender}, ${mUser!!.classGrade}, ${mUser!!.age}")
+                "${mUser!!.gender}, ${mUser!!.classNo}, ${mUser!!.gradeNo}, ${mUser!!.age}")
         Toast.makeText(this, String.format(getString(R.string.tip_login_user_succeed), name),
             Toast.LENGTH_LONG).show()
         playAudio(R.raw.tip_login_user_succeed)

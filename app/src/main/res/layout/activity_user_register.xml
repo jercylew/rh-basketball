@@ -10,6 +10,22 @@
     android:focusableInTouchMode="true"
     tools:context=".UserRegisterActivity">
 
+    <EditText
+        android:id="@+id/current_weight"
+        android:layout_width="322dp"
+        android:layout_height="88dp"
+        android:background="@drawable/edit_text_shape"
+        android:ems="10"
+        android:hint="@string/admin_user_register_hint_weight"
+        android:inputType="number"
+        android:paddingLeft="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/etPhone"
+        app:layout_constraintEnd_toStartOf="@+id/address"
+        app:layout_constraintHorizontal_bias="0.492"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/etGrade"
+        app:layout_constraintVertical_bias="0.516" />
+
     <TextView
         android:id="@+id/title"
         android:layout_width="wrap_content"
@@ -87,17 +103,17 @@
     </RadioGroup>
 
     <EditText
-        android:id="@+id/current_weight"
+        android:id="@+id/etGrade"
         android:layout_width="322dp"
         android:layout_height="95dp"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="36dp"
         android:background="@drawable/edit_text_shape"
         android:ems="10"
-        android:hint="@string/admin_user_register_hint_weight"
-        android:inputType="number"
+        android:hint="@string/admin_user_register_hint_grade"
+        android:inputType="text"
         android:paddingLeft="20dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.112"
+        app:layout_constraintHorizontal_bias="0.129"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/age" />
 
@@ -105,14 +121,14 @@
         android:id="@+id/height"
         android:layout_width="322dp"
         android:layout_height="95dp"
-        android:layout_marginTop="184dp"
+        android:layout_marginTop="172dp"
         android:background="@drawable/edit_text_shape"
         android:ems="10"
         android:hint="@string/admin_user_register_hint_height"
         android:inputType="number"
         android:paddingLeft="20dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.68"
+        app:layout_constraintHorizontal_bias="0.7"
         app:layout_constraintStart_toEndOf="@+id/age"
         app:layout_constraintTop_toBottomOf="@+id/radioGroup" />
 
@@ -126,16 +142,16 @@
         android:hint="@string/admin_user_register_hint_age"
         android:inputType="number"
         android:paddingLeft="20dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.116"
+        app:layout_constraintEnd_toStartOf="@+id/etClass"
+        app:layout_constraintHorizontal_bias="0.451"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/gender" />
 
     <EditText
         android:id="@+id/etPhone"
         android:layout_width="322dp"
-        android:layout_height="96dp"
-        android:layout_marginTop="56dp"
+        android:layout_height="88dp"
+        android:layout_marginTop="148dp"
         android:background="@drawable/edit_text_shape"
         android:ems="10"
         android:hint="@string/admin_user_register_hint_phone"
@@ -144,13 +160,13 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.117"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/current_weight" />
+        app:layout_constraintTop_toBottomOf="@+id/etGrade" />
 
     <EditText
         android:id="@+id/address"
         android:layout_width="322dp"
         android:layout_height="88dp"
-        android:layout_marginTop="64dp"
+        android:layout_marginTop="32dp"
         android:background="@drawable/edit_text_shape"
         android:ems="10"
         android:hint="@string/admin_user_register_hint_aqddress"
@@ -158,21 +174,21 @@
         android:maxLines="2"
         android:paddingLeft="20dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.686"
-        app:layout_constraintStart_toEndOf="@+id/current_weight"
+        app:layout_constraintHorizontal_bias="0.68"
+        app:layout_constraintStart_toEndOf="@+id/etGrade"
         app:layout_constraintTop_toBottomOf="@+id/height" />
 
     <CheckBox
         android:id="@+id/chkTermsConditions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="228dp"
+        android:layout_marginTop="196dp"
         android:backgroundTint="#D500F9"
         android:buttonTint="#D500F9"
         android:text="@string/admin_user_register_terms_conditions"
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.549"
+        app:layout_constraintHorizontal_bias="0.592"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/etPhone" />
 
@@ -187,10 +203,10 @@
         android:textSize="24sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.285"
+        app:layout_constraintHorizontal_bias="0.299"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/chkTermsConditions"
-        app:layout_constraintVertical_bias="0.23" />
+        app:layout_constraintVertical_bias="0.298" />
 
     <EditText
         android:id="@+id/etBarQRNo"
@@ -226,31 +242,31 @@
 
     <androidx.camera.view.PreviewView
         android:id="@+id/prvUserRegisterPhoto"
-        android:layout_width="159dp"
-        android:layout_height="166dp"
+        android:layout_width="155dp"
+        android:layout_height="154dp"
         app:layout_constraintBottom_toTopOf="@+id/chkTermsConditions"
         app:layout_constraintEnd_toStartOf="@+id/imvPhoto"
-        app:layout_constraintHorizontal_bias="0.584"
+        app:layout_constraintHorizontal_bias="0.583"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/address"
-        app:layout_constraintVertical_bias="0.642" />
+        app:layout_constraintVertical_bias="0.837" />
 
     <ImageView
         android:id="@+id/imvPhoto"
-        android:layout_width="152dp"
-        android:layout_height="141dp"
+        android:layout_width="155dp"
+        android:layout_height="154dp"
         android:background="@drawable/edit_text_shape"
         android:src="@drawable/user_photo"
         app:layout_constraintBottom_toTopOf="@+id/chkTermsConditions"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.882"
+        app:layout_constraintHorizontal_bias="0.632"
         app:layout_constraintStart_toEndOf="@+id/etPhone"
         app:layout_constraintTop_toBottomOf="@+id/address"
-        app:layout_constraintVertical_bias="0.473"
+        app:layout_constraintVertical_bias="0.842"
         tools:srcCompat="@drawable/user_photo" />
 
     <EditText
-        android:id="@+id/etClassGrade"
+        android:id="@+id/etClass"
         android:layout_width="322dp"
         android:layout_height="90dp"
         android:layout_marginStart="64dp"
@@ -264,18 +280,18 @@
         app:layout_constraintHorizontal_bias="0.288"
         app:layout_constraintStart_toEndOf="@+id/radioGroup"
         app:layout_constraintTop_toBottomOf="@+id/etBarQRNo"
-        app:layout_constraintVertical_bias="0.762" />
+        app:layout_constraintVertical_bias="0.811" />
 
     <ImageButton
         android:id="@+id/ibtnUserRegisterBack"
-        android:layout_width="154dp"
-        android:layout_height="74dp"
+        android:layout_width="171dp"
+        android:layout_height="82dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.253"
+        app:layout_constraintHorizontal_bias="0.257"
         app:layout_constraintStart_toEndOf="@+id/btnSubmit"
         app:layout_constraintTop_toBottomOf="@+id/chkTermsConditions"
-        app:layout_constraintVertical_bias="0.225"
+        app:layout_constraintVertical_bias="0.283"
         app:srcCompat="@drawable/back" />
 
 

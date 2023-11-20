@@ -44,6 +44,7 @@
     <string name="admin_user_register_hint_age">Age</string>
     <string name="admin_user_register_hint_height">Height</string>
     <string name="admin_user_register_hint_weight">Weight</string>
+    <string name="admin_user_register_hint_grade">Grade</string>
     <string name="admin_user_register_hint_aqddress">Address</string>
     <string name="admin_user_register_hint_phone">Phone</string>
     <string name="admin_user_register_hint_class_grade">Class Grade</string>

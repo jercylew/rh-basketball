@@ -7,7 +7,8 @@ data class User(
     val icCardNo: String,
     val age: Int,
     val gender: String,
-    val classGrade: String,
+    val classNo: String,
+    val gradeNo: String,
     val photoUrl: String,
     val isAdmin: Boolean,
 ) : java.io.Serializable

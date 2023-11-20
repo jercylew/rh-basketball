@@ -23,7 +23,8 @@ private constructor() {
         const val COLUMN_IC_CARD_NO = "ic_card_no"
         const val COLUMN_NAME = "name"
         const val COLUMN_AGE = "age"
-        const val COLUMN_CLASS_GRADE = "class_grade"
+        const val COLUMN_CLASS = "class"
+        const val COLUMN_GRADE = "grade"
         const val COLUMN_TEL = "tel"
         const val COLUMN_GENDER = "gender"
         const val COLUMN_IS_ADMIN = "is_admin"
@@ -60,7 +61,8 @@ internal class BasketballDBHelper(context: Context?) :
     }
 
     fun addNewUser(id: String, name: String?, barQRNo: String?, icCardNo: String?, age: Int?,
-                   gender: Int?, tel: String?, classGrade: String?, photoUrl: String?) {
+                   gender: Int?, tel: String?, classNo: String?, gradeNo: String?,
+                   photoUrl: String?) {
         val db = this.writableDatabase
         val values = ContentValues()
         val genderText: String = if(gender == 0) "男"  else "女"
@@ -71,7 +73,8 @@ internal class BasketballDBHelper(context: Context?) :
         values.put(BasketballContract.User.COLUMN_IC_CARD_NO, icCardNo)
         values.put(BasketballContract.User.COLUMN_IS_ADMIN, 0)
         values.put(BasketballContract.User.COLUMN_GENDER, genderText)
-        values.put(BasketballContract.User.COLUMN_CLASS_GRADE, classGrade)
+        values.put(BasketballContract.User.COLUMN_CLASS, classNo)
+        values.put(BasketballContract.User.COLUMN_GRADE, gradeNo)
         values.put(BasketballContract.User.COLUMN_AGE, age)
         values.put(BasketballContract.User.COLUMN_TEL, tel)
         values.put(BasketballContract.User.COLUMN_PHOTO_URL, photoUrl)
@@ -81,7 +84,7 @@ internal class BasketballDBHelper(context: Context?) :
     }
 
     fun updateUser(id: String, name: String?, barQRNo: String?, icCardNo: String?, age: Int?,
-                   gender: Int?, tel: String?, classGrade: String?, photoUrl: String?) {
+                   gender: Int?, tel: String?, classNo: String?, gradeNo: String?, photoUrl: String?) {
         val db = this.writableDatabase
         val values = ContentValues()
         val genderText: String = if(gender == 0) "男"  else "女"
@@ -91,7 +94,8 @@ internal class BasketballDBHelper(context: Context?) :
         values.put(BasketballContract.User.COLUMN_IC_CARD_NO, icCardNo)
         values.put(BasketballContract.User.COLUMN_IS_ADMIN, 0)
         values.put(BasketballContract.User.COLUMN_GENDER, genderText)
-        values.put(BasketballContract.User.COLUMN_CLASS_GRADE, classGrade)
+        values.put(BasketballContract.User.COLUMN_CLASS, classNo)
+        values.put(BasketballContract.User.COLUMN_GRADE, gradeNo)
         values.put(BasketballContract.User.COLUMN_AGE, age)
         values.put(BasketballContract.User.COLUMN_TEL, tel)
         values.put(BasketballContract.User.COLUMN_PHOTO_URL, photoUrl)
@@ -112,7 +116,7 @@ internal class BasketballDBHelper(context: Context?) :
     }
 
     fun getAllUsers(): ArrayList<User> {
-        var users: ArrayList<User> = ArrayList<User>()
+        val users: ArrayList<User> = ArrayList()
 
         val db = this.readableDatabase
 
@@ -123,7 +127,8 @@ internal class BasketballDBHelper(context: Context?) :
             BasketballContract.User.COLUMN_NAME,
             BasketballContract.User.COLUMN_AGE,
             BasketballContract.User.COLUMN_GENDER,
-            BasketballContract.User.COLUMN_CLASS_GRADE,
+            BasketballContract.User.COLUMN_CLASS,
+            BasketballContract.User.COLUMN_GRADE,
             BasketballContract.User.COLUMN_IS_ADMIN,
             BasketballContract.User.COLUMN_PHOTO_URL,
         )
@@ -141,28 +146,30 @@ internal class BasketballDBHelper(context: Context?) :
             sortOrder // The sort order
         )
 
-        var name: String = ""
-        var barQRNo: String = ""
-        var icCardNo: String = ""
-        var id: String = ""
-        var gender: String = ""
-        var classGrade: String = ""
-        var age: Int = 0
-        var isAdmin: Boolean = false
-        var photoUrl: String = ""
+        var name = ""
+        var barQRNo = ""
+        var icCardNo = ""
+        var id = ""
+        var gender = ""
+        var classNo = ""
+        var gradeNo = ""
+        var age = 0
+        var isAdmin = false
+        var photoUrl = ""
         while (cursor.moveToNext()) {
             name = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_NAME))
             barQRNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_BAR_QR_NO))
             icCardNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_IC_CARD_NO))
             id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
             gender = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_GENDER))
-            classGrade = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_CLASS_GRADE))
+            classNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_CLASS))
+            gradeNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_GRADE))
             isAdmin = (cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_IS_ADMIN)) == 1)
             photoUrl = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_PHOTO_URL))
             age = cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_AGE))
 
             val user = User(name = name, barQRNo = barQRNo, icCardNo = icCardNo,  id = id, gender = gender,
-                classGrade = classGrade, isAdmin = isAdmin, photoUrl = photoUrl,
+                classNo = classNo, gradeNo=gradeNo, isAdmin = isAdmin, photoUrl = photoUrl,
                 age = age)
             users.add(user)
         }
@@ -182,12 +189,13 @@ internal class BasketballDBHelper(context: Context?) :
             BasketballContract.User.COLUMN_NAME,
             BasketballContract.User.COLUMN_AGE,
             BasketballContract.User.COLUMN_GENDER,
-            BasketballContract.User.COLUMN_CLASS_GRADE,
+            BasketballContract.User.COLUMN_CLASS,
+            BasketballContract.User.COLUMN_GRADE,
             BasketballContract.User.COLUMN_IS_ADMIN,
             BasketballContract.User.COLUMN_PHOTO_URL,
         )
 
-        val selection: String =
+        val selection =
             "${BaseColumns._ID} = ?"
         val selectionArgs = arrayOf(id)
 
@@ -212,22 +220,22 @@ internal class BasketballDBHelper(context: Context?) :
             Log.w("RH-DBHelper", "Multiple user found for this user, ${BaseColumns._ID}: $id")
         }
 
-        var name: String = ""
-        var barQRNo: String = ""
-        var icCardNo: String = ""
-        var id: String = ""
-        var gender: String = ""
-        var classGrade: String = ""
-        val age: Int = 0
-        var isAdmin: Boolean = false
-        var photoUrl: String = ""
+        var name = ""
+        var barQRNo = ""
+        var icCardNo = ""
+        var gender = ""
+        var classNo = ""
+        var gradeNo = ""
+        val age = 0
+        var isAdmin = false
+        var photoUrl = ""
         while (cursor.moveToNext()) {
             name = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_NAME))
             barQRNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_BAR_QR_NO))
             icCardNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_IC_CARD_NO))
-            id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
             gender = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_GENDER))
-            classGrade = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_CLASS_GRADE))
+            classNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_CLASS))
+            gradeNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_GRADE))
             isAdmin = (cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_IS_ADMIN)) == 1)
             photoUrl = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_PHOTO_URL))
             break
@@ -235,8 +243,8 @@ internal class BasketballDBHelper(context: Context?) :
         cursor.close()
         db.close()
 
-        return User(name = name, id = id, barQRNo = barQRNo, icCardNo = icCardNo, gender = gender, classGrade = classGrade,
-            age = age, photoUrl = photoUrl, isAdmin = isAdmin)
+        return User(name = name, id = id, barQRNo = barQRNo, icCardNo = icCardNo, gender = gender, classNo = classNo,
+            gradeNo = gradeNo, age = age, photoUrl = photoUrl, isAdmin = isAdmin)
     }
 
     fun addNewBorrowRecord(id: String, borrowerId: String?, type: Int?, captureImagePath: String?) {
@@ -260,8 +268,8 @@ internal class BasketballDBHelper(context: Context?) :
         val db = this.writableDatabase
         val values = ContentValues()
 
-        val dateTimeText = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
-            .format(System.currentTimeMillis())
+//        val dateTimeText = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
+//            .format(System.currentTimeMillis())
 
         //Do not update created time !!!
         values.put(BasketballContract.BorrowRecord.COLUMN_BORROWER_ID, borrowerId)
@@ -284,11 +292,11 @@ internal class BasketballDBHelper(context: Context?) :
     }
 
     fun getAllBorrowRecords(): ArrayList<BorrowRecord> {
-        var records: ArrayList<BorrowRecord> = ArrayList<BorrowRecord>()
+        val records: ArrayList<BorrowRecord> = ArrayList()
 
         val db = this.readableDatabase
 
-        val projection = arrayOf<String>(
+        val projection = arrayOf(
             BaseColumns._ID,
             BasketballContract.BorrowRecord.COLUMN_BORROWER_ID,
             BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE,
@@ -309,11 +317,11 @@ internal class BasketballDBHelper(context: Context?) :
             sortOrder // The sort order
         )
 
-        var id: String = ""
-        var borrowerId: String = ""
+        var id = ""
+        var borrowerId = ""
         var type: Int = -1
-        var captureImagePath: String = ""
-        var createdTime: String = ""
+        var captureImagePath = ""
+        var createdTime = ""
         while (cursor.moveToNext()) {
             id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
             borrowerId = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_BORROWER_ID))
@@ -336,7 +344,7 @@ internal class BasketballDBHelper(context: Context?) :
 
         val db = this.readableDatabase
 
-        val projection = arrayOf<String>(
+        val projection = arrayOf(
             BaseColumns._ID,
             BasketballContract.BorrowRecord.COLUMN_BORROWER_ID,
             BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE,
@@ -361,11 +369,11 @@ internal class BasketballDBHelper(context: Context?) :
             sortOrder // The sort order
         )
 
-        var id: String = ""
-        var borrowerId: String = ""
+        var id = ""
+        var borrowerId = ""
         var type: Int = -1
-        var captureImagePath: String = ""
-        var createdTime: String = ""
+        var captureImagePath = ""
+        var createdTime = ""
         while (cursor.moveToNext()) {
             id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
             borrowerId = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_BORROWER_ID))
@@ -394,7 +402,8 @@ internal class BasketballDBHelper(context: Context?) :
                     BasketballContract.User.COLUMN_NAME + " TEXT," +
                     BasketballContract.User.COLUMN_GENDER + " TEXT," +
                     BasketballContract.User.COLUMN_AGE + " INTEGER," +
-                    BasketballContract.User.COLUMN_CLASS_GRADE + " TEXT," +
+                    BasketballContract.User.COLUMN_CLASS + " TEXT," +
+                    BasketballContract.User.COLUMN_GRADE + " TEXT," +
                     BasketballContract.User.COLUMN_IS_ADMIN + " INTEGER," +
                     BasketballContract.User.COLUMN_PHOTO_URL + " TEXT," +
                     BasketballContract.User.COLUMN_TEL + " TEXT)"

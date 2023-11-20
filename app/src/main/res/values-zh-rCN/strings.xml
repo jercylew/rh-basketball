@@ -47,6 +47,7 @@
     <string name="admin_user_register_hint_weight">体重</string>
     <string name="admin_user_register_hint_aqddress">地址</string>
     <string name="admin_user_register_hint_phone">手机号码</string>
+    <string name="admin_user_register_hint_grade">年级</string>
     <string name="admin_user_register_hint_class_grade">班级</string>
     <string name="admin_user_register_alert_name_null">姓名不能为空</string>
     <string name="admin_user_register_alert_gender_null">请选择性别</string>

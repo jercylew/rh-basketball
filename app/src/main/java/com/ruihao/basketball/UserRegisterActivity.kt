@@ -171,18 +171,21 @@ class UserRegisterActivity : AppCompatActivity() {
 
             val tel: String = binding.etPhone.text.toString()
             val age: Int = if (binding.age.text.toString() == "") 0 else binding.age.text.toString().toInt()
-            val classGrade: String = binding.etClassGrade.text.toString()
+            val classNo: String = binding.etClass.text.toString()
+            val gradeNo: String = binding.etGrade.text.toString()
             val newUUID: String = if (mTempUUID == "") UUID.randomUUID().toString() else mTempUUID
 
             if (mActionType == "edit") {
                 mUserToEdit?.let { it1 ->
-                    mDbHelper.updateUser(id = it1.id, name = name, barQRNo = barQRNumber, icCardNo = icCardNumber,
-                        age = age, gender = mGender,  tel = tel, classGrade = classGrade, photoUrl = insertPhotoUrl)
+                    mDbHelper.updateUser(id = it1.id, name = name, barQRNo = barQRNumber,
+                        icCardNo = icCardNumber, age = age, gender = mGender,  tel = tel,
+                        classNo = classNo, gradeNo=gradeNo, photoUrl = insertPhotoUrl)
                 }
             }
             else {
-                mDbHelper.addNewUser(id = newUUID, name = name, barQRNo = barQRNumber, icCardNo = icCardNumber,
-                    age = age, gender = mGender,  tel = tel, classGrade = classGrade, photoUrl = insertPhotoUrl)
+                mDbHelper.addNewUser(id = newUUID, name = name, barQRNo = barQRNumber,
+                    icCardNo = icCardNumber, age = age, gender = mGender,  tel = tel,
+                    classNo = classNo, gradeNo=gradeNo, photoUrl = insertPhotoUrl)
             }
 
             Toast.makeText(baseContext, getString(R.string.admin_user_register_tip_user_register_succeed),
@@ -230,7 +233,8 @@ class UserRegisterActivity : AppCompatActivity() {
             binding.age.setText(mUserToEdit?.age.toString())
             binding.height.setText("")
             binding.currentWeight.setText("")
-            binding.etClassGrade.setText(mUserToEdit?.classGrade)
+            binding.etClass.setText(mUserToEdit?.classNo)
+            binding.etGrade.setText(mUserToEdit?.gradeNo)
             binding.title.text = getString(R.string.admin_user_edit_title)
 
             val userPhotoUrl = "$mPhotoSavePath/${mUserToEdit?.id}.jpg"

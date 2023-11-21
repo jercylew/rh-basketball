@@ -42,6 +42,7 @@ import kotlinx.coroutines.withContext
 import org.java_websocket.drafts.Draft
 import org.java_websocket.drafts.Draft_6455
 import org.java_websocket.extensions.permessage_deflate.PerMessageDeflateExtension
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import org.videolan.libvlc.LibVLC
@@ -1167,50 +1168,14 @@ class MainActivity : AppCompatActivity() {
             joPayload.put("rows", 10)
 
             try {
-                val url = URL(postUrl)
+                mDbHelper.clearAllUsers()
+                val cloudUserInfoUrl = URL(postUrl)
                 for (page in 1..300) { // At most 3000
                     try {
-                        val httpURLConnection = url.openConnection() as HttpURLConnection
-                        httpURLConnection.requestMethod = "POST"
-                        httpURLConnection.setRequestProperty("Content-Type", "application/json")
-                        httpURLConnection.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ7XCJkZXB0Y29kZVwiOlwiMTAwMDEwMDA2N0QwMDAwMVwiLFwiZGVwdGlkXCI6MTgxLFwiZGVwdG5hbWVcIjpcIuWQjuWPsOeuoeeQhumDqFwiLFwiZmRlcHRjb2Rlc1wiOltcIjEwMDAxMDAwNjdEMDAwMDFcIl0sXCJmdXNlcnNcIjpbXCJcIixcIlwiLFwiXCJdLFwib3JnYW5jb2RlXCI6XCIxMDAwMTAwMDY3XCIsXCJvcmdhbmlkXCI6NjYsXCJvcmdhbm5hbWVcIjpcIueQg-aculwiLFwicGFzc3dvcmRcIjpcIlwiLFwicmVhbGFuYW1lXCI6XCJhZDAwMDZcIixcInJvbGVzXCI6W1wi566h55CG5ZGYXCJdLFwidXNlcklkXCI6MTk3LFwidXNlck5hbWVcIjpcImFkMDAwNlwifSIsImV4cCI6MTY5OTI2MjE5MCwiaWF0IjoxNjk5MjU4NTkwfQ.E39mAsPhOj4cH--tDDLpQPJlSEMtyFIcG1YhQ5IW0-g")
-
-                        //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
-                        httpURLConnection.doOutput = true
-                        // this is used for just in case we don't know about the data size associated with our request
-                        httpURLConnection.setChunkedStreamingMode(0)
-
-                        joPayload.put("page", page)
-                        Log.d(TAG, "Sync users list from cloud, HTTP post: $joPayload")
-                        // to write tha data in our request
-                        val outputStream: OutputStream =
-                            BufferedOutputStream(httpURLConnection.outputStream)
-                        val outputStreamWriter = OutputStreamWriter(outputStream)
-                        outputStreamWriter.write(joPayload.toString())
-                        outputStreamWriter.flush()
-                        outputStreamWriter.close()
-
-                        val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
-                        val bufferReader: BufferedReader = BufferedReader(InputStreamReader(inputStream))
-                        val respText =  bufferReader.readText()
-                        bufferReader.close()
-                        httpURLConnection.disconnect()
-
-                        Log.d(TAG, "Get user list from cloud: $respText")
-                        val joResp = JSONObject(respText)
-                        if (!joResp.getBoolean("success")) {
-                            continue
-                        }
-
-                        val joRespData = joResp.getJSONObject("data")
-                        val jaList = joRespData.getJSONArray("list")
-                        if (jaList.length() == 0) {
+                        val addedUsersCount = addBatchUsers(cloudUserInfoUrl, page, joPayload)
+                        if (addedUsersCount == 0) {
                             break
                         }
-
-                        //Save to db
-
-                        //Register to face machine
                     }
                     catch (exc: Exception) {
                         Log.d(TAG, "Exception occurred when fetching user list from cloud: ${exc.toString()}, page: $page")
@@ -1224,6 +1189,153 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "Exception occurred when saving user list to local machine: ${exc.toString()}")
             }
         }
+    }
+
+    private fun addBatchUsers(cloudUserInfoUrl: URL, page: Int, joReqCommonPayload: JSONObject): Int {
+        val httpURLConnection = cloudUserInfoUrl.openConnection() as HttpURLConnection
+        httpURLConnection.requestMethod = "POST"
+        httpURLConnection.setRequestProperty("Content-Type", "application/json")
+        httpURLConnection.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ7XCJkZXB0Y29kZVwiOlwiMTAwMDEwMDA2N0QwMDAwMVwiLFwiZGVwdGlkXCI6MTgxLFwiZGVwdG5hbWVcIjpcIuWQjuWPsOeuoeeQhumDqFwiLFwiZmRlcHRjb2Rlc1wiOltcIjEwMDAxMDAwNjdEMDAwMDFcIl0sXCJmdXNlcnNcIjpbXCJcIixcIlwiLFwiXCJdLFwib3JnYW5jb2RlXCI6XCIxMDAwMTAwMDY3XCIsXCJvcmdhbmlkXCI6NjYsXCJvcmdhbm5hbWVcIjpcIueQg-aculwiLFwicGFzc3dvcmRcIjpcIlwiLFwicmVhbGFuYW1lXCI6XCJhZDAwMDZcIixcInJvbGVzXCI6W1wi566h55CG5ZGYXCJdLFwidXNlcklkXCI6MTk3LFwidXNlck5hbWVcIjpcImFkMDAwNlwifSIsImV4cCI6MTY5OTI2MjE5MCwiaWF0IjoxNjk5MjU4NTkwfQ.E39mAsPhOj4cH--tDDLpQPJlSEMtyFIcG1YhQ5IW0-g")
+
+        //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
+        httpURLConnection.doOutput = true
+        // this is used for just in case we don't know about the data size associated with our request
+        httpURLConnection.setChunkedStreamingMode(0)
+
+        joReqCommonPayload.put("page", page)
+        Log.d(TAG, "Sync users list from cloud, HTTP post: $joReqCommonPayload")
+        // to write tha data in our request
+        val outputStream: OutputStream =
+            BufferedOutputStream(httpURLConnection.outputStream)
+        val outputStreamWriter = OutputStreamWriter(outputStream)
+        outputStreamWriter.write(joReqCommonPayload.toString())
+        outputStreamWriter.flush()
+        outputStreamWriter.close()
+
+        val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+        val bufferReader = BufferedReader(InputStreamReader(inputStream))
+        val respText =  bufferReader.readText()
+        bufferReader.close()
+        httpURLConnection.disconnect()
+
+        Log.d(TAG, "Get user list from cloud: $respText")
+        val joResp = JSONObject(respText)
+        if (!joResp.getBoolean("success")) {
+            return 0
+        }
+
+        val joRespData = joResp.getJSONObject("data")
+        val jaList = joRespData.getJSONArray("list")
+        if (jaList.length() == 0) {
+            return 0
+        }
+
+        val jaUsersListToRegister = JSONArray()
+        for (index in 0..jaList.length()) {
+            val joUserInfo = jaList.getJSONObject(index)
+            val name = joUserInfo.getString("stuentInfo_2alr")
+            val userId = joUserInfo.getString("stuentInfo_6l3r")
+            val icCardId = joUserInfo.getString("stuentInfo_dkqz")
+            val classNo = joUserInfo.getString("stuentInfo_zha9_text")
+            val gradeNo = joUserInfo.getString("stuentInfo_7lw6")
+            val photoUrl = joUserInfo.getString("stuentInfo_lrzn")
+            val gender = if (joUserInfo.getString("stuentInfo_zqvl") == "男") 0 else 1
+            val age = joUserInfo.getDouble("stuentInfo_fodb")
+
+            mDbHelper.addNewUser(id = UUID.randomUUID().toString(), name = name, barQRNo = userId,
+                icCardNo = icCardId, age = age.toInt(), gender = gender,  tel = "",
+                classNo = classNo, gradeNo=gradeNo, photoUrl = photoUrl)
+
+            val joUserInfoToRegister = JSONObject()
+            joUserInfoToRegister.put("index", index)
+            joUserInfoToRegister.put("isUpdate", 1)
+
+            joUserInfoToRegister.put("gender", if(gender == 0) "male" else "female")
+            joUserInfoToRegister.put("phone", "")
+            joUserInfoToRegister.put("name", name)
+            joUserInfoToRegister.put("workId", userId)
+            joUserInfoToRegister.put("userType", 0)
+            joUserInfoToRegister.put("age", 18)
+            joUserInfoToRegister.put("email", "")
+            joUserInfoToRegister.put("address", "")
+            joUserInfoToRegister.put("birth", "")
+            joUserInfoToRegister.put("country", "中国")
+            joUserInfoToRegister.put("nation", "")
+            joUserInfoToRegister.put("certificateType", 1)
+            joUserInfoToRegister.put("certificateNumber", "")
+
+            val joAccessInfo = JSONObject()
+            joAccessInfo.put("cardNum", "")
+            joAccessInfo.put("password", "")
+            joAccessInfo.put("authType", 0)
+            joAccessInfo.put("validtimeenable", 0)
+            joAccessInfo.put("validtime", "")
+            joAccessInfo.put("validtimeend", "")
+            joAccessInfo.put("eledisrules", JSONArray())
+            joUserInfoToRegister.put("accessInfo", joAccessInfo)
+
+            val jaUserImages = JSONArray()
+            val joUserImage = JSONObject()
+//            joUserImage.put("data", "")
+            joUserImage.put("format", "png")
+            joUserImage.put("url", photoUrl)
+
+            jaUserImages.put(joUserImage)
+            joUserInfoToRegister.put("images", jaUserImages)
+
+            jaUsersListToRegister.put(joUserInfoToRegister)
+        }
+
+        return registerBatchUserToFaceRecogMachine(jaUsersListToRegister)
+    }
+
+    private fun registerBatchUserToFaceRecogMachine(jaUsersList: JSONArray): Int {
+        val userRegisterUrlAddress = "http://$mCameraIP:8086/api/v1/addmultifaces"
+        val userRegisterUrl = URL(userRegisterUrlAddress)
+        val httpURLConnection = userRegisterUrl.openConnection() as HttpURLConnection
+        httpURLConnection.requestMethod = "POST"
+        httpURLConnection.setRequestProperty("Content-Type", "application/json")
+
+        //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
+        httpURLConnection.doOutput = true
+        // this is used for just in case we don't know about the data size associated with our request
+        httpURLConnection.setChunkedStreamingMode(0)
+
+        val joRegisterReqPayload = JSONObject()
+        joRegisterReqPayload.put("Persons", jaUsersList)
+        Log.d(TAG, "Register users, HTTP post: $joRegisterReqPayload")
+        // to write tha data in our request
+        val outputStream: OutputStream =
+            BufferedOutputStream(httpURLConnection.outputStream)
+        val outputStreamWriter = OutputStreamWriter(outputStream)
+        outputStreamWriter.write(joRegisterReqPayload.toString())
+        outputStreamWriter.flush()
+        outputStreamWriter.close()
+
+        val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+        val bufferReader = BufferedReader(InputStreamReader(inputStream))
+        val respText =  bufferReader.readText()
+        bufferReader.close()
+        httpURLConnection.disconnect()
+
+        Log.d(TAG, "Get user list from cloud: $respText")
+        val joRegisterResp = JSONObject(respText)
+        if (joRegisterResp.getInt("status") != 0) {
+            Log.e(TAG, "Failed to register the users: $jaUsersList")
+            return 0
+        }
+
+        val joRespData = joRegisterResp.getJSONObject("data")
+        val jaRegisteredUsers = joRespData.getJSONArray("multiResult")
+        var totalRegistered = 0
+        for (index in 0..jaRegisteredUsers.length()) {
+            val joRegisteredUser = jaRegisteredUsers.getJSONObject(index)
+            if (joRegisteredUser.getInt("errorCode") == 0) {
+                totalRegistered++
+            }
+        }
+
+        return totalRegistered
     }
 
     private fun syncBorrowRecordToCloud() {

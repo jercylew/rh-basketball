@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Environment
+import android.util.Base64
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
@@ -24,10 +25,27 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.preference.PreferenceManager
 import com.chaquo.python.Python
 import com.ruihao.basketball.databinding.ActivityUserRegisterBinding
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
+import org.videolan.libvlc.LibVLC
+import org.videolan.libvlc.Media
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.io.BufferedReader
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.io.OutputStream
+import java.io.OutputStreamWriter
+import java.net.HttpURLConnection
+import java.net.URL
 import java.security.InvalidParameterException
 import java.util.ArrayList
 import java.util.LinkedList
@@ -37,8 +55,8 @@ import java.util.UUID
 
 class UserRegisterActivity : AppCompatActivity() {
     private lateinit var binding: ActivityUserRegisterBinding
-    private lateinit var mImageCapture: ImageCapture
-    private lateinit var mPreview: Preview
+//    private lateinit var mImageCapture: ImageCapture
+//    private lateinit var mPreview: Preview
 
     private var mUserId: String = "" //The administrator's ID, not used so far
     private var mActionType: String = ""
@@ -51,6 +69,10 @@ class UserRegisterActivity : AppCompatActivity() {
     private var mScanBarQRCodeTimer: CountDownTimer? = null
     private var mScanBarQRCodeBytes: ArrayList<Int> = ArrayList<Int>()
     private var mUserToEdit: User? = null
+    private var mCameraIP: String = ""
+    private lateinit var libVlc: LibVLC
+    private lateinit var mediaPlayer: org.videolan.libvlc.MediaPlayer
+    private var mCurrentSavedImageBase64: String = ""
 
     private val mPhotoSavePath: String = Environment.getExternalStorageDirectory().path +
             "/RhBasketball/data/"
@@ -83,36 +105,40 @@ class UserRegisterActivity : AppCompatActivity() {
         binding = ActivityUserRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.imvPhoto.setOnClickListener{
-            val imageCapture = mImageCapture ?: return@setOnClickListener
             mTempUUID = UUID.randomUUID().toString()
-            val outputOptions = ImageCapture.OutputFileOptions
-                .Builder(File(getSavedCapturedImagePath()))
-                .build()
-
-            imageCapture.takePicture(
-                outputOptions,
-                ContextCompat.getMainExecutor(this),
-                object : ImageCapture.OnImageSavedCallback {
-                    override fun onError(exc: ImageCaptureException) {
-                        Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
-                    }
-
-                    override fun onImageSaved(output: ImageCapture.OutputFileResults){
-                        val msg = "Photo capture succeeded: ${output.savedUri}"
-                        Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-                        val imgFile = File(output.savedUri?.path ?: "")
-                        if (imgFile.exists()) {
-                            val imgBitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
-                            binding.imvPhoto.setImageBitmap(imgBitmap)
-                        }
-                    }
-                }
-            )
+            val imageSavePath = getSavedCapturedImagePath()
+            takePhoto(imageSavePath)
+//            val imageCapture = mImageCapture ?: return@setOnClickListener
+//            mTempUUID = UUID.randomUUID().toString()
+//            val outputOptions = ImageCapture.OutputFileOptions
+//                .Builder(File(getSavedCapturedImagePath()))
+//                .build()
+//
+//            imageCapture.takePicture(
+//                outputOptions,
+//                ContextCompat.getMainExecutor(this),
+//                object : ImageCapture.OnImageSavedCallback {
+//                    override fun onError(exc: ImageCaptureException) {
+//                        Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+//                    }
+//
+//                    override fun onImageSaved(output: ImageCapture.OutputFileResults){
+//                        val msg = "Photo capture succeeded: ${output.savedUri}"
+//                        Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+//                        val imgFile = File(output.savedUri?.path ?: "")
+//                        if (imgFile.exists()) {
+//                            val imgBitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
+//                            binding.imvPhoto.setImageBitmap(imgBitmap)
+//                        }
+//                    }
+//                }
+//            )
         }
         binding.btnSubmit.setOnClickListener{
             val name: String = binding.names.text.toString()
             val icCardNumber: String = binding.etICCardNo.text.toString()
             val barQRNumber: String = binding.etBarQRNo.text.toString()
+            val phoneNo: String = binding.etPhone.text.toString()
 
             if (name == "") {
                 Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_name_null),
@@ -144,19 +170,58 @@ class UserRegisterActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            var insertPhotoUrl: String = ""
-            if (imgFile.exists()) {
-                val py = Python.getInstance()
-                val module = py.getModule("face_recognition_wrapper")
-                val retResult: Boolean = module.callAttr("register_face",
-                    imgFile.absolutePath, mFaceRecognitionModelPath)
-                    .toBoolean()
+            var insertPhotoUrl = ""
+            if (imgFile.exists() && (mActionType != "edit")) { //Only register to face recognize machine for new created user, not when editing existing user
+//                val py = Python.getInstance()
+//                val module = py.getModule("face_recognition_wrapper")
+//                val retResult: Boolean = module.callAttr("register_face",
+//                    imgFile.absolutePath, mFaceRecognitionModelPath)
+//                    .toBoolean()
 
-                if (retResult) {
+                //Register to face recognize machine
+                val jaUsersListToRegister = JSONArray()
+                val joUserInfoToRegister = JSONObject()
+                joUserInfoToRegister.put("index", getUserIndexFromFaceRecognizeMachine(mActionType != "edit"))
+                joUserInfoToRegister.put("isUpdate", 1)
+
+                joUserInfoToRegister.put("gender", if(mGender == 0) "male" else "female")
+                joUserInfoToRegister.put("phone", phoneNo)
+                joUserInfoToRegister.put("name", name)
+                joUserInfoToRegister.put("workId", barQRNumber)
+                joUserInfoToRegister.put("userType", 0)
+                joUserInfoToRegister.put("age", 18)
+                joUserInfoToRegister.put("email", "")
+                joUserInfoToRegister.put("address", "")
+                joUserInfoToRegister.put("birth", "")
+                joUserInfoToRegister.put("country", "中国")
+                joUserInfoToRegister.put("nation", "")
+                joUserInfoToRegister.put("certificateType", 1)
+                joUserInfoToRegister.put("certificateNumber", "")
+
+                val joAccessInfo = JSONObject()
+                joAccessInfo.put("cardNum", icCardNumber)
+                joAccessInfo.put("password", "")
+                joAccessInfo.put("authType", 0)
+                joAccessInfo.put("validtimeenable", 0)
+                joAccessInfo.put("validtime", "")
+                joAccessInfo.put("validtimeend", "")
+                joAccessInfo.put("eledisrules", JSONArray())
+                joUserInfoToRegister.put("accessInfo", joAccessInfo)
+
+                val jaUserImages = JSONArray()
+                val joUserImage = JSONObject()
+                joUserImage.put("data", mCurrentSavedImageBase64)
+                joUserImage.put("format", "jpg")
+
+                jaUserImages.put(joUserImage)
+                joUserInfoToRegister.put("images", jaUserImages)
+                jaUsersListToRegister.put(joUserInfoToRegister)
+
+                if (registerBatchUserToFaceRecogMachine(jaUsersListToRegister) > 0) {
                     insertPhotoUrl = imgFile.absolutePath
                 }
                 else {
-                    Log.e(TAG, "Failed to register user, adding user face to model failed")
+                    Log.e(TAG, "Failed to register user, adding user face to face recognize machine failed")
                     Toast.makeText(baseContext, getString(R.string.admin_user_register_alert_face_not_found),
                         Toast.LENGTH_SHORT).show()
                     playAudio(R.raw.admin_user_register_alert_face_not_found)
@@ -166,6 +231,7 @@ class UserRegisterActivity : AppCompatActivity() {
                     if (barQRNumber == "" && icCardNumber == "") {
                         return@setOnClickListener
                     }
+                    return@setOnClickListener
                 }
             }
 
@@ -199,7 +265,70 @@ class UserRegisterActivity : AppCompatActivity() {
 
         comPort = SerialControl()
 
-        startCamera()
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        mCameraIP = sharedPreferences.getString("camera_rtsp_ip", "192.168.1.15").toString()
+
+//        startCamera()
+        libVlc = LibVLC(this)
+        mediaPlayer = org.videolan.libvlc.MediaPlayer(libVlc)
+    }
+
+    private fun getUserIndexFromFaceRecognizeMachine(newUser: Boolean = false): Int {
+        var index = 0
+        if (newUser) {
+            val userList: ArrayList<User> = mDbHelper.getAllUsers()
+            index = userList.size
+        }
+        return index
+    }
+
+    private fun registerBatchUserToFaceRecogMachine(jaUsersList: JSONArray): Int {
+        val userRegisterUrlAddress = "http://$mCameraIP:8086/api/v1/addmultifaces"
+        val userRegisterUrl = URL(userRegisterUrlAddress)
+        val httpURLConnection = userRegisterUrl.openConnection() as HttpURLConnection
+        httpURLConnection.requestMethod = "POST"
+        httpURLConnection.setRequestProperty("Content-Type", "application/json")
+
+        //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
+        httpURLConnection.doOutput = true
+        // this is used for just in case we don't know about the data size associated with our request
+        httpURLConnection.setChunkedStreamingMode(0)
+
+        val joRegisterReqPayload = JSONObject()
+        joRegisterReqPayload.put("Persons", jaUsersList)
+        Log.d(TAG, "Register users, HTTP post: $joRegisterReqPayload")
+        // to write tha data in our request
+        val outputStream: OutputStream =
+            BufferedOutputStream(httpURLConnection.outputStream)
+        val outputStreamWriter = OutputStreamWriter(outputStream)
+        outputStreamWriter.write(joRegisterReqPayload.toString())
+        outputStreamWriter.flush()
+        outputStreamWriter.close()
+
+        val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+        val bufferReader = BufferedReader(InputStreamReader(inputStream))
+        val respText =  bufferReader.readText()
+        bufferReader.close()
+        httpURLConnection.disconnect()
+
+        Log.d(TAG, "Get user list from cloud: $respText")
+        val joRegisterResp = JSONObject(respText)
+        if (joRegisterResp.getInt("status") != 0) {
+            Log.e(TAG, "Failed to register the users: $jaUsersList")
+            return 0
+        }
+
+        val joRespData = joRegisterResp.getJSONObject("data")
+        val jaRegisteredUsers = joRespData.getJSONArray("multiResult")
+        var totalRegistered = 0
+        for (index in 0..jaRegisteredUsers.length()) {
+            val joRegisteredUser = jaRegisteredUsers.getJSONObject(index)
+            if (joRegisteredUser.getInt("errorCode") == 0) {
+                totalRegistered++
+            }
+        }
+
+        return totalRegistered
     }
 
     override fun onResume() {
@@ -220,10 +349,12 @@ class UserRegisterActivity : AppCompatActivity() {
                 "男" -> {
                     binding.male.isChecked = true
                     binding.female.isChecked = false
+                    mGender = 0
                 }
                 "女" -> {
                     binding.male.isChecked = false
                     binding.female.isChecked = true
+                    mGender = 1
                 }
                 else -> {
                     binding.male.isChecked = false
@@ -245,6 +376,29 @@ class UserRegisterActivity : AppCompatActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+
+        mediaPlayer.attachViews(binding.prvUserRegisterPhoto, null, false, false)
+
+        val cameraRtsp = "rtsp://${mCameraIP}:554/av_stream0"
+        val media = Media(libVlc, Uri.parse(cameraRtsp))
+        media.setHWDecoderEnabled(true, false)
+        media.addOption(":network-caching=20")
+
+        mediaPlayer.media = media
+        media.release()
+        mediaPlayer.play()
+    }
+
+    override fun onStop()
+    {
+        super.onStop()
+
+        mediaPlayer.stop()
+        mediaPlayer.detachViews()
+    }
+
     override fun onPause() {
         comPort?.close()
         dispQueue?.interrupt()
@@ -253,9 +407,11 @@ class UserRegisterActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-        cameraProvider.unbindAll()
+//        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+//        val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+//        cameraProvider.unbindAll()
+        mediaPlayer.release()
+        libVlc.release()
 
         super.onDestroy()
     }
@@ -385,37 +541,37 @@ class UserRegisterActivity : AppCompatActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.R)
-    private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        mImageCapture = display?.let {
-            ImageCapture.Builder()
-                .setTargetRotation(it.rotation)
-                .build()
-        }!!
-
-        cameraProviderFuture.addListener({
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-
-            mPreview = Preview.Builder()
-                .build()
-                .also {
-                    it.setSurfaceProvider(binding.prvUserRegisterPhoto.surfaceProvider)
-                }
-
-            // Select back camera as a default
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
-                    this, cameraSelector, mPreview, mImageCapture)
-
-            } catch(exc: Exception) {
-                Log.e(TAG, "Use case binding failed", exc)
-            }
-
-        }, ContextCompat.getMainExecutor(this))
-    }
+//    @RequiresApi(Build.VERSION_CODES.R)
+//    private fun startCamera() {
+//        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+//        mImageCapture = display?.let {
+//            ImageCapture.Builder()
+//                .setTargetRotation(it.rotation)
+//                .build()
+//        }!!
+//
+//        cameraProviderFuture.addListener({
+//            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+//
+//            mPreview = Preview.Builder()
+//                .build()
+//                .also {
+//                    it.setSurfaceProvider(binding.prvUserRegisterPhoto.surfaceProvider)
+//                }
+//
+//            // Select back camera as a default
+//            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+//            try {
+//                cameraProvider.unbindAll()
+//                cameraProvider.bindToLifecycle(
+//                    this, cameraSelector, mPreview, mImageCapture)
+//
+//            } catch(exc: Exception) {
+//                Log.e(TAG, "Use case binding failed", exc)
+//            }
+//
+//        }, ContextCompat.getMainExecutor(this))
+//    }
 
     private fun getSavedCapturedImagePath(): String {
         return "$mPhotoSavePath$mTempUUID.jpg"
@@ -461,6 +617,89 @@ class UserRegisterActivity : AppCompatActivity() {
                     this.resources.getResourceTypeName(resID) + '/' +
                     this.resources.getResourceEntryName(resID)
         )
+    }
+
+    private fun takePhoto(saveImagePath: String) {
+        GlobalScope.launch {
+            val cameraSnapUrl = "http://$mCameraIP:8086/api/v1/remoteSnapPic"
+            try {
+                val url = URL(cameraSnapUrl)
+                val httpURLConnection = url.openConnection() as HttpURLConnection
+                httpURLConnection.requestMethod = "GET"
+
+                val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+                val bufferReader = BufferedReader(InputStreamReader(inputStream))
+                val respText =  bufferReader.readText()
+                bufferReader.close()
+                httpURLConnection.disconnect()
+
+//                Log.d(TAG, "Take photo: $respText")
+                val joResp = JSONObject(respText)
+                if (joResp.getInt("status") != 0) {
+                    Log.d(TAG, "Camera failed to snap photo: ${joResp.getString("detail")}")
+                    return@launch
+                }
+
+                val joRespData = joResp.getJSONObject("data")
+                val joSnapPicture = joRespData.getJSONObject("SnapPicture")
+                mCurrentSavedImageBase64 = joSnapPicture.getString("SnapPictureBase64")
+                var imageBase64HeaderStriped = mCurrentSavedImageBase64
+
+                val commaPos = mCurrentSavedImageBase64.indexOf(",")
+                if (commaPos >= 0) {
+                    imageBase64HeaderStriped = mCurrentSavedImageBase64.substring(commaPos + 1)
+                }
+
+                val file = File(saveImagePath)
+                if (file.exists()) {
+                    file.delete()
+                }
+
+                val out = FileOutputStream(file)
+
+                val bos = BufferedOutputStream(out)
+                val bfile: ByteArray = Base64.decode(imageBase64HeaderStriped, Base64.DEFAULT)
+                bos.write(bfile)
+                bos.flush()
+                bos.close()
+                out.flush()
+                out.close()
+                Log.d(TAG, "Taken photo saved: $saveImagePath")
+
+                val imgFile = File(saveImagePath)
+                if (imgFile.exists()) {
+                    runOnUiThread {
+                        val imgBitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
+                        binding.imvPhoto.setImageBitmap(imgBitmap)
+                    }
+                }
+            }
+            catch (exc: Exception) {
+                Log.d(TAG, "Exception occurred when taking photo: ${exc.toString()}")
+            }
+        }
+
+        // Using camera attached to this
+//        val imageCapture = imageCapture ?: return
+//        val outputOptions = ImageCapture.OutputFileOptions
+//            .Builder(File(saveImagePath))
+//            .build()
+//
+//        imageCapture.takePicture(
+//            outputOptions,
+//            ContextCompat.getMainExecutor(this),
+//            object : ImageCapture.OnImageSavedCallback {
+//                override fun onError(exc: ImageCaptureException) {
+//                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+//                }
+//
+//                override fun onImageSaved(output: ImageCapture.OutputFileResults){
+//                    val msg = "Photo capture succeeded: ${output.savedUri}"
+//                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+//                    Log.d(TAG, msg)
+//                }
+//            }
+//        )
     }
 
     //TODO: Move to a separate class later

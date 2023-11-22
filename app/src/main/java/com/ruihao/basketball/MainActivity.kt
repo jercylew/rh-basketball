@@ -34,11 +34,9 @@ import androidx.preference.PreferenceManager
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.ruihao.basketball.databinding.ActivityMainBinding
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.java_websocket.drafts.Draft
 import org.java_websocket.drafts.Draft_6455
 import org.java_websocket.extensions.permessage_deflate.PerMessageDeflateExtension
@@ -470,7 +468,7 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "Face recognized, userId: $pushUserId, userName: $pushUserName")
                 runOnUiThread {
                     if (mUser == null) {
-                        loginUser(BaseColumns._ID, pushUserId)
+                        loginUser(BasketballContract.User.COLUMN_BAR_QR_NO, pushUserId)
                     }
                 }
             } catch (exc: JSONException) {
@@ -782,7 +780,7 @@ class MainActivity : AppCompatActivity() {
                 httpURLConnection.requestMethod = "GET"
 
                 val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
-                val bufferReader: BufferedReader = BufferedReader(InputStreamReader(inputStream))
+                val bufferReader = BufferedReader(InputStreamReader(inputStream))
                 val respText =  bufferReader.readText()
                 bufferReader.close()
                 httpURLConnection.disconnect()

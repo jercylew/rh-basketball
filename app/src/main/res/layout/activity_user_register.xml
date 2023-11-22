@@ -240,10 +240,14 @@
         app:layout_constraintStart_toEndOf="@+id/names"
         app:layout_constraintTop_toBottomOf="@+id/etBarQRNo" />
 
-    <androidx.camera.view.PreviewView
+    <org.videolan.libvlc.util.VLCVideoLayout
         android:id="@+id/prvUserRegisterPhoto"
         android:layout_width="155dp"
         android:layout_height="154dp"
+        android:layout_marginStart="180dp"
+        android:layout_marginTop="840dp"
+        android:layout_marginEnd="440dp"
+        android:layout_marginBottom="270dp"
         app:layout_constraintBottom_toTopOf="@+id/chkTermsConditions"
         app:layout_constraintEnd_toStartOf="@+id/imvPhoto"
         app:layout_constraintHorizontal_bias="0.583"

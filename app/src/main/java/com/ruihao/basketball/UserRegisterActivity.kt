@@ -519,7 +519,7 @@ class UserRegisterActivity : AppCompatActivity() {
         try {
             comPort.open()
 //            Toast.makeText(this, "Open serial port succeed: ${comPort.sPort}",
-//                Toast.LENGTH_LONG).show();
+//                Toast.LENGTH_LONG).show()
         } catch (e: SecurityException) {
             Log.e(TAG, "Unable to open serial port, permission denied!")
         } catch (e: IOException) {
@@ -579,12 +579,12 @@ class UserRegisterActivity : AppCompatActivity() {
 
     private fun dispRecData(comRecData: ComBean) {
         val strReceived: String? = comRecData.bRec?.let { serialPortBytesToString(it) }
-        binding.etICCardNo.text.clear()
+        Log.d(TAG, "To set new ic card number: $strReceived")
         binding.etICCardNo.setText(strReceived)
     }
 
     private fun serialPortBytesToString(bytes: ByteArray): String {
-        var strText: String = ""
+        var strText = ""
 
         for (ch in bytes) {
             strText += ch.toUInt().toString(16)
@@ -593,20 +593,22 @@ class UserRegisterActivity : AppCompatActivity() {
         return strText
     }
 
-    private fun playAudio(src: Int): Unit {
-        if (mMediaPlayer == null) {
-            mMediaPlayer = MediaPlayer.create(this, src)
-            mMediaPlayer?.start()
-        }
-        else {
-            if (mMediaPlayer!!.isPlaying) {
-                return
+    private fun playAudio(src: Int) {
+        GlobalScope.launch {
+            if (mMediaPlayer == null) {
+                mMediaPlayer = MediaPlayer.create(this@UserRegisterActivity, src)
+                mMediaPlayer?.start()
             }
-            mMediaPlayer!!.reset()
+            else {
+                if (mMediaPlayer!!.isPlaying) {
+                    return@launch
+                }
+                mMediaPlayer!!.reset()
 
-            resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this, it) }
-            mMediaPlayer!!.prepare()
-            mMediaPlayer!!.start()
+                resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this@UserRegisterActivity, it) }
+                mMediaPlayer!!.prepare()
+                mMediaPlayer!!.start()
+            }
         }
     }
 
@@ -725,6 +727,7 @@ class UserRegisterActivity : AppCompatActivity() {
                 }
 
                 while (queueList.poll().also { comData = it } != null) {
+                    Log.d(TAG, "Read data within thread, got a new message")
                     this@UserRegisterActivity.runOnUiThread(Runnable { dispRecData(comData) })
                     try {
                         sleep(100)

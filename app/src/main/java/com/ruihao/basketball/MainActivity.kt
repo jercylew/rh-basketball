@@ -1351,7 +1351,9 @@ class MainActivity : AppCompatActivity() {
             //最终效果差不多-_-，线程定时刷新稍好一些。
             if (comRecData != null) {
                 Log.d("RH_Basketball##########", "onDataReceived $comRecData")
-                dispQueue?.addQueue(comRecData)
+                if (!mAdminActivityRunning) {
+                    dispQueue?.addQueue(comRecData)
+                }
             } //线程定时刷新显示(推荐)
         }
     }

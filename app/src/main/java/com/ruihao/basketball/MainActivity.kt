@@ -149,7 +149,7 @@ class MainActivity : AppCompatActivity() {
             if (mUser == null) {
                 Toast.makeText(
                     this@MainActivity, getString(R.string.tip_login),
-                    Toast.LENGTH_LONG
+                    Toast.LENGTH_SHORT
                 ).show()
                 playAudio(R.raw.tip_login)
                 return@setOnClickListener
@@ -160,7 +160,7 @@ class MainActivity : AppCompatActivity() {
             if (!mModbusOk) {
                 Toast.makeText(
                     this@MainActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_LONG
+                    Toast.LENGTH_SHORT
                 ).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
@@ -170,7 +170,7 @@ class MainActivity : AppCompatActivity() {
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 0) {
                 Toast.makeText(
                     this@MainActivity, getString(R.string.tip_no_basketball),
-                    Toast.LENGTH_LONG
+                    Toast.LENGTH_SHORT
                 ).show()
                 playAudio(R.raw.tip_no_basketball)
                 return@setOnClickListener
@@ -180,7 +180,7 @@ class MainActivity : AppCompatActivity() {
             if (!canUserBorrow()) {
                 Toast.makeText(
                     this@MainActivity, getString(R.string.tip_borrowed_exceed_limit),
-                    Toast.LENGTH_LONG
+                    Toast.LENGTH_SHORT
                 ).show()
                 playAudio(R.raw.tip_borrowed_exceed_limit)
                 return@setOnClickListener
@@ -215,7 +215,7 @@ class MainActivity : AppCompatActivity() {
             if (!regCleared) { //Timeout
                 Toast.makeText(
                     this@MainActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_LONG
+                    Toast.LENGTH_SHORT
                 ).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
@@ -233,7 +233,7 @@ class MainActivity : AppCompatActivity() {
             // Inform the user toc (Play audio)
             Toast.makeText(
                 this@MainActivity, getString(R.string.tip_take_basketball),
-                Toast.LENGTH_LONG
+                Toast.LENGTH_SHORT
             ).show()
             playAudio(R.raw.tip_take_basketball)
 
@@ -252,7 +252,7 @@ class MainActivity : AppCompatActivity() {
             if (mUser == null) {
                 Toast.makeText(
                     this@MainActivity, getString(R.string.tip_login),
-                    Toast.LENGTH_LONG
+                    Toast.LENGTH_SHORT
                 ).show()
                 playAudio(R.raw.tip_login)
                 return@setOnClickListener
@@ -263,7 +263,7 @@ class MainActivity : AppCompatActivity() {
             if (!mModbusOk) {
                 Toast.makeText(
                     this@MainActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_LONG
+                    Toast.LENGTH_SHORT
                 ).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
@@ -272,7 +272,7 @@ class MainActivity : AppCompatActivity() {
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 24) {
                 Toast.makeText(
                     this@MainActivity, getString(R.string.tip_no_space),
-                    Toast.LENGTH_LONG
+                    Toast.LENGTH_SHORT
                 ).show()
                 playAudio(R.raw.tip_no_space)
                 return@setOnClickListener
@@ -289,7 +289,7 @@ class MainActivity : AppCompatActivity() {
 
             Toast.makeText(
                 this@MainActivity, getString(R.string.tip_return_basketball),
-                Toast.LENGTH_LONG
+                Toast.LENGTH_SHORT
             ).show()
             playAudio(R.raw.tip_return_basketball)
 
@@ -303,7 +303,7 @@ class MainActivity : AppCompatActivity() {
                     if (readModbusRegister(addressBallEntered) == 1) {
                         Toast.makeText(
                             this@MainActivity, getString(R.string.tip_return_succeed),
-                            Toast.LENGTH_LONG
+                            Toast.LENGTH_SHORT
                         ).show()
                         playAudio(R.raw.tip_return_succeed)
                         updateBallsQuantity()
@@ -333,7 +333,7 @@ class MainActivity : AppCompatActivity() {
                     if (readModbusRegister(addressBallEntered) == 1) {
                         Toast.makeText(
                             this@MainActivity, getString(R.string.tip_return_succeed),
-                            Toast.LENGTH_LONG
+                            Toast.LENGTH_SHORT
                         ).show()
                         playAudio(R.raw.tip_return_succeed)
                         updateBallsQuantity()
@@ -354,7 +354,7 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         Toast.makeText(
                             this@MainActivity, getString(R.string.tip_return_failed),
-                            Toast.LENGTH_LONG
+                            Toast.LENGTH_SHORT
                         ).show()
                         playAudio(R.raw.tip_return_failed)
                     }
@@ -642,7 +642,7 @@ class MainActivity : AppCompatActivity() {
             result += keyCodeToChar(keyCode, hasShift);
             hasShift = (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT);
         }
-        Toast.makeText(this, result, Toast.LENGTH_LONG).show();
+        Toast.makeText(this, result, Toast.LENGTH_SHORT).show();
 
         // Login with IC card number
         if (mUser == null) {
@@ -896,7 +896,7 @@ class MainActivity : AppCompatActivity() {
 //                    Log.d(TAG, "Face recognized as $label")
 //                    runOnUiThread {
 ////                        Toast.makeText(this@MainActivity, "Face recognized as $label",
-////                            Toast.LENGTH_LONG).show()
+////                            Toast.LENGTH_SHORT).show()
 //                        binding.boundingBoxView.setResults(facesRecs)
 //                        if (mUser == null) {
 //                            loginUser(BaseColumns._ID, label)
@@ -972,7 +972,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun dispRecData(comRecData: ComBean) {
         val strReceived: String? = comRecData.bRec?.let { serialPortBytesToString(it) }
-//        Toast.makeText(this, strReceived, Toast.LENGTH_LONG).show()
+//        Toast.makeText(this, strReceived, Toast.LENGTH_SHORT).show()
 
         if (mUser == null) {
             loginUser(BasketballContract.User.COLUMN_IC_CARD_NO, strReceived)
@@ -993,7 +993,7 @@ class MainActivity : AppCompatActivity() {
         try {
             comPort.open()
 //            Toast.makeText(this, "Open serial port succeed: ${comPort.sPort}",
-//                Toast.LENGTH_LONG).show();
+//                Toast.LENGTH_SHORT).show();
         } catch (e: SecurityException) {
             Log.e("RH_Basketball", "Unable to open serial port, permission denied!")
         } catch (e: IOException) {
@@ -1039,7 +1039,7 @@ class MainActivity : AppCompatActivity() {
         if (cursor.count == 0) {
             Log.d(TAG, "User not found, with $withField: $withValue")
             Toast.makeText(this, getString(R.string.tip_login_user_not_found),
-                Toast.LENGTH_LONG).show()
+                Toast.LENGTH_SHORT).show()
             playAudio(R.raw.tip_login_user_not_found)
             return
         }
@@ -1094,7 +1094,7 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "Login succeed, user: ${mUser!!.name}, ${mUser!!.id}, ${mUser!!.barQRNo}," +
                 "${mUser!!.gender}, ${mUser!!.classNo}, ${mUser!!.gradeNo}, ${mUser!!.age}")
         Toast.makeText(this, String.format(getString(R.string.tip_login_user_succeed), name),
-            Toast.LENGTH_LONG).show()
+            Toast.LENGTH_SHORT).show()
         playAudio(R.raw.tip_login_user_succeed)
 
         binding.tvGreeting.text = String.format(getString(R.string.welcome_text_format, name))
@@ -1129,21 +1129,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun playAudio(src: Int): Unit {
-        GlobalScope.launch {
-            if (mMediaPlayer == null) {
-                mMediaPlayer = MediaPlayer.create(this@MainActivity, src)
-                mMediaPlayer?.start()
+        if (mMediaPlayer == null) {
+            mMediaPlayer = MediaPlayer.create(this@MainActivity, src)
+            mMediaPlayer?.start()
+        }
+        else {
+            if (mMediaPlayer!!.isPlaying) {
+                return
             }
-            else {
-                if (mMediaPlayer!!.isPlaying) {
-                    return@launch
-                }
-                mMediaPlayer!!.reset()
+            mMediaPlayer!!.reset()
 
-                resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this@MainActivity, it) }
-                mMediaPlayer!!.prepare()
-                mMediaPlayer!!.start()
-            }
+            resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this@MainActivity, it) }
+            mMediaPlayer!!.prepare()
+            mMediaPlayer!!.start()
         }
     }
 

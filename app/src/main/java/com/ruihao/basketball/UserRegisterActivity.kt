@@ -105,9 +105,15 @@ class UserRegisterActivity : AppCompatActivity() {
         binding = ActivityUserRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.imvPhoto.setOnClickListener{
+            //Clear the previous captured image
+            val file = File(getSavedCapturedImagePath())
+            if (file.exists()) {
+                file.delete()
+            }
+
             mTempUUID = UUID.randomUUID().toString()
-            val imageSavePath = getSavedCapturedImagePath()
-            takePhoto(imageSavePath)
+            takePhoto(getSavedCapturedImagePath())
+
 //            val imageCapture = mImageCapture ?: return@setOnClickListener
 //            mTempUUID = UUID.randomUUID().toString()
 //            val outputOptions = ImageCapture.OutputFileOptions
@@ -142,21 +148,21 @@ class UserRegisterActivity : AppCompatActivity() {
 
             if (name == "") {
                 Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_name_null),
-                    Toast.LENGTH_LONG).show()
+                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.admin_user_register_alert_name_null)
                 return@setOnClickListener
             }
 
             if (mGender == -1) {
                 Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_gender_null),
-                    Toast.LENGTH_LONG).show()
+                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.admin_user_register_alert_gender_null)
                 return@setOnClickListener
             }
 
             if (!binding.chkTermsConditions.isChecked) {
                 Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_terms_conditions_uncheck),
-                    Toast.LENGTH_LONG).show()
+                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.admin_user_register_alert_terms_conditions_uncheck)
                 return@setOnClickListener
             }
@@ -165,7 +171,7 @@ class UserRegisterActivity : AppCompatActivity() {
             Log.d(TAG, "Now check the photo file: ${imgFile.absolutePath}")
             if (barQRNumber == "" && icCardNumber == "" && !imgFile.exists()) {
                 Toast.makeText(this@UserRegisterActivity, getString(R.string.admin_user_register_alert_number_photo_null),
-                    Toast.LENGTH_LONG).show()
+                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.admin_user_register_alert_number_photo_null)
                 return@setOnClickListener
             }
@@ -255,11 +261,16 @@ class UserRegisterActivity : AppCompatActivity() {
             }
 
             Toast.makeText(baseContext, getString(R.string.admin_user_register_tip_user_register_succeed),
-                Toast.LENGTH_LONG).show()
+                Toast.LENGTH_SHORT).show()
             playAudio(R.raw.admin_user_register_tip_user_register_succeed)
             finish()
         }
         binding.ibtnUserRegisterBack.setOnClickListener{
+            val imageSavePath = getSavedCapturedImagePath()
+            val file = File(imageSavePath)
+            if (file.exists()) {
+                file.delete()
+            }
             finish()
         }
 
@@ -447,7 +458,7 @@ class UserRegisterActivity : AppCompatActivity() {
             result += keyCodeToChar(keyCode, hasShift);
             hasShift = (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT);
         }
-        Toast.makeText(this, result, Toast.LENGTH_LONG).show();
+        Toast.makeText(this, result, Toast.LENGTH_SHORT).show();
 
         binding.etBarQRNo.setText(result)
 
@@ -519,7 +530,7 @@ class UserRegisterActivity : AppCompatActivity() {
         try {
             comPort.open()
 //            Toast.makeText(this, "Open serial port succeed: ${comPort.sPort}",
-//                Toast.LENGTH_LONG).show()
+//                Toast.LENGTH_SHORT).show()
         } catch (e: SecurityException) {
             Log.e(TAG, "Unable to open serial port, permission denied!")
         } catch (e: IOException) {
@@ -623,6 +634,7 @@ class UserRegisterActivity : AppCompatActivity() {
 
     private fun takePhoto(saveImagePath: String) {
         GlobalScope.launch {
+            Log.d(TAG, "Taking the photo from camera ...")
             val cameraSnapUrl = "http://$mCameraIP:8086/api/v1/remoteSnapPic"
             try {
                 val url = URL(cameraSnapUrl)

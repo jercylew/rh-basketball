@@ -93,7 +93,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         binding.btnBorrow.setOnClickListener {
             if (!mModbusOk) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_LONG).show()
+                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
@@ -101,7 +101,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             // Check if there are remaining balls
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 0) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_no_basketball),
-                    Toast.LENGTH_LONG).show()
+                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.tip_no_basketball)
                 return@setOnClickListener
             }
@@ -135,7 +135,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
             if (!regCleared) { //Timeout
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_LONG).show()
+                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
@@ -150,7 +150,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
             // Inform the user toc (Play audio)
             Toast.makeText(this@AdminActivity, getString(R.string.tip_take_basketball),
-                Toast.LENGTH_LONG).show()
+                Toast.LENGTH_SHORT).show()
             playAudio(R.raw.tip_take_basketball)
 
             // Save borrow record (DO not do this now)
@@ -160,14 +160,14 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         binding.btnReturn.setOnClickListener {
             if (!mModbusOk) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_LONG).show()
+                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
 
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 24) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_no_space),
-                    Toast.LENGTH_LONG).show()
+                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.tip_no_space)
                 return@setOnClickListener
             }
@@ -182,7 +182,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             }
 
             Toast.makeText(this@AdminActivity, getString(R.string.tip_return_basketball),
-                Toast.LENGTH_LONG).show()
+                Toast.LENGTH_SHORT).show()
             playAudio(R.raw.tip_return_basketball)
 
             val savedCaptureImagePath = borrowReturnCapturePath("return")
@@ -194,7 +194,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
                     if (readModbusRegister(addressBallEntered) == 1) {
                         Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
-                            Toast.LENGTH_LONG).show()
+                            Toast.LENGTH_SHORT).show()
                         playAudio(R.raw.tip_return_succeed)
                         updateBallsQuantity()
                         binding.tvReturnBallCounterDown.text = ""
@@ -215,7 +215,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 override fun onFinish() {
                     if (readModbusRegister(addressBallEntered) == 1) {
                         Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
-                            Toast.LENGTH_LONG).show()
+                            Toast.LENGTH_SHORT).show()
                         playAudio(R.raw.tip_return_succeed)
                         updateBallsQuantity()
 
@@ -227,7 +227,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                     }
                     else {
                         Toast.makeText(this@AdminActivity, getString(R.string.tip_return_failed),
-                            Toast.LENGTH_LONG).show()
+                            Toast.LENGTH_SHORT).show()
                         playAudio(R.raw.tip_return_failed)
                     }
                     binding.tvReturnBallCounterDown.text = ""
@@ -253,7 +253,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 //            }
 //            if (!regSet) { //Did not detect the signal of ball entered
 //                Toast.makeText(this@AdminActivity, getString(R.string.tip_return_failed),
-//                    Toast.LENGTH_LONG).show()
+//                    Toast.LENGTH_SHORT).show()
 //                playAudio(R.raw.tip_return_failed)
 //                return@setOnClickListener
 //            }
@@ -264,7 +264,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 //
 //            // Inform user to return the ball
 //            Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
-//                Toast.LENGTH_LONG).show()
+//                Toast.LENGTH_SHORT).show()
 //            playAudio(R.raw.tip_return_succeed)
 //            updateBallsQuantity()
 //
@@ -285,7 +285,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         binding.cardLoadBalls.setOnClickListener{
             if (!mModbusOk) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_LONG).show()
+                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
@@ -305,7 +305,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
             // Inform the user to load balls
             Toast.makeText(this@AdminActivity, getString(R.string.admin_tip_load_balls),
-                Toast.LENGTH_LONG).show()
+                Toast.LENGTH_SHORT).show()
             playAudio(R.raw.admin_tip_load_balls)
 
             // Close the lock TODO： The user click a button to lock the doors
@@ -409,7 +409,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
         if (!mModbusOk) {
             Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
-                Toast.LENGTH_LONG).show()
+                Toast.LENGTH_SHORT).show()
             return
         }
         Log.d(TAG, "onSharedPreferenceChanged key: $key")

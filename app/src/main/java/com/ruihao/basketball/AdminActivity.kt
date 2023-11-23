@@ -33,8 +33,10 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.preference.PreferenceManager
 import com.ruihao.basketball.databinding.ActivityAdminBinding
 import com.ruihao.basketball.databinding.ActivityMainBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
@@ -92,8 +94,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
         binding.btnBorrow.setOnClickListener {
             if (!mModbusOk) {
-                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_SHORT).show()
+//                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
+//                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
@@ -134,8 +136,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             }
 
             if (!regCleared) { //Timeout
-                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_SHORT).show()
+//                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
+//                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
@@ -159,8 +161,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         }
         binding.btnReturn.setOnClickListener {
             if (!mModbusOk) {
-                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_SHORT).show()
+//                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
+//                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
@@ -284,8 +286,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         }
         binding.cardLoadBalls.setOnClickListener{
             if (!mModbusOk) {
-                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_SHORT).show()
+//                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
+//                    Toast.LENGTH_SHORT).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
@@ -375,7 +377,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         binding.tvGreeting.text = String.format(getString(R.string.welcome_text_format, userName))
     }
 
-    private fun updateBallsQuantity(): Unit {
+    private fun updateBallsQuantity() {
         mRemainBallsQty[0] = readModbusRegister(1000)
         mRemainBallsQty[1] = readModbusRegister(1001)
         if (mRemainBallsQty[0] < 0) {
@@ -385,10 +387,10 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             mRemainBallsQty[1] = 0
         }
 
-        var total: Int = mTotalBallsQty[0] + mTotalBallsQty[1]
-        var remain: Int = mRemainBallsQty[0] + mRemainBallsQty[1]
-        binding.tvTotalQty.text = String.format(getString(R.string.total_basketballs), total)
-        binding.tvRemainQty.text = String.format(getString(R.string.remain_basketballs), remain)
+//        var total: Int = mTotalBallsQty[0] + mTotalBallsQty[1]
+//        var remain: Int = mRemainBallsQty[0] + mRemainBallsQty[1]
+        binding.tvTotalQty.text = String.format(getString(R.string.total_basketballs), mTotalBallsQty[0] + mTotalBallsQty[1])
+        binding.tvRemainQty.text = String.format(getString(R.string.remain_basketballs), mRemainBallsQty[0] + mRemainBallsQty[1])
     }
 
     override fun onDestroy() {
@@ -408,8 +410,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         }
 
         if (!mModbusOk) {
-            Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
-                Toast.LENGTH_SHORT).show()
+//            Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
+//                Toast.LENGTH_SHORT).show()
             return
         }
         Log.d(TAG, "onSharedPreferenceChanged key: $key")
@@ -448,53 +450,55 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     }
 
     private fun takePhoto(saveImagePath: String) {
-        GlobalScope.launch {
-            val cameraSnapUrl = "http://$mCameraIP:8086/api/v1/remoteSnapPic"
-            try {
-                val url = URL(cameraSnapUrl)
-                val httpURLConnection = url.openConnection() as HttpURLConnection
-                httpURLConnection.requestMethod = "GET"
+        runBlocking {
+            launch(Dispatchers.Default) {
+                val cameraSnapUrl = "http://$mCameraIP:8086/api/v1/remoteSnapPic"
+                try {
+                    val url = URL(cameraSnapUrl)
+                    val httpURLConnection = url.openConnection() as HttpURLConnection
+                    httpURLConnection.requestMethod = "GET"
 
-                val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
-                val bufferReader: BufferedReader = BufferedReader(InputStreamReader(inputStream))
-                val respText =  bufferReader.readText()
-                bufferReader.close()
-                httpURLConnection.disconnect()
+                    val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+                    val bufferReader: BufferedReader = BufferedReader(InputStreamReader(inputStream))
+                    val respText =  bufferReader.readText()
+                    bufferReader.close()
+                    httpURLConnection.disconnect()
 
 //                Log.d(TAG, "Take photo: $respText")
-                val joResp = JSONObject(respText)
-                if (joResp.getInt("status") != 0) {
-                    Log.d(TAG, "Camera failed to snap photo: ${joResp.getString("detail")}")
-                    return@launch
+                    val joResp = JSONObject(respText)
+                    if (joResp.getInt("status") != 0) {
+                        Log.d(TAG, "Camera failed to snap photo: ${joResp.getString("detail")}")
+                        return@launch
+                    }
+
+                    val joRespData = joResp.getJSONObject("data")
+                    val joSnapPicture = joRespData.getJSONObject("SnapPicture")
+                    var snapPictureBase64Text = joSnapPicture.getString("SnapPictureBase64")
+
+                    val commaPos = snapPictureBase64Text.indexOf(",")
+                    if (commaPos >= 0) {
+                        snapPictureBase64Text = snapPictureBase64Text.substring(commaPos + 1)
+                    }
+
+                    val file = File(saveImagePath)
+                    if (file.exists()) {
+                        file.delete()
+                    }
+
+                    val out = FileOutputStream(file)
+
+                    val bos = BufferedOutputStream(out)
+                    val bfile: ByteArray = Base64.decode(snapPictureBase64Text, Base64.DEFAULT)
+                    bos.write(bfile)
+                    bos.flush()
+                    bos.close()
+                    out.flush()
+                    out.close()
+                    Log.d(TAG, "Taken photo saved: $saveImagePath")
                 }
-
-                val joRespData = joResp.getJSONObject("data")
-                val joSnapPicture = joRespData.getJSONObject("SnapPicture")
-                var snapPictureBase64Text = joSnapPicture.getString("SnapPictureBase64")
-
-                val commaPos = snapPictureBase64Text.indexOf(",")
-                if (commaPos >= 0) {
-                    snapPictureBase64Text = snapPictureBase64Text.substring(commaPos + 1)
+                catch (exc: Exception) {
+                    Log.d(TAG, "Exception occurred when taking photo: ${exc.toString()}")
                 }
-
-                val file = File(saveImagePath)
-                if (file.exists()) {
-                    file.delete()
-                }
-
-                val out = FileOutputStream(file)
-
-                val bos = BufferedOutputStream(out)
-                val bfile: ByteArray = Base64.decode(snapPictureBase64Text, Base64.DEFAULT)
-                bos.write(bfile)
-                bos.flush()
-                bos.close()
-                out.flush()
-                out.close()
-                Log.d(TAG, "Taken photo saved: $saveImagePath")
-            }
-            catch (exc: Exception) {
-                Log.d(TAG, "Exception occurred when taking photo: ${exc.toString()}")
             }
         }
 //        val imageCapture = mImageCapture ?: return
@@ -521,19 +525,23 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     }
 
     private fun playAudio(src: Int): Unit {
-        if (mMediaPlayer == null) {
-            mMediaPlayer = MediaPlayer.create(this, src)
-            mMediaPlayer?.start()
-        }
-        else {
-            if (mMediaPlayer!!.isPlaying) {
-                return
-            }
-            mMediaPlayer!!.reset()
+        runBlocking {
+            launch(Dispatchers.Default) {
+                if (mMediaPlayer == null) {
+                    mMediaPlayer = MediaPlayer.create(this@AdminActivity, src)
+                    mMediaPlayer?.start()
+                }
+                else {
+                    if (mMediaPlayer!!.isPlaying) {
+                        return@launch
+                    }
+                    mMediaPlayer!!.reset()
 
-            resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this, it) }
-            mMediaPlayer!!.prepare()
-            mMediaPlayer!!.start()
+                    resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this@AdminActivity, it) }
+                    mMediaPlayer!!.prepare()
+                    mMediaPlayer!!.start()
+                }
+            }
         }
     }
 
@@ -561,7 +569,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         cameraProvider.bindToLifecycle(this, cameraSelector, mImageCapture)
     }
 
-    private fun initController(): Unit {
+    private fun initController() {
         GlobalScope.launch {
             while(true) {
                 if (mModbusOk) {

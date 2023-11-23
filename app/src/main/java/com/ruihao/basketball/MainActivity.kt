@@ -34,9 +34,11 @@ import androidx.preference.PreferenceManager
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.ruihao.basketball.databinding.ActivityMainBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.java_websocket.drafts.Draft
 import org.java_websocket.drafts.Draft_6455
 import org.java_websocket.extensions.permessage_deflate.PerMessageDeflateExtension
@@ -147,10 +149,10 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnBorrow.setOnClickListener {
             if (mUser == null) {
-                Toast.makeText(
-                    this@MainActivity, getString(R.string.tip_login),
-                    Toast.LENGTH_SHORT
-                ).show()
+//                Toast.makeText(
+//                    this@MainActivity, getString(R.string.tip_login),
+//                    Toast.LENGTH_SHORT
+//                ).show()
                 playAudio(R.raw.tip_login)
                 return@setOnClickListener
             }
@@ -158,10 +160,10 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "Borrow button: mModbusOk: $mModbusOk")
 
             if (!mModbusOk) {
-                Toast.makeText(
-                    this@MainActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_SHORT
-                ).show()
+//                Toast.makeText(
+//                    this@MainActivity, getString(R.string.tip_device_error),
+//                    Toast.LENGTH_SHORT
+//                ).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
@@ -213,10 +215,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (!regCleared) { //Timeout
-                Toast.makeText(
-                    this@MainActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_SHORT
-                ).show()
+//                Toast.makeText(
+//                    this@MainActivity, getString(R.string.tip_device_error),
+//                    Toast.LENGTH_SHORT
+//                ).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
@@ -250,10 +252,10 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnReturn.setOnClickListener {
             if (mUser == null) {
-                Toast.makeText(
-                    this@MainActivity, getString(R.string.tip_login),
-                    Toast.LENGTH_SHORT
-                ).show()
+//                Toast.makeText(
+//                    this@MainActivity, getString(R.string.tip_login),
+//                    Toast.LENGTH_SHORT
+//                ).show()
                 playAudio(R.raw.tip_login)
                 return@setOnClickListener
             }
@@ -261,10 +263,10 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "Return button: mModbusOk: $mModbusOk")
 
             if (!mModbusOk) {
-                Toast.makeText(
-                    this@MainActivity, getString(R.string.tip_device_error),
-                    Toast.LENGTH_SHORT
-                ).show()
+//                Toast.makeText(
+//                    this@MainActivity, getString(R.string.tip_device_error),
+//                    Toast.LENGTH_SHORT
+//                ).show()
                 playAudio(R.raw.tip_device_error)
                 return@setOnClickListener
             }
@@ -517,6 +519,10 @@ class MainActivity : AppCompatActivity() {
         mediaPlayer.media = media
         media.release()
         mediaPlayer.play()
+
+        openComPort(comPort!!)
+        dispQueue = DispQueueThread()
+        dispQueue!!.start()
     }
 
     override fun onStop()
@@ -525,16 +531,15 @@ class MainActivity : AppCompatActivity() {
 
         mediaPlayer.stop()
         mediaPlayer.detachViews()
+
+        comPort?.close()
+        dispQueue?.interrupt()
     }
 
     override fun onResume() {
         super.onResume()
 
 //        startCamera()
-
-        openComPort(comPort!!)
-        dispQueue = DispQueueThread()
-        dispQueue!!.start()
 
         updateBallsQuantity()
         updateGridView()
@@ -544,8 +549,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
-        comPort?.close()
-        dispQueue?.interrupt()
+
 
         super.onPause()
     }
@@ -715,9 +719,9 @@ class MainActivity : AppCompatActivity() {
 
     //Camera
     private fun initCamera() {
-        if (!Python.isStarted()) {
-            Python.start(AndroidPlatform(this))
-        }
+//        if (!Python.isStarted()) {
+//            Python.start(AndroidPlatform(this))
+//        }
 
         if (!mAppDataFile.exists() && !mAppDataFile.mkdirs()) {
             Log.w(TAG, "Failed to create image data directory, face recognition will not work!")
@@ -747,78 +751,82 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initController(): Unit {
-        GlobalScope.launch {
-            while(mInitControllerTimes >= MAX_INIT_CONTROLLER_TIMES) {
-                if (mModbusOk) {
-                    runOnUiThread {
-                        updateBallsQuantity()
-                        updateGridView()
-                    }
-                }
-                else {
-                    Log.d(TAG, "Trying to connect to modbus ...")
-                    mModbusOk = initModbus()
-                    Log.d(TAG, "Init modbus, result: $mModbusOk")
+        runBlocking {
+            launch(Dispatchers.Default) {
+                while(mInitControllerTimes >= MAX_INIT_CONTROLLER_TIMES) {
                     if (mModbusOk) {
-                        writeModbusRegister(1014, 1000) //出球的时长(推杆动作的间隔): 1 second
-                        writeModbusRegister(1015, 3000) //进球口门锁关闭时长: 3 seconds
+                        runOnUiThread {
+                            updateBallsQuantity()
+                            updateGridView()
+                        }
                     }
-                }
+                    else {
+                        Log.d(TAG, "Trying to connect to modbus ...")
+                        mModbusOk = initModbus()
+                        Log.d(TAG, "Init modbus, result: $mModbusOk")
+                        if (mModbusOk) {
+                            writeModbusRegister(1014, 1000) //出球的时长(推杆动作的间隔): 1 second
+                            writeModbusRegister(1015, 3000) //进球口门锁关闭时长: 3 seconds
+                        }
+                    }
 
-                mInitControllerTimes++
-                delay(3000)
+                    mInitControllerTimes++
+                    delay(3000)
+                }
             }
         }
     }
 
     private fun takePhoto(saveImagePath: String) {
-        GlobalScope.launch {
-            val cameraSnapUrl = "http://$mCameraIP:8086/api/v1/remoteSnapPic"
-            try {
-                val url = URL(cameraSnapUrl)
-                val httpURLConnection = url.openConnection() as HttpURLConnection
-                httpURLConnection.requestMethod = "GET"
+        runBlocking {
+            launch(Dispatchers.Default) {
+                val cameraSnapUrl = "http://$mCameraIP:8086/api/v1/remoteSnapPic"
+                try {
+                    val url = URL(cameraSnapUrl)
+                    val httpURLConnection = url.openConnection() as HttpURLConnection
+                    httpURLConnection.requestMethod = "GET"
 
-                val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
-                val bufferReader = BufferedReader(InputStreamReader(inputStream))
-                val respText =  bufferReader.readText()
-                bufferReader.close()
-                httpURLConnection.disconnect()
+                    val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+                    val bufferReader = BufferedReader(InputStreamReader(inputStream))
+                    val respText =  bufferReader.readText()
+                    bufferReader.close()
+                    httpURLConnection.disconnect()
 
 //                Log.d(TAG, "Take photo: $respText")
-                val joResp = JSONObject(respText)
-                if (joResp.getInt("status") != 0) {
-                    Log.d(TAG, "Camera failed to snap photo: ${joResp.getString("detail")}")
-                    return@launch
+                    val joResp = JSONObject(respText)
+                    if (joResp.getInt("status") != 0) {
+                        Log.d(TAG, "Camera failed to snap photo: ${joResp.getString("detail")}")
+                        return@launch
+                    }
+
+                    val joRespData = joResp.getJSONObject("data")
+                    val joSnapPicture = joRespData.getJSONObject("SnapPicture")
+                    var snapPictureBase64Text = joSnapPicture.getString("SnapPictureBase64")
+
+                    val commaPos = snapPictureBase64Text.indexOf(",")
+                    if (commaPos >= 0) {
+                        snapPictureBase64Text = snapPictureBase64Text.substring(commaPos + 1)
+                    }
+
+                    val file = File(saveImagePath)
+                    if (file.exists()) {
+                        file.delete()
+                    }
+
+                    val out = FileOutputStream(file)
+
+                    val bos = BufferedOutputStream(out)
+                    val bfile: ByteArray = Base64.decode(snapPictureBase64Text, Base64.DEFAULT)
+                    bos.write(bfile)
+                    bos.flush()
+                    bos.close()
+                    out.flush()
+                    out.close()
+                    Log.d(TAG, "Taken photo saved: $saveImagePath")
                 }
-
-                val joRespData = joResp.getJSONObject("data")
-                val joSnapPicture = joRespData.getJSONObject("SnapPicture")
-                var snapPictureBase64Text = joSnapPicture.getString("SnapPictureBase64")
-
-                val commaPos = snapPictureBase64Text.indexOf(",")
-                if (commaPos >= 0) {
-                    snapPictureBase64Text = snapPictureBase64Text.substring(commaPos + 1)
+                catch (exc: Exception) {
+                    Log.d(TAG, "Exception occurred when taking photo: ${exc.toString()}")
                 }
-
-                val file = File(saveImagePath)
-                if (file.exists()) {
-                    file.delete()
-                }
-
-                val out = FileOutputStream(file)
-
-                val bos = BufferedOutputStream(out)
-                val bfile: ByteArray = Base64.decode(snapPictureBase64Text, Base64.DEFAULT)
-                bos.write(bfile)
-                bos.flush()
-                bos.close()
-                out.flush()
-                out.close()
-                Log.d(TAG, "Taken photo saved: $saveImagePath")
-            }
-            catch (exc: Exception) {
-                Log.d(TAG, "Exception occurred when taking photo: ${exc.toString()}")
             }
         }
 
@@ -1038,8 +1046,8 @@ class MainActivity : AppCompatActivity() {
 
         if (cursor.count == 0) {
             Log.d(TAG, "User not found, with $withField: $withValue")
-            Toast.makeText(this, getString(R.string.tip_login_user_not_found),
-                Toast.LENGTH_SHORT).show()
+//            Toast.makeText(this, getString(R.string.tip_login_user_not_found),
+//                Toast.LENGTH_SHORT).show()
             playAudio(R.raw.tip_login_user_not_found)
             return
         }
@@ -1128,20 +1136,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun playAudio(src: Int): Unit {
-        if (mMediaPlayer == null) {
-            mMediaPlayer = MediaPlayer.create(this@MainActivity, src)
-            mMediaPlayer?.start()
-        }
-        else {
-            if (mMediaPlayer!!.isPlaying) {
-                return
-            }
-            mMediaPlayer!!.reset()
+    private fun playAudio(src: Int) {
+        runBlocking {
+            launch(Dispatchers.Default) {
+                if (mMediaPlayer == null) {
+                    mMediaPlayer = MediaPlayer.create(this@MainActivity, src)
+                    mMediaPlayer?.start()
+                }
+                else {
+                    if (mMediaPlayer!!.isPlaying) {
+                        return@launch
+                    }
+                    mMediaPlayer!!.reset()
 
-            resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this@MainActivity, it) }
-            mMediaPlayer!!.prepare()
-            mMediaPlayer!!.start()
+                    resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this@MainActivity, it) }
+                    mMediaPlayer!!.prepare()
+                    mMediaPlayer!!.start()
+                }
+            }
         }
     }
 
@@ -1155,34 +1167,35 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun syncUserInfoFromCloud() {
-        GlobalScope.launch {
-            // HTTP Get
-            val postUrl = "https://readerapp.dingcooltech.com/comm/apiComm/stuentInfo.querylist?fromid=1632564838868836353&questionName=stuentInfo"
-            val joPayload = JSONObject()
-            joPayload.put("fromid", "1632564838868836353")
-            joPayload.put("questionName", "studentInfo")
-            joPayload.put("rows", 10)
+        runBlocking {
+            launch(Dispatchers.Default) {
+                val postUrl = "https://readerapp.dingcooltech.com/comm/apiComm/stuentInfo.querylist?fromid=1632564838868836353&questionName=stuentInfo"
+                val joPayload = JSONObject()
+                joPayload.put("fromid", "1632564838868836353")
+                joPayload.put("questionName", "studentInfo")
+                joPayload.put("rows", 10)
 
-            try {
-                mDbHelper.clearAllUsers()
-                val cloudUserInfoUrl = URL(postUrl)
-                for (page in 1..300) { // At most 3000
-                    try {
-                        val addedUsersCount = addBatchUsers(cloudUserInfoUrl, page, joPayload)
-                        if (addedUsersCount == 0) {
-                            break
+                try {
+                    mDbHelper.clearAllUsers()
+                    val cloudUserInfoUrl = URL(postUrl)
+                    for (page in 1..300) { // At most 3000
+                        try {
+                            val addedUsersCount = addBatchUsers(cloudUserInfoUrl, page, joPayload)
+                            if (addedUsersCount == 0) {
+                                break
+                            }
+                        }
+                        catch (exc: Exception) {
+                            Log.d(TAG, "Exception occurred when fetching user list from cloud: ${exc.toString()}, page: $page")
+                        }
+                        finally {
                         }
                     }
-                    catch (exc: Exception) {
-                        Log.d(TAG, "Exception occurred when fetching user list from cloud: ${exc.toString()}, page: $page")
-                    }
-                    finally {
-                    }
-                }
 
-            }
-            catch (exc: Exception) {
-                Log.d(TAG, "Exception occurred when saving user list to local machine: ${exc.toString()}")
+                }
+                catch (exc: Exception) {
+                    Log.d(TAG, "Exception occurred when saving user list to local machine: ${exc.toString()}")
+                }
             }
         }
     }
@@ -1368,7 +1381,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 while (queueList.poll().also { comData = it } != null) {
-//                    Log.d("RH_Basketball##########", "DispQueueThread $comData")
+                    Log.d("RH_Basketball##########", "DispQueueThread $comData")
                     this@MainActivity.runOnUiThread(Runnable { dispRecData(comData) })
                     try {
                         sleep(100) //显示性能高的话，可以把此数值调小。

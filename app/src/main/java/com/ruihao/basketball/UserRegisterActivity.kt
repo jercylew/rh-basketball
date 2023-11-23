@@ -28,8 +28,10 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.preference.PreferenceManager
 import com.chaquo.python.Python
 import com.ruihao.basketball.databinding.ActivityUserRegisterBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import org.videolan.libvlc.LibVLC
@@ -51,6 +53,7 @@ import java.util.ArrayList
 import java.util.LinkedList
 import java.util.Queue
 import java.util.UUID
+import kotlin.system.measureTimeMillis
 
 
 class UserRegisterActivity : AppCompatActivity() {
@@ -605,20 +608,22 @@ class UserRegisterActivity : AppCompatActivity() {
     }
 
     private fun playAudio(src: Int) {
-        GlobalScope.launch {
-            if (mMediaPlayer == null) {
-                mMediaPlayer = MediaPlayer.create(this@UserRegisterActivity, src)
-                mMediaPlayer?.start()
-            }
-            else {
-                if (mMediaPlayer!!.isPlaying) {
-                    return@launch
+        runBlocking {
+            launch(Dispatchers.Default) {
+                if (mMediaPlayer == null) {
+                    mMediaPlayer = MediaPlayer.create(this@UserRegisterActivity, src)
+                    mMediaPlayer?.start()
                 }
-                mMediaPlayer!!.reset()
+                else {
+                    if (mMediaPlayer!!.isPlaying) {
+                        return@launch
+                    }
+                    mMediaPlayer!!.reset()
 
-                resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this@UserRegisterActivity, it) }
-                mMediaPlayer!!.prepare()
-                mMediaPlayer!!.start()
+                    resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this@UserRegisterActivity, it) }
+                    mMediaPlayer!!.prepare()
+                    mMediaPlayer!!.start()
+                }
             }
         }
     }
@@ -633,65 +638,70 @@ class UserRegisterActivity : AppCompatActivity() {
     }
 
     private fun takePhoto(saveImagePath: String) {
-        GlobalScope.launch {
-            Log.d(TAG, "Taking the photo from camera ...")
-            val cameraSnapUrl = "http://$mCameraIP:8086/api/v1/remoteSnapPic"
-            try {
-                val url = URL(cameraSnapUrl)
-                val httpURLConnection = url.openConnection() as HttpURLConnection
-                httpURLConnection.requestMethod = "GET"
+        val time = measureTimeMillis {
+            runBlocking {
+                launch(Dispatchers.Default) {
+                    val cameraSnapUrl = "http://$mCameraIP:8086/api/v1/remoteSnapPic"
+                    try {
+                        val url = URL(cameraSnapUrl)
+                        val httpURLConnection = url.openConnection() as HttpURLConnection
+                        httpURLConnection.requestMethod = "GET"
 
-                val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
-                val bufferReader = BufferedReader(InputStreamReader(inputStream))
-                val respText =  bufferReader.readText()
-                bufferReader.close()
-                httpURLConnection.disconnect()
+                        val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+                        val bufferReader = BufferedReader(InputStreamReader(inputStream))
+                        val respText =  bufferReader.readText()
+                        bufferReader.close()
+                        httpURLConnection.disconnect()
 
 //                Log.d(TAG, "Take photo: $respText")
-                val joResp = JSONObject(respText)
-                if (joResp.getInt("status") != 0) {
-                    Log.d(TAG, "Camera failed to snap photo: ${joResp.getString("detail")}")
-                    return@launch
-                }
+                        val joResp = JSONObject(respText)
+                        if (joResp.getInt("status") != 0) {
+                            Log.d(TAG, "Camera failed to snap photo: ${joResp.getString("detail")}")
+                            return@launch
+                        }
 
-                val joRespData = joResp.getJSONObject("data")
-                val joSnapPicture = joRespData.getJSONObject("SnapPicture")
-                mCurrentSavedImageBase64 = joSnapPicture.getString("SnapPictureBase64")
-                var imageBase64HeaderStriped = mCurrentSavedImageBase64
+                        val joRespData = joResp.getJSONObject("data")
+                        val joSnapPicture = joRespData.getJSONObject("SnapPicture")
+                        mCurrentSavedImageBase64 = joSnapPicture.getString("SnapPictureBase64")
+                        var imageBase64HeaderStriped = mCurrentSavedImageBase64
 
-                val commaPos = mCurrentSavedImageBase64.indexOf(",")
-                if (commaPos >= 0) {
-                    imageBase64HeaderStriped = mCurrentSavedImageBase64.substring(commaPos + 1)
-                }
+                        val commaPos = mCurrentSavedImageBase64.indexOf(",")
+                        if (commaPos >= 0) {
+                            imageBase64HeaderStriped = mCurrentSavedImageBase64.substring(commaPos + 1)
+                        }
 
-                val file = File(saveImagePath)
-                if (file.exists()) {
-                    file.delete()
-                }
+                        val file = File(saveImagePath)
+                        if (file.exists()) {
+                            file.delete()
+                        }
 
-                val out = FileOutputStream(file)
+                        val out = FileOutputStream(file)
 
-                val bos = BufferedOutputStream(out)
-                val bfile: ByteArray = Base64.decode(imageBase64HeaderStriped, Base64.DEFAULT)
-                bos.write(bfile)
-                bos.flush()
-                bos.close()
-                out.flush()
-                out.close()
-                Log.d(TAG, "Taken photo saved: $saveImagePath")
+                        val bos = BufferedOutputStream(out)
+                        val bfile: ByteArray = Base64.decode(imageBase64HeaderStriped, Base64.DEFAULT)
+                        bos.write(bfile)
+                        bos.flush()
+                        bos.close()
+                        out.flush()
+                        out.close()
+                        Log.d(TAG, "Taken photo saved: $saveImagePath")
 
-                val imgFile = File(saveImagePath)
-                if (imgFile.exists()) {
-                    runOnUiThread {
-                        val imgBitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
-                        binding.imvPhoto.setImageBitmap(imgBitmap)
+                        val imgFile = File(saveImagePath)
+                        if (imgFile.exists()) {
+                            runOnUiThread {
+                                val imgBitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
+                                binding.imvPhoto.setImageBitmap(imgBitmap)
+                            }
+                        }
+                    }
+                    catch (exc: Exception) {
+                        Log.d(TAG, "Exception occurred when taking photo: ${exc.toString()}")
                     }
                 }
             }
-            catch (exc: Exception) {
-                Log.d(TAG, "Exception occurred when taking photo: ${exc.toString()}")
-            }
         }
+        println("Done in $time ms")
+
 
         // Using camera attached to this
 //        val imageCapture = imageCapture ?: return

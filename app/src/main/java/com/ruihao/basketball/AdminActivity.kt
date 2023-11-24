@@ -441,6 +441,8 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             Log.d(TAG, "Write setting at $address: $qty")
             writeModbusRegister(address, qty)
         }
+
+        updateBallsQuantity()
     }
 
     private fun borrowReturnCapturePath(type: String): String {
@@ -570,16 +572,16 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     }
 
     private fun initController() {
-        GlobalScope.launch {
-            while(true) {
-                if (mModbusOk) {
-                    runOnUiThread {
-                        updateBallsQuantity()
-                    }
-                }
-                Thread.sleep(3000)
-            }
-        }
+//        GlobalScope.launch {
+//            while(true) {
+//                if (mModbusOk) {
+//                    runOnUiThread {
+//                        updateBallsQuantity()
+//                    }
+//                }
+//                Thread.sleep(3000)
+//            }
+//        }
     }
 
     /**

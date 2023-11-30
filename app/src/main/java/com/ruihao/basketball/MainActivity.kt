@@ -616,24 +616,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_ENTER) {
+            handleScanICOrQRCard()
+            return super.onKeyDown(keyCode, event)
+        }
         mScanBarQRCodeBytes.add(keyCode)
-        Log.d(TAG, "Received Key: $keyCode")
+//        Log.d(TAG, "Received Key: $keyCode, is ENTER: ${keyCode == KeyEvent.KEYCODE_ENTER}")
 
-        if (mScanBarQRCodeTimer != null) {
-            Log.d(TAG, "Key receive not completed, continue receive")
-            mScanBarQRCodeTimer!!.cancel()
-            mScanBarQRCodeTimer = null
-        }
-        mScanBarQRCodeTimer = object : CountDownTimer(350, 350) {
-            override fun onTick(millisUntilFinished: Long) {
-                // Do nothing
-            }
-            override fun onFinish() {
-                handleScanICOrQRCard()
-            }
-        }
-
-        (mScanBarQRCodeTimer as CountDownTimer).start()
+//        if (mScanBarQRCodeTimer != null) {
+//            Log.d(TAG, "Key receive not completed, continue receive")
+//            mScanBarQRCodeTimer!!.cancel()
+//            mScanBarQRCodeTimer = null
+//        }
+//        mScanBarQRCodeTimer = object : CountDownTimer(350, 350) {
+//            override fun onTick(millisUntilFinished: Long) {
+//                // Do nothing
+//            }
+//            override fun onFinish() {
+//                handleScanICOrQRCard()
+//            }
+//        }
+//
+//        (mScanBarQRCodeTimer as CountDownTimer).start()
 
         return super.onKeyDown(keyCode, event)
     }
@@ -654,7 +658,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         mScanBarQRCodeBytes.clear();
-        mScanBarQRCodeTimer = null
+//        mScanBarQRCodeTimer = null
     }
 
     private fun keyCodeToChar(keyCode: Int, hasShift: Boolean): String {
@@ -980,7 +984,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun dispRecData(comRecData: ComBean) {
         val strReceived: String? = comRecData.bRec?.let { serialPortBytesToString(it) }
-//        Toast.makeText(this, strReceived, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, strReceived, Toast.LENGTH_SHORT).show()
 
         if (mUser == null) {
             loginUser(BasketballContract.User.COLUMN_IC_CARD_NO, strReceived)
@@ -988,10 +992,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun serialPortBytesToString(bytes: ByteArray): String {
-        var strText: String = ""
+        var strText = ""
 
         for (ch in bytes) {
-            strText += ch.toUInt().toString(16)
+//            Log.d(TAG, "Byte: $ch -> ${ch.toUByte().toString(16)}")
+            strText += ch.toUByte().toString(16)
         }
 
         return strText

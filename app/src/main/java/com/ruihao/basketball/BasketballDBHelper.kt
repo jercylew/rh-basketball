@@ -62,7 +62,7 @@ internal class BasketballDBHelper(context: Context?) :
 
     fun addNewUser(id: String, name: String?, barQRNo: String?, icCardNo: String?, age: Int?,
                    gender: Int?, tel: String?, classNo: String?, gradeNo: String?,
-                   photoUrl: String?) {
+                   photoUrl: String?, isAdmin: Int? = 0) {
         val db = this.writableDatabase
         val values = ContentValues()
         val genderText: String = if(gender == 0) "男"  else "女"
@@ -71,7 +71,7 @@ internal class BasketballDBHelper(context: Context?) :
         values.put(BasketballContract.User.COLUMN_NAME, name)
         values.put(BasketballContract.User.COLUMN_BAR_QR_NO, barQRNo)
         values.put(BasketballContract.User.COLUMN_IC_CARD_NO, icCardNo)
-        values.put(BasketballContract.User.COLUMN_IS_ADMIN, 0)
+        values.put(BasketballContract.User.COLUMN_IS_ADMIN, isAdmin)
         values.put(BasketballContract.User.COLUMN_GENDER, genderText)
         values.put(BasketballContract.User.COLUMN_CLASS, classNo)
         values.put(BasketballContract.User.COLUMN_GRADE, gradeNo)
@@ -117,7 +117,9 @@ internal class BasketballDBHelper(context: Context?) :
 
     fun clearAllUsers() {
         val db = this.writableDatabase
-        db.delete(BasketballContract.User.TABLE_NAME, null, emptyArray<String>())
+        val where = "_id != ?"
+        val whereArgs = arrayOf("00000000-0000-0000-0000-000000000000")
+        db.delete(BasketballContract.User.TABLE_NAME, where, whereArgs)
         db.close()
     }
 

@@ -188,5 +188,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btnBorrow" />
 
+    <android.widget.Button
+        android:id="@+id/btnAdminLogin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/admin_login"
+        app:layout_constraintBottom_toTopOf="@+id/tvFooterTechSupport"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.957"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvGreeting"
+        app:layout_constraintVertical_bias="0.904" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

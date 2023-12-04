@@ -4,6 +4,7 @@ package com.ruihao.basketball
 
 import android.Manifest
 import android.content.ContentResolver
+import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -20,10 +21,13 @@ import android.provider.BaseColumns
 import android.util.Base64
 import android.util.Log
 import android.view.KeyEvent
+import android.view.View
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -363,6 +367,42 @@ class MainActivity : AppCompatActivity() {
             }
             (mReturnBallTimer as CountDownTimer).start()
         }
+        binding.btnAdminLogin.setOnClickListener {
+            val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+
+            // Inflate and set the layout for the dialog.
+            // Pass null as the parent view because it's going in the dialog
+            // layout.
+            val dialogContent: View = layoutInflater.inflate(R.layout.dialog_signin, null)
+            builder.setView(dialogContent)
+                // Add action buttons.
+                .setPositiveButton(R.string.dialog_ok,
+                    DialogInterface.OnClickListener { dialog, id ->
+                        val editAdminPassword = dialogContent.findViewById(R.id.admin_password) as EditText
+                        val enteredPassword = editAdminPassword.text.toString()
+                        Log.d(TAG, "Trying to login admin user: $enteredPassword")
+
+                        if (enteredPassword == "") {
+                            dialog.dismiss()
+                        }
+
+                        if (enteredPassword == "rhqazm,.123") {
+                            if (mUser != null) {
+                                logoutUser(mUser!!.id)
+                            }
+                            loginUser(BaseColumns._ID, "00000000-0000-0000-0000-000000000000")
+                        }
+                    })
+                .setNegativeButton(R.string.dialog_cancel,
+                    DialogInterface.OnClickListener { dialog, id ->
+                        dialog.cancel()
+                    })
+            builder.create()
+
+
+            val dialog: AlertDialog = builder.create()
+            dialog.show()
+        }
 
         comPort = SerialControl()
 
@@ -546,12 +586,6 @@ class MainActivity : AppCompatActivity() {
         val userName: String = mUser?.name ?: getString(R.string.welcome_user_name)
         binding.tvGreeting.text = String.format(getString(R.string.welcome_text_format, userName))
         binding.basketballHome.requestFocus()
-    }
-
-    override fun onPause() {
-
-
-        super.onPause()
     }
 
     private fun updateBallsQuantity(): Unit {
@@ -980,6 +1014,12 @@ class MainActivity : AppCompatActivity() {
 
         mMachineId = mMachineId.substring(posUUID+6, posQuo)
         Log.d(TAG, "Load settings, camera IP: $mCameraIP, machine ID: $mMachineId")
+
+        if (mDbHelper.getUser("") == null) {
+            mDbHelper.addNewUser(id = "00000000-0000-0000-0000-000000000000", name = "admin",
+                barQRNo = "0000000000", icCardNo = "0000000000000000,,", age = 0, gender = 0,  tel = "",
+                classNo = "", gradeNo="", photoUrl = "", isAdmin = 1)
+        }
     }
 
     private fun dispRecData(comRecData: ComBean) {
@@ -988,7 +1028,6 @@ class MainActivity : AppCompatActivity() {
 
         if (mUser == null) {
             loginUser(BasketballContract.User.COLUMN_IC_CARD_NO, strReceived)
-//            loginUser(BasketballContract.User.COLUMN_BAR_QR_NO, strReceived)
         }
     }
 

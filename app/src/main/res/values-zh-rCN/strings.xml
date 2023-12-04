@@ -7,6 +7,10 @@
     <string name="remain_basketballs">剩余球数: %d</string>
     <string name="borrow_basketball">我要借球</string>
     <string name="return_basketball">我要还球</string>
+    <string name="admin_login">管理员登录</string>
+    <string name="admin_password_hint">请输入管理员密码</string>
+    <string name="dialog_ok">确定</string>
+    <string name="dialog_cancel">取消</string>
     <string name="welcome_text_format">欢迎您 %s</string>
     <string name="welcome_user_name">游客</string>
     <string name="footer_technique_support">技术支持: 深圳瑞昊科技有限公司</string>

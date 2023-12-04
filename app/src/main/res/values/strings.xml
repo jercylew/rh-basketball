@@ -6,6 +6,10 @@
     <string name="remain_basketballs">Remaining: %d</string>
     <string name="borrow_basketball">Borrow</string>
     <string name="return_basketball">Return</string>
+    <string name="admin_login">Admin</string>
+    <string name="admin_password_hint">Enter the Admin password</string>
+    <string name="dialog_ok">Ok</string>
+    <string name="dialog_cancel">Cancel</string>
     <string name="welcome_text_format">Welcome %s</string>
     <string name="welcome_user_name">Guest</string>
     <string name="footer_technique_support">Technique support: Shenzhen Ruihao Technology Co., Ltd</string>

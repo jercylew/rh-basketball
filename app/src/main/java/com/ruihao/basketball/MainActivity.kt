@@ -33,6 +33,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.preference.PreferenceManager
 import com.ruihao.basketball.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -983,10 +984,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun dispRecData(comRecData: ComBean) {
         val strReceived: String? = comRecData.bRec?.let { serialPortBytesToString(it) }
-        Toast.makeText(this, strReceived, Toast.LENGTH_SHORT).show()
+//        Toast.makeText(this, strReceived, Toast.LENGTH_SHORT).show()
 
         if (mUser == null) {
             loginUser(BasketballContract.User.COLUMN_IC_CARD_NO, strReceived)
+//            loginUser(BasketballContract.User.COLUMN_BAR_QR_NO, strReceived)
         }
     }
 
@@ -1035,9 +1037,12 @@ class MainActivity : AppCompatActivity() {
             BasketballContract.User.COLUMN_PHOTO_URL,
         )
 
-        val selection: String =
-            "$withField = ?"
-        val selectionArgs = arrayOf(withValue)
+        val selection: String = if (withField == BasketballContract.User.COLUMN_IC_CARD_NO)
+            "$withField LIKE ?" else "$withField = ?"
+        val selectionArgs = if (withField == BasketballContract.User.COLUMN_IC_CARD_NO)
+            arrayOf("%$withValue%") else arrayOf(withValue)
+
+        Log.d(TAG, "Login user, selection: $selection, args: ${selectionArgs[0]}")
 
         val sortOrder: String =
             BasketballContract.User.COLUMN_NAME + " DESC"
@@ -1175,52 +1180,67 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun syncUserInfoFromCloud() {
-        runBlocking {
-            launch(Dispatchers.Default) {
-                val postUrl = "https://readerapp.dingcooltech.com/comm/apiComm/stuentInfo.querylist?fromid=1632564838868836353&questionName=stuentInfo"
-                val joPayload = JSONObject()
-                joPayload.put("fromid", "1632564838868836353")
-                joPayload.put("questionName", "studentInfo")
-                joPayload.put("rows", 10)
+        GlobalScope.launch {
+            val postUrl = "https://readerapp.dingcooltech.com/comm/apiComm/stuentInfo.querylist?fromid=1632564838868836353&questionName=stuentInfo"
+            val joPayload = JSONObject()
+            joPayload.put("fromid", "1632564838868836353")
+            joPayload.put("questionName", "studentInfo")
+            joPayload.put("rows", 10)
 
-                //Start synchronizing
-                playAudio(R.raw.tip_start_sync_users)
+            //Start synchronizing
+            playAudio(R.raw.tip_start_sync_users)
 
-                try {
-                    mDbHelper.clearAllUsers()
-                    val cloudUserInfoUrl = URL(postUrl)
-                    for (page in 1..300) { // At most 3000
-                        try {
-                            val addedUsersCount = addBatchUsers(cloudUserInfoUrl, page, joPayload)
-                            if (addedUsersCount == 0) {
-                                break
-                            }
-                        }
-                        catch (exc: Exception) {
-                            Log.d(TAG, "Exception occurred when fetching user list from cloud: ${exc.toString()}, page: $page")
-                        }
-                        finally {
+            try {
+                mDbHelper.clearAllUsers()
+                val cloudUserInfoUrl = URL(postUrl)
+                for (page in 1..300) { // At most 3000
+                    try {
+                        val addedUsersCount = addBatchUsers(cloudUserInfoUrl, page, joPayload)
+                        if (addedUsersCount == 0) {
+                            break
                         }
                     }
-
+                    catch (exc: Exception) {
+                        Log.d(TAG, "Exception occurred when fetching user list from cloud: ${exc.toString()}, page: $page")
+                    }
+                    finally {
+                    }
                 }
-                catch (exc: Exception) {
-                    Log.d(TAG, "Exception occurred when saving user list to local machine: ${exc.toString()}")
-                }
 
-                delay(1000)
-
-                //End of synchronizing
-                playAudio(R.raw.tip_end_sync_users)
             }
+            catch (exc: Exception) {
+                Log.d(TAG, "Exception occurred when saving user list to local machine: ${exc.toString()}")
+            }
+
+            delay(1000)
+
+            //End of synchronizing
+            playAudio(R.raw.tip_end_sync_users)
         }
     }
+
+    private fun getJSONFieldString(joObject: JSONObject, field: String, defaultValue: String = ""): String {
+        if (joObject.isNull(field)) {
+            return ""
+        }
+
+        return joObject.getString(field)
+    }
+
+    private fun getJSONFieldDouble(joObject: JSONObject, field: String, defaultValue: Double = 0.0): Double {
+        if (joObject.isNull(field)) {
+            return 0.0
+        }
+
+        return joObject.getDouble(field)
+    }
+
 
     private fun addBatchUsers(cloudUserInfoUrl: URL, page: Int, joReqCommonPayload: JSONObject): Int {
         val httpURLConnection = cloudUserInfoUrl.openConnection() as HttpURLConnection
         httpURLConnection.requestMethod = "POST"
         httpURLConnection.setRequestProperty("Content-Type", "application/json")
-        httpURLConnection.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ7XCJkZXB0Y29kZVwiOlwiMTAwMDEwMDA2N0QwMDAwMVwiLFwiZGVwdGlkXCI6MTgxLFwiZGVwdG5hbWVcIjpcIuWQjuWPsOeuoeeQhumDqFwiLFwiZmRlcHRjb2Rlc1wiOltcIjEwMDAxMDAwNjdEMDAwMDFcIl0sXCJmdXNlcnNcIjpbXCJcIixcIlwiLFwiXCJdLFwib3JnYW5jb2RlXCI6XCIxMDAwMTAwMDY3XCIsXCJvcmdhbmlkXCI6NjYsXCJvcmdhbm5hbWVcIjpcIueQg-aculwiLFwicGFzc3dvcmRcIjpcIlwiLFwicmVhbGFuYW1lXCI6XCJhZDAwMDZcIixcInJvbGVzXCI6W1wi566h55CG5ZGYXCJdLFwidXNlcklkXCI6MTk3LFwidXNlck5hbWVcIjpcImFkMDAwNlwifSIsImV4cCI6MTY5OTI2MjE5MCwiaWF0IjoxNjk5MjU4NTkwfQ.E39mAsPhOj4cH--tDDLpQPJlSEMtyFIcG1YhQ5IW0-g")
+        httpURLConnection.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ7XCJkZXB0Y29kZVwiOlwiMTAwMDEwMDA2OUQwMDAwMVwiLFwiZGVwdGlkXCI6MTg0LFwiZGVwdG5hbWVcIjpcIuWQjuWPsOeuoeeQhumDqFwiLFwiZmRlcHRjb2Rlc1wiOltcIjEwMDAxMDAwNjlEMDAwMDFcIl0sXCJmdXNlcnNcIjpbXCJcIixcIlwiLFwiXCJdLFwib3JnYW5jb2RlXCI6XCIxMDAwMTAwMDY5XCIsXCJvcmdhbmlkXCI6NjgsXCJvcmdhbm5hbWVcIjpcIuWNg-ael-WxsVwiLFwicGFzc3dvcmRcIjpcIlwiLFwicmVhbGFuYW1lXCI6XCJhZDAwMTBcIixcInJvbGVzXCI6W1wi566h55CG5ZGYXCJdLFwidXNlcklkXCI6MjAzLFwidXNlck5hbWVcIjpcImFkMDAxMFwifSIsImV4cCI6MTcwMTY2MTU2OCwiaWF0IjoxNzAxNjU3OTY4fQ.oCes4NbkxfjRtstdbxmMECYkTWigLWidkP_Irul0hxU")
 
         //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
         httpURLConnection.doOutput = true
@@ -1259,18 +1279,21 @@ class MainActivity : AppCompatActivity() {
         val indexLast = jaList.length() - 1
         for (index in 0..indexLast) {
             val joUserInfo = jaList.getJSONObject(index)
-            val name = joUserInfo.getString("stuentInfo_2alr")
-            val userId = joUserInfo.getString("stuentInfo_6l3r")
-            val icCardId = joUserInfo.getString("stuentInfo_dkqz")
-            val classNo = joUserInfo.getString("stuentInfo_zha9_text")
-            val gradeNo = joUserInfo.getString("stuentInfo_7lw6")
-            val gender = if (joUserInfo.getString("stuentInfo_zqvl") == "男") 0 else 1
-            val age = joUserInfo.getDouble("stuentInfo_fodb")
+            val name =  getJSONFieldString(joUserInfo, "stuentInfo_2alr")
+            val userId = getJSONFieldString(joUserInfo, "stuentInfo_6l3r")
+            val icCardId1 = getJSONFieldString(joUserInfo, "filed170133705991458")
+            val icCardId2 = getJSONFieldString(joUserInfo, "filed170133706044821")
+            val icCardId3 = getJSONFieldString(joUserInfo, "stuentInfo_yfe1")
+            val icCardIdAll = "$icCardId1,$icCardId2,$icCardId3"
+            val classNo = getJSONFieldString(joUserInfo, "stuentInfo_zha9_text")
+            val gradeNo = getJSONFieldString(joUserInfo, "stuentInfo_7lw6")
+            val gender = if (getJSONFieldString(joUserInfo, "stuentInfo_zqvl") == "男") 0 else 1
+            val age = getJSONFieldDouble(joUserInfo, "stuentInfo_fodb")
             var photoUrl = ""
             var photoFormat = ""
 
             mDbHelper.addNewUser(id = UUID.randomUUID().toString(), name = name, barQRNo = userId,
-                icCardNo = icCardId, age = age.toInt(), gender = gender,  tel = "",
+                icCardNo = icCardIdAll, age = age.toInt(), gender = gender,  tel = "",
                 classNo = classNo, gradeNo=gradeNo, photoUrl = photoUrl)
 
             if (joUserInfo.isNull("stuentInfo_lrzn")) {

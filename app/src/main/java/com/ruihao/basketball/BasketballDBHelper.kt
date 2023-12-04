@@ -117,8 +117,7 @@ internal class BasketballDBHelper(context: Context?) :
 
     fun clearAllUsers() {
         val db = this.writableDatabase
-        val whereArgs = arrayOf("")
-        db.delete(BasketballContract.User.TABLE_NAME, null, whereArgs)
+        db.delete(BasketballContract.User.TABLE_NAME, null, emptyArray<String>())
         db.close()
     }
 

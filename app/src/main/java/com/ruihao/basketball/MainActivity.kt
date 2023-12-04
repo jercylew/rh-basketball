@@ -31,11 +31,8 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.preference.PreferenceManager
-import com.chaquo.python.Python
-import com.chaquo.python.android.AndroidPlatform
 import com.ruihao.basketball.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -386,21 +383,21 @@ class MainActivity : AppCompatActivity() {
             mAdminActivityRunning = false
         }
 
-        val cloudServerUri = URI("ws://readerapp.dingcooltech.com/websocket/comm/sendMachineMsg")
+        val cloudServerUri = URI("ws://readerapp.dingcooltech.com/websocket/$mMachineId/123456")
         mCloudCmdWSClient = ChatWebSocketClient(cloudServerUri) { message ->
             Log.d(TAG, "Cloud Websocket message received: $message")
 
             try {
-                val joCmd = JSONObject(message)
-                val cmdMacId = joCmd.getString("mid")
+//                val joCmd = JSONObject(message)
+//                val cmdMacId = joCmd.getString("mid")
+//
+//                if (cmdMacId != mMachineId) {
+//                    Log.d(TAG, "Cloud command not for this machine")
+//                    return@ChatWebSocketClient
+//                }
 
-                if (cmdMacId != mMachineId) {
-                    Log.d(TAG, "Clod command not for this machine")
-                    return@ChatWebSocketClient
-                }
-
-                val cmdType = joCmd.getString("msg")
-                if (cmdType == "000") {
+//                val cmdType = joCmd.getString("msg")
+                if (message == "000") {
                     // Switch off device
                     try {
                         /* Missing read/write permission, trying to chmod the file */
@@ -415,14 +412,14 @@ class MainActivity : AppCompatActivity() {
                         throw SecurityException()
                     }
                 }
-                if (cmdType == "001") {
+                if (message == "001") {
                     // Sync user info from cloud to device
                     syncUserInfoFromCloud()
                 }
-                if (cmdType == "002") {
+                if (message == "002") {
                     // Sync info to cloud server
                 }
-                if (cmdType == "003") {
+                if (message == "003") {
                     // Sync to a specified client ?
                 }
             } catch (exc: JSONException) {
@@ -478,6 +475,8 @@ class MainActivity : AppCompatActivity() {
             }
         }, headersMap)
         mFaceRecognitionWSClient.connect()
+
+        syncUserInfoFromCloud()
     }
 
     private fun faceRecognitionModelPath(): String {
@@ -995,8 +994,12 @@ class MainActivity : AppCompatActivity() {
         var strText = ""
 
         for (ch in bytes) {
-//            Log.d(TAG, "Byte: $ch -> ${ch.toUByte().toString(16)}")
-            strText += ch.toUByte().toString(16)
+            var byteText = ch.toUByte().toString(16)
+            if (byteText.length < 2) {
+                byteText = "0$byteText"
+            }
+//            Log.d(TAG, "Byte: $ch -> $byteText")
+            strText += byteText
         }
 
         return strText
@@ -1180,6 +1183,9 @@ class MainActivity : AppCompatActivity() {
                 joPayload.put("questionName", "studentInfo")
                 joPayload.put("rows", 10)
 
+                //Start synchronizing
+                playAudio(R.raw.tip_start_sync_users)
+
                 try {
                     mDbHelper.clearAllUsers()
                     val cloudUserInfoUrl = URL(postUrl)
@@ -1201,6 +1207,11 @@ class MainActivity : AppCompatActivity() {
                 catch (exc: Exception) {
                     Log.d(TAG, "Exception occurred when saving user list to local machine: ${exc.toString()}")
                 }
+
+                delay(1000)
+
+                //End of synchronizing
+                playAudio(R.raw.tip_end_sync_users)
             }
         }
     }
@@ -1245,20 +1256,41 @@ class MainActivity : AppCompatActivity() {
         }
 
         val jaUsersListToRegister = JSONArray()
-        for (index in 0..jaList.length()) {
+        val indexLast = jaList.length() - 1
+        for (index in 0..indexLast) {
             val joUserInfo = jaList.getJSONObject(index)
             val name = joUserInfo.getString("stuentInfo_2alr")
             val userId = joUserInfo.getString("stuentInfo_6l3r")
             val icCardId = joUserInfo.getString("stuentInfo_dkqz")
             val classNo = joUserInfo.getString("stuentInfo_zha9_text")
             val gradeNo = joUserInfo.getString("stuentInfo_7lw6")
-            val photoUrl = joUserInfo.getString("stuentInfo_lrzn")
             val gender = if (joUserInfo.getString("stuentInfo_zqvl") == "男") 0 else 1
             val age = joUserInfo.getDouble("stuentInfo_fodb")
+            var photoUrl = ""
+            var photoFormat = ""
 
             mDbHelper.addNewUser(id = UUID.randomUUID().toString(), name = name, barQRNo = userId,
                 icCardNo = icCardId, age = age.toInt(), gender = gender,  tel = "",
                 classNo = classNo, gradeNo=gradeNo, photoUrl = photoUrl)
+
+            if (joUserInfo.isNull("stuentInfo_lrzn")) {
+                continue
+            }
+
+            val photoUrlObjectText = joUserInfo.getString("stuentInfo_lrzn")
+            val jaImages = JSONArray(photoUrlObjectText)
+            if (jaImages.length() > 0) {
+                val joImage = jaImages.getJSONObject(0) //Use the first one by default
+                photoUrl = joImage.getString("url")
+                val dotPos = photoUrl.lastIndexOf(".")
+
+                if (dotPos > 0) {
+                    photoFormat = photoUrl.substring(dotPos+1)
+                }
+            }
+            if (photoUrl == "") {
+                continue
+            }
 
             val joUserInfoToRegister = JSONObject()
             joUserInfoToRegister.put("index", index)
@@ -1291,7 +1323,7 @@ class MainActivity : AppCompatActivity() {
             val jaUserImages = JSONArray()
             val joUserImage = JSONObject()
 //            joUserImage.put("data", "")
-            joUserImage.put("format", "png")
+            joUserImage.put("format", photoFormat)
             joUserImage.put("url", photoUrl)
 
             jaUserImages.put(joUserImage)
@@ -1300,56 +1332,70 @@ class MainActivity : AppCompatActivity() {
             jaUsersListToRegister.put(joUserInfoToRegister)
         }
 
-        return registerBatchUserToFaceRecogMachine(jaUsersListToRegister)
+        val registerCount = registerBatchUserToFaceRecogMachine(jaUsersListToRegister)
+        Log.d(TAG, "Registered face in face recognize machine: $registerCount users")
+
+        return jaList.length()
     }
 
     private fun registerBatchUserToFaceRecogMachine(jaUsersList: JSONArray): Int {
-        val userRegisterUrlAddress = "http://$mCameraIP:8086/api/v1/addmultifaces"
-        val userRegisterUrl = URL(userRegisterUrlAddress)
-        val httpURLConnection = userRegisterUrl.openConnection() as HttpURLConnection
-        httpURLConnection.requestMethod = "POST"
-        httpURLConnection.setRequestProperty("Content-Type", "application/json")
-
-        //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
-        httpURLConnection.doOutput = true
-        // this is used for just in case we don't know about the data size associated with our request
-        httpURLConnection.setChunkedStreamingMode(0)
-
-        val joRegisterReqPayload = JSONObject()
-        joRegisterReqPayload.put("Persons", jaUsersList)
-        Log.d(TAG, "Register users, HTTP post: $joRegisterReqPayload")
-        // to write tha data in our request
-        val outputStream: OutputStream =
-            BufferedOutputStream(httpURLConnection.outputStream)
-        val outputStreamWriter = OutputStreamWriter(outputStream)
-        outputStreamWriter.write(joRegisterReqPayload.toString())
-        outputStreamWriter.flush()
-        outputStreamWriter.close()
-
-        val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
-        val bufferReader = BufferedReader(InputStreamReader(inputStream))
-        val respText =  bufferReader.readText()
-        bufferReader.close()
-        httpURLConnection.disconnect()
-
-        Log.d(TAG, "Get user list from cloud: $respText")
-        val joRegisterResp = JSONObject(respText)
-        if (joRegisterResp.getInt("status") != 0) {
-            Log.e(TAG, "Failed to register the users: $jaUsersList")
+        if (jaUsersList.length() == 0) {
             return 0
         }
 
-        val joRespData = joRegisterResp.getJSONObject("data")
-        val jaRegisteredUsers = joRespData.getJSONArray("multiResult")
-        var totalRegistered = 0
-        for (index in 0..jaRegisteredUsers.length()) {
-            val joRegisteredUser = jaRegisteredUsers.getJSONObject(index)
-            if (joRegisteredUser.getInt("errorCode") == 0) {
-                totalRegistered++
-            }
-        }
+        try {
+            val userRegisterUrlAddress = "http://$mCameraIP:8086/api/v1/addmultifaces"
+            val userRegisterUrl = URL(userRegisterUrlAddress)
+            val httpURLConnection = userRegisterUrl.openConnection() as HttpURLConnection
+            httpURLConnection.requestMethod = "POST"
+            httpURLConnection.setRequestProperty("Content-Type", "application/json")
 
-        return totalRegistered
+            //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
+            httpURLConnection.doOutput = true
+            // this is used for just in case we don't know about the data size associated with our request
+            httpURLConnection.setChunkedStreamingMode(0)
+
+            val joRegisterReqPayload = JSONObject()
+            joRegisterReqPayload.put("Persons", jaUsersList)
+            Log.d(TAG, "Register users, HTTP post: $joRegisterReqPayload")
+            // to write tha data in our request
+            val outputStream: OutputStream =
+                BufferedOutputStream(httpURLConnection.outputStream)
+            val outputStreamWriter = OutputStreamWriter(outputStream)
+            outputStreamWriter.write(joRegisterReqPayload.toString())
+            outputStreamWriter.flush()
+            outputStreamWriter.close()
+
+            val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+            val bufferReader = BufferedReader(InputStreamReader(inputStream))
+            val respText =  bufferReader.readText()
+            bufferReader.close()
+            httpURLConnection.disconnect()
+
+            Log.d(TAG, "Get user list from cloud: $respText")
+            val joRegisterResp = JSONObject(respText)
+            if (joRegisterResp.getInt("status") != 0) {
+                Log.e(TAG, "Failed to register the users: $jaUsersList")
+                return 0
+            }
+
+            val joRespData = joRegisterResp.getJSONObject("data")
+            val jaRegisteredUsers = joRespData.getJSONArray("multiResult")
+            var totalRegistered = 0
+            val indexLast = jaRegisteredUsers.length() - 1
+            for (index in 0..indexLast) {
+                val joRegisteredUser = jaRegisteredUsers.getJSONObject(index)
+                if (joRegisteredUser.getInt("errorCode") == 0) {
+                    totalRegistered++
+                }
+            }
+
+            return totalRegistered
+        }
+        catch (exc: Exception) {
+            Log.d(TAG, "Exception occurred when registering faces to face recognize machine: ${exc.toString()}")
+            return 0
+        }
     }
 
     private fun syncBorrowRecordToCloud() {

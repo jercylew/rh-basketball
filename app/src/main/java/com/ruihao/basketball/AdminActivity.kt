@@ -65,6 +65,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     private var mMediaPlayer: MediaPlayer? = null
     private var mReturnBallTimer: CountDownTimer? = null
     private var mCameraIP = ""
+    private var mAdminPassword = ""
 
     private val mAppDataFile: File = File(
         Environment.getExternalStorageDirectory().path
@@ -364,7 +365,23 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
         updateSharedPreferencesFromController()
 
-        mCameraIP = sharedPreferences.getString("camera_rtsp_ip", "192.168.1.15").toString()
+        mCameraIP = sharedPreferences.getString("camera_rtsp_ip", "").toString()
+        if (mCameraIP == "") {
+            mCameraIP = "192.168.1.15"
+            with (sharedPreferences.edit()) {
+                putString("camera_rtsp_ip", mCameraIP)
+                apply()
+            }
+        }
+
+        mAdminPassword = sharedPreferences.getString("admin_password", "").toString()
+        if (mAdminPassword == "") {
+            mAdminPassword = "qazm,.123"
+            with (sharedPreferences.edit()) {
+                putString("admin_password", mAdminPassword)
+                apply()
+            }
+        }
     }
 
     override fun onResume() {
@@ -405,7 +422,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
-        if (key == "camera_rtsp_ip") {
+        if (key == "camera_rtsp_ip" || key == "admin_password") {
             return
         }
 

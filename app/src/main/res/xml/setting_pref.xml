@@ -28,4 +28,8 @@
         android:defaultValue=""
         android:key="camera_rtsp_ip"
         android:title="@string/settings_title_camera_ip"/>
+    <EditTextPreference
+        android:defaultValue=""
+        android:key="admin_password"
+        android:title="@string/settings_title_admin_password"/>
 </PreferenceScreen>

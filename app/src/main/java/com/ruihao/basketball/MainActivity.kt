@@ -122,6 +122,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var libVlc: LibVLC
     private lateinit var mediaPlayer: org.videolan.libvlc.MediaPlayer
 
+    private var mAdminPassword = ""
+
     private val mAppDataFile: File = File(Environment.getExternalStorageDirectory().path
             + "/RhBasketball")
     private var mAdminActivityRunning: Boolean = false
@@ -386,7 +388,7 @@ class MainActivity : AppCompatActivity() {
                             dialog.dismiss()
                         }
 
-                        if (enteredPassword == "rhqazm,.123") {
+                        if (enteredPassword == mAdminPassword) {
                             if (mUser != null) {
                                 logoutUser(mUser!!.id)
                             }
@@ -421,6 +423,8 @@ class MainActivity : AppCompatActivity() {
             }
             val intent = result.data ?: return@registerForActivityResult
 
+            Log.d(TAG, "Coming back from Admin page")
+            loadSettings()
             mAdminActivityRunning = false
         }
 
@@ -517,7 +521,7 @@ class MainActivity : AppCompatActivity() {
         }, headersMap)
         mFaceRecognitionWSClient.connect()
 
-        syncUserInfoFromCloud()
+//        syncUserInfoFromCloud()
     }
 
     private fun faceRecognitionModelPath(): String {
@@ -992,6 +996,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadSettings() {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         mCameraIP = sharedPreferences.getString("camera_rtsp_ip", "192.168.1.15").toString()
+        mAdminPassword = sharedPreferences.getString("admin_password", "qazm,.123").toString()
 
         //Get the machine ID
         val shCommand = "su root blkid /dev/block/mmcblk2p15"

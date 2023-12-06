@@ -1217,7 +1217,7 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, String.format(getString(R.string.tip_login_user_succeed), name),
             Toast.LENGTH_SHORT).show()
 //        playAudio(R.raw.tip_login_user_succeed)
-        mTTSService?.speak("${getString(R.string.welcome_text)}, ${mUser!!.gradeNo}${mUser!!.classNo}, ${mUser!!.name}",
+        mTTSService?.speak("${getString(R.string.welcome_text)}, ${mUser!!.classNo}${mUser!!.name}",
             TextToSpeech.QUEUE_FLUSH, null, UUID.randomUUID().toString())
 
         binding.tvGreeting.text = String.format(getString(R.string.welcome_text_format, name))

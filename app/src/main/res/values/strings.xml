@@ -11,6 +11,7 @@
     <string name="dialog_ok">Ok</string>
     <string name="dialog_cancel">Cancel</string>
     <string name="welcome_text_format">Welcome %s</string>
+    <string name="welcome_text">Welcome</string>
     <string name="welcome_user_name">Guest</string>
     <string name="footer_technique_support">Technique support: Shenzhen Ruihao Technology Co., Ltd</string>
     <string name="footer_tel">Tel: 0755–8423987</string>

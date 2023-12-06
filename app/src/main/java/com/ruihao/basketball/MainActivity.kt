@@ -18,6 +18,7 @@ import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Environment
 import android.provider.BaseColumns
+import android.speech.tts.TextToSpeech
 import android.util.Base64
 import android.util.Log
 import android.view.KeyEvent
@@ -81,6 +82,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var mListBalls: List<GridViewModal>
     private lateinit var mAdminActivityLauncher: ActivityResultLauncher<Intent>
+//    private lateinit var mTTSDataCheckActivityLauncher: ActivityResultLauncher<Intent>
     private lateinit var mCloudCmdWSClient: ChatWebSocketClient
     private lateinit var mFaceRecognitionWSClient: ChatWebSocketClient
     private var mTotalBallsQty: Array<Int> = arrayOf<Int>(12, 12)
@@ -130,6 +132,8 @@ class MainActivity : AppCompatActivity() {
     private var mMachineId: String = ""
 
     private var mInitControllerTimes = 0
+
+    private var mTTSService: TextToSpeech? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -418,7 +422,7 @@ class MainActivity : AppCompatActivity() {
         libVlc = LibVLC(this)
         mediaPlayer = org.videolan.libvlc.MediaPlayer(libVlc)
 
-        mAdminActivityLauncher = registerForActivityResult<Intent, ActivityResult>(
+        mAdminActivityLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
         ) { result: ActivityResult ->
             if (RESULT_OK != result.resultCode) {
@@ -430,6 +434,25 @@ class MainActivity : AppCompatActivity() {
             loadSettings()
             mAdminActivityRunning = false
         }
+
+//        mTTSDataCheckActivityLauncher = registerForActivityResult(
+//            ActivityResultContracts.StartActivityForResult()
+//        ) { result: ActivityResult ->
+//            if (RESULT_OK != result.resultCode) {
+//                return@registerForActivityResult
+//            }
+//            Log.d(TAG, "Coming back from TTS Data Check page")
+////            val intent = result.data ?: return@registerForActivityResult
+//
+//            if (result.resultCode == RESULT_OK) {
+//                Log.d(TAG, "TTS Check completed")
+//            }
+//            else {
+//                val myIntent = Intent()
+//                myIntent.action = TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA
+//                mTTSDataCheckActivityLauncher.launch(myIntent)
+//            }
+//        }
 
         val cloudServerUri = URI("ws://readerapp.dingcooltech.com/websocket/$mMachineId/123456")
         mCloudCmdWSClient = ChatWebSocketClient(cloudServerUri) { message ->
@@ -524,7 +547,28 @@ class MainActivity : AppCompatActivity() {
         }, headersMap)
         mFaceRecognitionWSClient.connect()
 
-//        syncUserInfoFromCloud()
+        mTTSService = TextToSpeech(
+            this@MainActivity,
+        ) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                if (mTTSService != null) {
+                    val result: Int = mTTSService!!.setLanguage(Locale.CHINA)
+                    if (result == TextToSpeech.LANG_MISSING_DATA ||
+                        result == TextToSpeech.LANG_NOT_SUPPORTED
+                    )
+                    {
+                        Log.e("error", "This Language is not supported")
+                    }
+                    else {
+//                    ConvertTextToSpeech()
+                    }
+                }
+            }
+            else {
+                Log.e(TAG, "TTS initialize failed, status code: $status")
+            }
+        }
+        syncUserInfoFromCloud()
     }
 
     private fun faceRecognitionModelPath(): String {
@@ -595,6 +639,10 @@ class MainActivity : AppCompatActivity() {
         binding.basketballHome.requestFocus()
     }
 
+    override fun onPause() {
+        super.onPause()
+    }
+
     private fun updateBallsQuantity(): Unit {
         mRemainBallsQty[0] = readModbusRegister(1000)
         mRemainBallsQty[1] = readModbusRegister(1001)
@@ -652,6 +700,11 @@ class MainActivity : AppCompatActivity() {
 
         mediaPlayer.release()
         libVlc.release()
+
+        if(mTTSService != null){
+            mTTSService!!.stop();
+            mTTSService!!.shutdown();
+        }
 
         super.onDestroy()
     }
@@ -1023,7 +1076,7 @@ class MainActivity : AppCompatActivity() {
         mMachineId = mMachineId.substring(posUUID+6, posQuo)
         Log.d(TAG, "Load settings, camera IP: $mCameraIP, machine ID: $mMachineId")
 
-        if (mDbHelper.getUser("") == null) {
+        if (mDbHelper.getUser("00000000-0000-0000-0000-000000000000") == null) {
             mDbHelper.addNewUser(id = "00000000-0000-0000-0000-000000000000", name = "admin",
                 barQRNo = "0000000000", icCardNo = "0000000000000000,,", age = 0, gender = 0,  tel = "",
                 classNo = "", gradeNo="", photoUrl = "", isAdmin = 1)
@@ -1163,7 +1216,9 @@ class MainActivity : AppCompatActivity() {
                 "${mUser!!.gender}, ${mUser!!.classNo}, ${mUser!!.gradeNo}, ${mUser!!.age}")
         Toast.makeText(this, String.format(getString(R.string.tip_login_user_succeed), name),
             Toast.LENGTH_SHORT).show()
-        playAudio(R.raw.tip_login_user_succeed)
+//        playAudio(R.raw.tip_login_user_succeed)
+        mTTSService?.speak("${getString(R.string.welcome_text)}, ${mUser!!.gradeNo}${mUser!!.classNo}, ${mUser!!.name}",
+            TextToSpeech.QUEUE_FLUSH, null, UUID.randomUUID().toString())
 
         binding.tvGreeting.text = String.format(getString(R.string.welcome_text_format, name))
 
@@ -1332,7 +1387,7 @@ class MainActivity : AppCompatActivity() {
             val icCardId2 = getJSONFieldString(joUserInfo, "filed170133706044821")
             val icCardId3 = getJSONFieldString(joUserInfo, "stuentInfo_yfe1")
             val icCardIdAll = "$icCardId1,$icCardId2,$icCardId3"
-            val classNo = getJSONFieldString(joUserInfo, "stuentInfo_zha9_text")
+            val classNo = getJSONFieldString(joUserInfo, "stuentInfo_lgcc")
             val gradeNo = getJSONFieldString(joUserInfo, "stuentInfo_7lw6")
             val gender = if (getJSONFieldString(joUserInfo, "stuentInfo_zqvl") == "男") 0 else 1
             val age = getJSONFieldDouble(joUserInfo, "stuentInfo_fodb")

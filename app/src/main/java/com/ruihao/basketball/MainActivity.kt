@@ -613,6 +613,11 @@ class MainActivity : AppCompatActivity() {
         mediaPlayer.media = media
         media.release()
         mediaPlayer.play()
+        Log.d(TAG, "VLV media init, state: ${mediaPlayer.isPlaying}")
+
+        if (!mediaPlayer.isPlaying) {
+            binding.viewFinder.visibility = View.INVISIBLE
+        }
 
         openComPort(comPort!!)
         dispQueue = DispQueueThread()
@@ -855,25 +860,21 @@ class MainActivity : AppCompatActivity() {
     private fun initController(): Unit {
         runBlocking {
             launch(Dispatchers.Default) {
-                while(mInitControllerTimes <= MAX_INIT_CONTROLLER_TIMES) {
+                while((mInitControllerTimes <= MAX_INIT_CONTROLLER_TIMES) && !mModbusOk) {
+                    Log.d(TAG, "Trying to connect to modbus ...")
+                    mModbusOk = initModbus()
+                    Log.d(TAG, "Init modbus, result: $mModbusOk")
                     if (mModbusOk) {
+                        writeModbusRegister(1014, 1000) //出球的时长(推杆动作的间隔): 1 second
+                        writeModbusRegister(1015, 3000) //进球口门锁关闭时长: 3 seconds
                         runOnUiThread {
                             updateBallsQuantity()
                             updateGridView()
                         }
                     }
-                    else {
-                        Log.d(TAG, "Trying to connect to modbus ...")
-                        mModbusOk = initModbus()
-                        Log.d(TAG, "Init modbus, result: $mModbusOk")
-                        if (mModbusOk) {
-                            writeModbusRegister(1014, 1000) //出球的时长(推杆动作的间隔): 1 second
-                            writeModbusRegister(1015, 3000) //进球口门锁关闭时长: 3 seconds
-                        }
-                    }
 
                     mInitControllerTimes++
-                    delay(3000)
+                    delay(1000)
                 }
             }
         }

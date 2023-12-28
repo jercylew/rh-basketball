@@ -12,6 +12,7 @@ import android.graphics.ImageFormat
 import android.graphics.Rect
 import android.graphics.YuvImage
 import android.media.MediaPlayer
+import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -28,6 +29,7 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.ImageAnalysis
@@ -71,7 +73,6 @@ import java.util.LinkedList
 import java.util.Locale
 import java.util.Queue
 import java.util.Timer
-import java.util.TimerTask
 import java.util.UUID
 import kotlin.concurrent.timerTask
 
@@ -136,6 +137,7 @@ class MainActivity : AppCompatActivity() {
     private var mTTSService: TextToSpeech? = null
     private var mIsSyncBusy: Boolean = false
 
+    @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
         actionBar?.hide()
         val windowInsetsController =
@@ -1128,7 +1130,7 @@ class MainActivity : AppCompatActivity() {
             playAudio(R.raw.tip_sync_busy)
             return
         }
-        
+
         val db = mDbHelper.readableDatabase
 
         val projection = arrayOf<String>(
@@ -1289,7 +1291,21 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        val activeNetwork = connectivityManager?.activeNetwork
+
+        Log.d(TAG, "Got active network: ${activeNetwork.toString()}")
+        return activeNetwork != null
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
     private fun syncUserInfoFromCloud() {
+        if (!isNetworkAvailable()) {
+            return
+        }
+
         GlobalScope.launch {
             val postUrl = "https://readerapp.dingcooltech.com/comm/apiComm/stuentInfo.querylist?fromid=1632564838868836353&questionName=stuentInfo"
             val joPayload = JSONObject()

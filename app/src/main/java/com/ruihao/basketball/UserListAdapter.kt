@@ -43,7 +43,7 @@ class UserListAdapter(context: Context, usersList: ArrayList<User>) :
             val imgBitmap = BitmapFactory.decodeFile(userPhotoUrl)
             (holder as UserListAdapter.ViewHolder).mIVPhoto.setImageBitmap(imgBitmap)
         }
-        (holder as UserListAdapter.ViewHolder).mTVClassGrade.text = "${userInfo.gradeNo}${userInfo.classNo}"
+        (holder as UserListAdapter.ViewHolder).mTVClassGrade.text = "${userInfo.classNo}"
         (holder as UserListAdapter.ViewHolder).mTVName.text = userInfo.name
         (holder as UserListAdapter.ViewHolder).mTVGender.text = userInfo.gender
         (holder as UserListAdapter.ViewHolder).mTVNumber.text = userInfo.barQRNo  //Usually student number used to make bar/QR code

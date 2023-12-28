@@ -70,7 +70,10 @@ import java.util.Date
 import java.util.LinkedList
 import java.util.Locale
 import java.util.Queue
+import java.util.Timer
+import java.util.TimerTask
 import java.util.UUID
+import kotlin.concurrent.timerTask
 
 
 typealias FaceCheckListener = (imageDataBase64: String) -> Unit
@@ -97,6 +100,9 @@ class MainActivity : AppCompatActivity() {
     private var mModbusOk: Boolean = false
     private var mMediaPlayer: MediaPlayer? = null
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
+
+    private var mWSCheckTimer: Timer? = null
+    private var mWSConnCheckTask: TimerTask? = null
 
     //Camera
 //    private var imageCapture: ImageCapture? = null
@@ -506,13 +512,6 @@ class MainActivity : AppCompatActivity() {
         headersMap["Sec-WebSocket-Extensions"] = "permessage-deflate;client_max_window_bits"
         headersMap["Connection"] = "Upgrade"
         headersMap["Upgrade"] = "websocket"
-//        headersMap["Pragma"] = "no-cache"
-//        headersMap["Cache-Control"] = "no-cache"
-//        headersMap["Accept-Encoding"] = "gzip, deflate"
-//        headersMap["Accept-Language"] = "zh-CN,zh;q=0.9"
-//        headersMap["Origin"] = "null"
-//        headersMap["User-Agent"] = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36"
-
 
         val perMessageDeflateDraft: Draft = Draft_6455(
             PerMessageDeflateExtension()
@@ -546,6 +545,20 @@ class MainActivity : AppCompatActivity() {
             }
         }, headersMap)
         mFaceRecognitionWSClient.connect()
+
+        mWSCheckTimer = Timer(true)
+        mWSCheckTimer!!.scheduleAtFixedRate(timerTask()
+        {
+            Log.d(TAG, "Now checking the ws sockets connection...")
+            if (mCloudCmdWSClient.isClosed) {
+                Log.d(TAG, "WS cloud socket disconnected, now reconnect it...")
+                mCloudCmdWSClient.reconnect()
+            }
+            if (mFaceRecognitionWSClient.isClosed) {
+                Log.d(TAG, "WS cloud socket disconnected, now reconnect it...")
+                mFaceRecognitionWSClient.reconnect()
+            }
+        }, 1000, 10000)
 
         mTTSService = TextToSpeech(
             this@MainActivity,
@@ -706,6 +719,7 @@ class MainActivity : AppCompatActivity() {
             mTTSService!!.shutdown();
         }
 
+        mWSCheckTimer?.cancel()
         super.onDestroy()
     }
 
@@ -1159,8 +1173,9 @@ class MainActivity : AppCompatActivity() {
 
         if (cursor.count == 0) {
             Log.d(TAG, "User not found, with $withField: $withValue")
-//            Toast.makeText(this, getString(R.string.tip_login_user_not_found),
-//                Toast.LENGTH_SHORT).show()
+            Toast.makeText(this,
+                "${getString(R.string.tip_login_user_not_found)}: $withValue",
+                Toast.LENGTH_LONG).show()
             playAudio(R.raw.tip_login_user_not_found)
             return
         }
@@ -1350,7 +1365,7 @@ class MainActivity : AppCompatActivity() {
         httpURLConnection.setChunkedStreamingMode(0)
 
         joReqCommonPayload.put("page", page)
-        Log.d(TAG, "Sync users list from cloud, HTTP post: $joReqCommonPayload")
+//        Log.d(TAG, "Sync users list from cloud, HTTP post: $joReqCommonPayload")
         // to write tha data in our request
         val outputStream: OutputStream =
             BufferedOutputStream(httpURLConnection.outputStream)
@@ -1365,7 +1380,7 @@ class MainActivity : AppCompatActivity() {
         bufferReader.close()
         httpURLConnection.disconnect()
 
-        Log.d(TAG, "Get user list from cloud: $respText")
+//        Log.d(TAG, "Get user list from cloud: $respText")
         val joResp = JSONObject(respText)
         if (!joResp.getBoolean("success")) {
             return 0

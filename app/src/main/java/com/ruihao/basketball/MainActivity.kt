@@ -100,9 +100,7 @@ class MainActivity : AppCompatActivity() {
     private var mModbusOk: Boolean = false
     private var mMediaPlayer: MediaPlayer? = null
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
-
     private var mWSCheckTimer: Timer? = null
-    private var mWSConnCheckTask: TimerTask? = null
 
     //Camera
 //    private var imageCapture: ImageCapture? = null
@@ -129,18 +127,14 @@ class MainActivity : AppCompatActivity() {
     private var mCameraIP = ""
     private lateinit var libVlc: LibVLC
     private lateinit var mediaPlayer: org.videolan.libvlc.MediaPlayer
-
     private var mAdminPassword = ""
-
     private val mAppDataFile: File = File(Environment.getExternalStorageDirectory().path
             + "/RhBasketball")
     private var mAdminActivityRunning: Boolean = false
     private var mMachineId: String = ""
-
     private var mInitControllerTimes = 0
-
     private var mTTSService: TextToSpeech? = null
-
+    private var mIsSyncBusy: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         actionBar?.hide()
@@ -168,6 +162,11 @@ class MainActivity : AppCompatActivity() {
 //                    Toast.LENGTH_SHORT
 //                ).show()
                 playAudio(R.raw.tip_login)
+                return@setOnClickListener
+            }
+
+            if (mIsSyncBusy) {
+                playAudio(R.raw.tip_sync_busy)
                 return@setOnClickListener
             }
 
@@ -271,6 +270,10 @@ class MainActivity : AppCompatActivity() {
 //                    Toast.LENGTH_SHORT
 //                ).show()
                 playAudio(R.raw.tip_login)
+                return@setOnClickListener
+            }
+            if (mIsSyncBusy) {
+                playAudio(R.raw.tip_sync_busy)
                 return@setOnClickListener
             }
 
@@ -380,6 +383,10 @@ class MainActivity : AppCompatActivity() {
             (mReturnBallTimer as CountDownTimer).start()
         }
         binding.btnAdminLogin.setOnClickListener {
+            if (mIsSyncBusy) {
+                playAudio(R.raw.tip_sync_busy)
+                return@setOnClickListener
+            }
             val builder: AlertDialog.Builder = AlertDialog.Builder(this)
 
             // Inflate and set the layout for the dialog.
@@ -440,25 +447,6 @@ class MainActivity : AppCompatActivity() {
             loadSettings()
             mAdminActivityRunning = false
         }
-
-//        mTTSDataCheckActivityLauncher = registerForActivityResult(
-//            ActivityResultContracts.StartActivityForResult()
-//        ) { result: ActivityResult ->
-//            if (RESULT_OK != result.resultCode) {
-//                return@registerForActivityResult
-//            }
-//            Log.d(TAG, "Coming back from TTS Data Check page")
-////            val intent = result.data ?: return@registerForActivityResult
-//
-//            if (result.resultCode == RESULT_OK) {
-//                Log.d(TAG, "TTS Check completed")
-//            }
-//            else {
-//                val myIntent = Intent()
-//                myIntent.action = TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA
-//                mTTSDataCheckActivityLauncher.launch(myIntent)
-//            }
-//        }
 
         val cloudServerUri = URI("ws://readerapp.dingcooltech.com/websocket/$mMachineId/123456")
         mCloudCmdWSClient = ChatWebSocketClient(cloudServerUri) { message ->
@@ -555,7 +543,7 @@ class MainActivity : AppCompatActivity() {
                 mCloudCmdWSClient.reconnect()
             }
             if (mFaceRecognitionWSClient.isClosed) {
-                Log.d(TAG, "WS cloud socket disconnected, now reconnect it...")
+                Log.d(TAG, "WS face recognition machine socket disconnected, now reconnect it...")
                 mFaceRecognitionWSClient.reconnect()
             }
         }, 1000, 10000)
@@ -865,7 +853,7 @@ class MainActivity : AppCompatActivity() {
     private fun initController(): Unit {
         runBlocking {
             launch(Dispatchers.Default) {
-                while(mInitControllerTimes >= MAX_INIT_CONTROLLER_TIMES) {
+                while(mInitControllerTimes <= MAX_INIT_CONTROLLER_TIMES) {
                     if (mModbusOk) {
                         runOnUiThread {
                             updateBallsQuantity()
@@ -1136,6 +1124,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loginUser(withField: String, withValue: String?): Unit {
+        if (mIsSyncBusy) {
+            playAudio(R.raw.tip_sync_busy)
+            return
+        }
+        
         val db = mDbHelper.readableDatabase
 
         val projection = arrayOf<String>(
@@ -1306,6 +1299,9 @@ class MainActivity : AppCompatActivity() {
 
             //Start synchronizing
             playAudio(R.raw.tip_start_sync_users)
+            runOnUiThread {
+                mIsSyncBusy = true
+            }
 
             try {
                 mDbHelper.clearAllUsers()
@@ -1323,10 +1319,12 @@ class MainActivity : AppCompatActivity() {
                     finally {
                     }
                 }
-
             }
             catch (exc: Exception) {
                 Log.d(TAG, "Exception occurred when saving user list to local machine: ${exc.toString()}")
+            }
+            runOnUiThread {
+                mIsSyncBusy = false
             }
 
             delay(1000)

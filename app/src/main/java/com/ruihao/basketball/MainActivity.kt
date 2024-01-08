@@ -548,6 +548,11 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "WS face recognition machine socket disconnected, now reconnect it...")
                 mFaceRecognitionWSClient.reconnect()
             }
+
+            runOnUiThread {
+                updateBallsQuantity()
+                updateGridView()
+            }
         }, 1000, 10000)
 
         mTTSService = TextToSpeech(
@@ -560,7 +565,7 @@ class MainActivity : AppCompatActivity() {
                         result == TextToSpeech.LANG_NOT_SUPPORTED
                     )
                     {
-                        Log.e("error", "This Language is not supported")
+                        Log.e(TAG, "This Language is not supported")
                     }
                     else {
 //                    ConvertTextToSpeech()
@@ -713,6 +718,8 @@ class MainActivity : AppCompatActivity() {
             mTTSService!!.stop();
             mTTSService!!.shutdown();
         }
+
+        closeModbus()
 
         mWSCheckTimer?.cancel()
         super.onDestroy()
@@ -1691,6 +1698,7 @@ class MainActivity : AppCompatActivity() {
     private external fun stringFromJNI(): String
     private external fun doFaceRecognition(imagePath: String): String
     private external fun initModbus(): Boolean
+    private external fun closeModbus(): Boolean
     private external fun writeModbusBit(address: Int, value: Boolean): Boolean
     private external fun writeModbusRegister(address: Int, value: Int): Boolean
     private external fun readModbusBit(address: Int): Int

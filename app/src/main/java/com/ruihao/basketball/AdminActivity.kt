@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Environment
+import android.speech.tts.TextToSpeech
 import android.util.Base64
 import android.util.Log
 import android.view.KeyEvent
@@ -66,6 +67,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     private var mReturnBallTimer: CountDownTimer? = null
     private var mCameraIP = ""
     private var mAdminPassword = ""
+    private var mTTSService: TextToSpeech? = null
 
     private val mAppDataFile: File = File(
         Environment.getExternalStorageDirectory().path
@@ -86,6 +88,28 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             File("${mAppDataFile.path}/capture").mkdirs()
         }
 
+        mTTSService = TextToSpeech(
+            this@AdminActivity,
+        ) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                if (mTTSService != null) {
+                    val result: Int = mTTSService!!.setLanguage(Locale.CHINA)
+                    if (result == TextToSpeech.LANG_MISSING_DATA ||
+                        result == TextToSpeech.LANG_NOT_SUPPORTED
+                    )
+                    {
+                        Log.e(TAG, "This Language is not supported")
+                    }
+                    else {
+//                    ConvertTextToSpeech()
+                    }
+                }
+            }
+            else {
+                Log.e(TAG, "TTS initialize failed, status code: $status")
+            }
+        }
+
         mUserId = intent.getStringExtra("userId").toString()
         mUserName = intent.getStringExtra("userName").toString()
         mModbusOk = intent.getBooleanExtra("modbusOk", false)
@@ -97,7 +121,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             if (!mModbusOk) {
 //                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
 //                    Toast.LENGTH_SHORT).show()
-                playAudio(R.raw.tip_device_error)
+                playAudio(R.string.tip_device_error)
                 return@setOnClickListener
             }
 
@@ -105,7 +129,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 0) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_no_basketball),
                     Toast.LENGTH_SHORT).show()
-                playAudio(R.raw.tip_no_basketball)
+                playAudio(R.string.tip_no_basketball)
                 return@setOnClickListener
             }
 
@@ -139,7 +163,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             if (!regCleared) { //Timeout
 //                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
 //                    Toast.LENGTH_SHORT).show()
-                playAudio(R.raw.tip_device_error)
+                playAudio(R.string.tip_device_error)
                 return@setOnClickListener
             }
 
@@ -154,7 +178,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             // Inform the user toc (Play audio)
             Toast.makeText(this@AdminActivity, getString(R.string.tip_take_basketball),
                 Toast.LENGTH_SHORT).show()
-            playAudio(R.raw.tip_take_basketball)
+            playAudio(R.string.tip_take_basketball)
 
             // Save borrow record (DO not do this now)
             val recordId: String = UUID.randomUUID().toString()
@@ -164,14 +188,14 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             if (!mModbusOk) {
 //                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
 //                    Toast.LENGTH_SHORT).show()
-                playAudio(R.raw.tip_device_error)
+                playAudio(R.string.tip_device_error)
                 return@setOnClickListener
             }
 
             if (mRemainBallsQty[0] + mRemainBallsQty[1] == 24) {
                 Toast.makeText(this@AdminActivity, getString(R.string.tip_no_space),
                     Toast.LENGTH_SHORT).show()
-                playAudio(R.raw.tip_no_space)
+                playAudio(R.string.tip_no_space)
                 return@setOnClickListener
             }
 
@@ -180,13 +204,13 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             val addressBallEntered: Int = if (mRemainBallsQty[0] < 12) 1004 else 1005
             if (!writeModbusRegister(addressOpen, 1)) {
                 Log.e(TAG, "Failed to write command of opening the lock of the door")
-                playAudio(R.raw.tip_device_error)
+                playAudio(R.string.tip_device_error)
                 return@setOnClickListener
             }
 
             Toast.makeText(this@AdminActivity, getString(R.string.tip_return_basketball),
                 Toast.LENGTH_SHORT).show()
-            playAudio(R.raw.tip_return_basketball)
+            playAudio(R.string.tip_return_basketball)
 
             val savedCaptureImagePath = borrowReturnCapturePath("return")
             takePhoto(savedCaptureImagePath)
@@ -198,7 +222,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                     if (readModbusRegister(addressBallEntered) == 1) {
                         Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
                             Toast.LENGTH_SHORT).show()
-                        playAudio(R.raw.tip_return_succeed)
+                        playAudio(R.string.tip_return_succeed)
                         updateBallsQuantity()
                         binding.tvReturnBallCounterDown.text = ""
 
@@ -211,7 +235,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                     else {
                         val remainSecs: Long = millisUntilFinished / 1000
                         if (remainSecs == 10L || remainSecs == 20L) {
-                            playAudio(R.raw.tip_return_basketball)
+                            playAudio(R.string.tip_return_basketball)
                         }
                     }
                 }
@@ -219,7 +243,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                     if (readModbusRegister(addressBallEntered) == 1) {
                         Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
                             Toast.LENGTH_SHORT).show()
-                        playAudio(R.raw.tip_return_succeed)
+                        playAudio(R.string.tip_return_succeed)
                         updateBallsQuantity()
 
                         val recordId: String = UUID.randomUUID().toString()
@@ -231,7 +255,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                     else {
                         Toast.makeText(this@AdminActivity, getString(R.string.tip_return_failed),
                             Toast.LENGTH_SHORT).show()
-                        playAudio(R.raw.tip_return_failed)
+                        playAudio(R.string.tip_return_failed)
                     }
                     binding.tvReturnBallCounterDown.text = ""
                 }
@@ -289,7 +313,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             if (!mModbusOk) {
 //                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
 //                    Toast.LENGTH_SHORT).show()
-                playAudio(R.raw.tip_device_error)
+                playAudio(R.string.tip_device_error)
                 return@setOnClickListener
             }
 
@@ -309,7 +333,7 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             // Inform the user to load balls
             Toast.makeText(this@AdminActivity, getString(R.string.admin_tip_load_balls),
                 Toast.LENGTH_SHORT).show()
-            playAudio(R.raw.admin_tip_load_balls)
+            playAudio(R.string.admin_tip_load_balls)
 
             // Close the lock TODO： The user click a button to lock the doors
         }
@@ -414,6 +438,11 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         super.onDestroy()
         PreferenceManager.getDefaultSharedPreferences(this)
             .unregisterOnSharedPreferenceChangeListener(this)
+
+        if (mTTSService != null) {
+            mTTSService!!.stop();
+            mTTSService!!.shutdown();
+        }
     }
 
     override fun onBackPressed() {
@@ -543,34 +572,47 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 //        )
     }
 
-    private fun playAudio(src: Int): Unit {
-        runBlocking {
-            launch(Dispatchers.Default) {
-                if (mMediaPlayer == null) {
-                    mMediaPlayer = MediaPlayer.create(this@AdminActivity, src)
-                    mMediaPlayer?.start()
-                }
-                else {
-                    if (mMediaPlayer!!.isPlaying) {
-                        return@launch
-                    }
-                    mMediaPlayer!!.reset()
-
-                    resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this@AdminActivity, it) }
-                    mMediaPlayer!!.prepare()
-                    mMediaPlayer!!.start()
-                }
-            }
+//    private fun playAudio(src: Int): Unit {
+//        runBlocking {
+//            launch(Dispatchers.Default) {
+//                if (mMediaPlayer == null) {
+//                    mMediaPlayer = MediaPlayer.create(this@AdminActivity, src)
+//                    mMediaPlayer?.start()
+//                }
+//                else {
+//                    if (mMediaPlayer!!.isPlaying) {
+//                        return@launch
+//                    }
+//                    mMediaPlayer!!.reset()
+//
+//                    resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this@AdminActivity, it) }
+//                    mMediaPlayer!!.prepare()
+//                    mMediaPlayer!!.start()
+//                }
+//            }
+//        }
+//    }
+//
+//    private fun resourceToUri(resID: Int): Uri? {
+//        return Uri.parse(
+//            ContentResolver.SCHEME_ANDROID_RESOURCE + "://" +
+//                    this.resources.getResourcePackageName(resID) + '/' +
+//                    this.resources.getResourceTypeName(resID) + '/' +
+//                    this.resources.getResourceEntryName(resID)
+//        )
+//    }
+    private fun playAudio(src: String) {
+        if (src == "") {
+            return
         }
+
+        mTTSService?.speak(src, TextToSpeech.QUEUE_FLUSH, null,
+            UUID.randomUUID().toString())
     }
 
-    private fun resourceToUri(resID: Int): Uri? {
-        return Uri.parse(
-            ContentResolver.SCHEME_ANDROID_RESOURCE + "://" +
-                    this.resources.getResourcePackageName(resID) + '/' +
-                    this.resources.getResourceTypeName(resID) + '/' +
-                    this.resources.getResourceEntryName(resID)
-        )
+    private fun playAudio(srcId: Int) {
+        val srcText: String = getString(srcId)
+        playAudio(srcText)
     }
 
     @RequiresApi(Build.VERSION_CODES.R)

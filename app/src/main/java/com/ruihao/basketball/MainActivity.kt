@@ -163,12 +163,12 @@ class MainActivity : AppCompatActivity() {
 //                    this@MainActivity, getString(R.string.tip_login),
 //                    Toast.LENGTH_SHORT
 //                ).show()
-                playAudio(R.raw.tip_login)
+                playAudio(R.string.tip_login)
                 return@setOnClickListener
             }
 
             if (mIsSyncBusy) {
-                playAudio(R.raw.tip_sync_busy)
+                playAudio(R.string.tip_sync_busy)
                 return@setOnClickListener
             }
 
@@ -179,7 +179,7 @@ class MainActivity : AppCompatActivity() {
 //                    this@MainActivity, getString(R.string.tip_device_error),
 //                    Toast.LENGTH_SHORT
 //                ).show()
-                playAudio(R.raw.tip_device_error)
+                playAudio(R.string.tip_device_error)
                 return@setOnClickListener
             }
 
@@ -189,7 +189,7 @@ class MainActivity : AppCompatActivity() {
                     this@MainActivity, getString(R.string.tip_no_basketball),
                     Toast.LENGTH_SHORT
                 ).show()
-                playAudio(R.raw.tip_no_basketball)
+                playAudio(R.string.tip_no_basketball)
                 return@setOnClickListener
             }
 
@@ -199,7 +199,7 @@ class MainActivity : AppCompatActivity() {
                     this@MainActivity, getString(R.string.tip_borrowed_exceed_limit),
                     Toast.LENGTH_SHORT
                 ).show()
-                playAudio(R.raw.tip_borrowed_exceed_limit)
+                playAudio(R.string.tip_borrowed_exceed_limit)
                 return@setOnClickListener
             }
 
@@ -234,7 +234,7 @@ class MainActivity : AppCompatActivity() {
 //                    this@MainActivity, getString(R.string.tip_device_error),
 //                    Toast.LENGTH_SHORT
 //                ).show()
-                playAudio(R.raw.tip_device_error)
+                playAudio(R.string.tip_device_error)
                 return@setOnClickListener
             }
 
@@ -252,7 +252,7 @@ class MainActivity : AppCompatActivity() {
                 this@MainActivity, getString(R.string.tip_take_basketball),
                 Toast.LENGTH_SHORT
             ).show()
-            playAudio(R.raw.tip_take_basketball)
+            playAudio(R.string.tip_take_basketball)
 
             // Save borrow record (DO not do this now)
             val recordId: String = UUID.randomUUID().toString()
@@ -271,11 +271,11 @@ class MainActivity : AppCompatActivity() {
 //                    this@MainActivity, getString(R.string.tip_login),
 //                    Toast.LENGTH_SHORT
 //                ).show()
-                playAudio(R.raw.tip_login)
+                playAudio(R.string.tip_login)
                 return@setOnClickListener
             }
             if (mIsSyncBusy) {
-                playAudio(R.raw.tip_sync_busy)
+                playAudio(R.string.tip_sync_busy)
                 return@setOnClickListener
             }
 
@@ -286,7 +286,7 @@ class MainActivity : AppCompatActivity() {
 //                    this@MainActivity, getString(R.string.tip_device_error),
 //                    Toast.LENGTH_SHORT
 //                ).show()
-                playAudio(R.raw.tip_device_error)
+                playAudio(R.string.tip_device_error)
                 return@setOnClickListener
             }
 
@@ -295,7 +295,7 @@ class MainActivity : AppCompatActivity() {
                     this@MainActivity, getString(R.string.tip_no_space),
                     Toast.LENGTH_SHORT
                 ).show()
-                playAudio(R.raw.tip_no_space)
+                playAudio(R.string.tip_no_space)
                 return@setOnClickListener
             }
 
@@ -304,7 +304,7 @@ class MainActivity : AppCompatActivity() {
             val addressBallEntered: Int = if (mRemainBallsQty[0] < 12) 1004 else 1005
             if (!writeModbusRegister(addressOpen, 1)) {
                 Log.e(TAG, "Failed to write command of opening the lock of the door")
-                playAudio(R.raw.tip_device_error)
+                playAudio(R.string.tip_device_error)
                 return@setOnClickListener
             }
 
@@ -312,7 +312,7 @@ class MainActivity : AppCompatActivity() {
                 this@MainActivity, getString(R.string.tip_return_basketball),
                 Toast.LENGTH_SHORT
             ).show()
-            playAudio(R.raw.tip_return_basketball)
+            playAudio(R.string.tip_return_basketball)
 
             val savedCaptureImagePath = borrowReturnCapturePath("return")
             takePhoto(savedCaptureImagePath)
@@ -326,7 +326,7 @@ class MainActivity : AppCompatActivity() {
                             this@MainActivity, getString(R.string.tip_return_succeed),
                             Toast.LENGTH_SHORT
                         ).show()
-                        playAudio(R.raw.tip_return_succeed)
+                        playAudio(R.string.tip_return_succeed)
                         updateBallsQuantity()
                         updateGridView()
                         binding.tvReturnCounterDown.text = ""
@@ -345,7 +345,7 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         val remainSecs: Long = millisUntilFinished / 1000
                         if (remainSecs == 10L || remainSecs == 20L) {
-                            playAudio(R.raw.tip_return_basketball)
+                            playAudio(R.string.tip_return_basketball)
                         }
                     }
                 }
@@ -356,7 +356,7 @@ class MainActivity : AppCompatActivity() {
                             this@MainActivity, getString(R.string.tip_return_succeed),
                             Toast.LENGTH_SHORT
                         ).show()
-                        playAudio(R.raw.tip_return_succeed)
+                        playAudio(R.string.tip_return_succeed)
                         updateBallsQuantity()
                         updateGridView()
 
@@ -377,7 +377,7 @@ class MainActivity : AppCompatActivity() {
                             this@MainActivity, getString(R.string.tip_return_failed),
                             Toast.LENGTH_SHORT
                         ).show()
-                        playAudio(R.raw.tip_return_failed)
+                        playAudio(R.string.tip_return_failed)
                     }
                     binding.tvReturnCounterDown.text = ""
                 }
@@ -714,7 +714,7 @@ class MainActivity : AppCompatActivity() {
         mediaPlayer.release()
         libVlc.release()
 
-        if(mTTSService != null){
+        if (mTTSService != null) {
             mTTSService!!.stop();
             mTTSService!!.shutdown();
         }
@@ -1179,7 +1179,7 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this,
                 "${getString(R.string.tip_login_user_not_found)}: $withValue",
                 Toast.LENGTH_LONG).show()
-            playAudio(R.raw.tip_login_user_not_found)
+            playAudio(R.string.tip_login_user_not_found)
             return
         }
 
@@ -1269,25 +1269,39 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun playAudio(src: Int) {
-        runBlocking {
-            launch(Dispatchers.Default) {
-                if (mMediaPlayer == null) {
-                    mMediaPlayer = MediaPlayer.create(this@MainActivity, src)
-                    mMediaPlayer?.start()
-                }
-                else {
-                    if (mMediaPlayer!!.isPlaying) {
-                        return@launch
-                    }
-                    mMediaPlayer!!.reset()
+//    private fun playAudio(src: Int) {
+//        runBlocking {
+//            launch(Dispatchers.Default) {
+//                if (mMediaPlayer == null) {
+//                    mMediaPlayer = MediaPlayer.create(this@MainActivity, src)
+//                    mMediaPlayer?.start()
+//                }
+//                else {
+//                    if (mMediaPlayer!!.isPlaying) {
+//                        return@launch
+//                    }
+//                    mMediaPlayer!!.reset()
+//
+//                    resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this@MainActivity, it) }
+//                    mMediaPlayer!!.prepare()
+//                    mMediaPlayer!!.start()
+//                }
+//            }
+//        }
+//    }
 
-                    resourceToUri(src)?.let { mMediaPlayer!!.setDataSource(this@MainActivity, it) }
-                    mMediaPlayer!!.prepare()
-                    mMediaPlayer!!.start()
-                }
-            }
+    private fun playAudio(src: String) {
+        if (src == "") {
+            return
         }
+
+        mTTSService?.speak(src, TextToSpeech.QUEUE_FLUSH, null,
+            UUID.randomUUID().toString())
+    }
+
+    private fun playAudio(srcId: Int) {
+        val srcText: String = getString(srcId)
+        playAudio(srcText)
     }
 
     private fun resourceToUri(resID: Int): Uri? {
@@ -1354,7 +1368,7 @@ class MainActivity : AppCompatActivity() {
             delay(1000)
 
             //End of synchronizing
-            playAudio(R.raw.tip_end_sync_users)
+            playAudio(R.string.tip_end_sync_users)
         }
     }
 

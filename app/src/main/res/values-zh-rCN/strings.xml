@@ -29,6 +29,7 @@
     <string name="tip_return_failed">还球失败，麻烦请再试一次</string>
     <string name="tip_end_sync_users">同步用户信息完成</string>
     <string name="tip_sync_busy">请稍等，正在同步用户信息</string>
+    <string name="tip_start_sync_users">开始同步用户信息</string>
     <string name="view_borrow_records">借阅记录</string>
     <string name="load_basketballs">请装载篮球</string>
 

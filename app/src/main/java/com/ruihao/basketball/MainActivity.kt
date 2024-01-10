@@ -386,7 +386,7 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnAdminLogin.setOnClickListener {
             if (mIsSyncBusy) {
-                playAudio(R.raw.tip_sync_busy)
+                playAudio(R.string.tip_sync_busy)
                 return@setOnClickListener
             }
             val builder: AlertDialog.Builder = AlertDialog.Builder(this)
@@ -1135,7 +1135,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun loginUser(withField: String, withValue: String?): Unit {
         if (mIsSyncBusy) {
-            playAudio(R.raw.tip_sync_busy)
+            playAudio(R.string.tip_sync_busy)
             return
         }
 
@@ -1336,7 +1336,7 @@ class MainActivity : AppCompatActivity() {
             joPayload.put("rows", 10)
 
             //Start synchronizing
-            playAudio(R.raw.tip_start_sync_users)
+            playAudio(R.string.tip_start_sync_users)
             runOnUiThread {
                 mIsSyncBusy = true
             }

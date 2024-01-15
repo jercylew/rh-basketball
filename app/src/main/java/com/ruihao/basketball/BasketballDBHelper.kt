@@ -256,6 +256,11 @@ internal class BasketballDBHelper(context: Context?) :
     }
 
     fun addNewBorrowRecord(id: String, borrowerId: String?, type: Int?, captureImagePath: String?) {
+        //type, bit 0: borrow / return, bit 1: uploaded or not uploaded
+        // 0x00: uploaded borrow
+        // 0x01: uploaded return
+        // 0x02: not uploaded borrow
+        // 0x03: not uploaded return
         val db = this.writableDatabase
         val values = ContentValues()
 
@@ -366,6 +371,58 @@ internal class BasketballDBHelper(context: Context?) :
         val selection =
             "${BaseColumns._ID} = ? and ${BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE}=?"
         val selectionArgs = arrayOf(id, type.toString())
+
+        val cursor = db.query(
+            BasketballContract.BorrowRecord.TABLE_NAME,  // The table to query
+            projection,  // The array of columns to return (pass null to get all)
+            selection,  // The columns for the WHERE clause
+            selectionArgs,  // The values for the WHERE clause
+            null,  // don't group the rows
+            null,  // don't filter by row groups
+            sortOrder // The sort order
+        )
+
+        var id = ""
+        var borrowerId = ""
+        var type: Int = -1
+        var captureImagePath = ""
+        var createdTime = ""
+        while (cursor.moveToNext()) {
+            id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
+            borrowerId = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_BORROWER_ID))
+            type = cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE))
+            captureImagePath = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_CAPTURE_IMAGE_PATH))
+            createdTime = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_CREATED_TIME))
+
+            val record = BorrowRecord(id = id, borrowerId = borrowerId,
+                type = type, createdTime = createdTime, captureImagePath = captureImagePath)
+            records.add(record)
+        }
+        cursor.close()
+        db.close()
+
+        return records
+    }
+
+    fun getBorrowRecordsWithType(type: Int): ArrayList<BorrowRecord> {
+        var records: ArrayList<BorrowRecord> = ArrayList<BorrowRecord>()
+
+        val db = this.readableDatabase
+
+        val projection = arrayOf(
+            BaseColumns._ID,
+            BasketballContract.BorrowRecord.COLUMN_BORROWER_ID,
+            BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE,
+            BasketballContract.BorrowRecord.COLUMN_CAPTURE_IMAGE_PATH,
+            BasketballContract.BorrowRecord.COLUMN_CREATED_TIME,
+        )
+
+        val sortOrder: String =
+            BasketballContract.BorrowRecord.COLUMN_CREATED_TIME + " DESC"
+
+        val selection =
+            "${BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE}=?"
+        val selectionArgs = arrayOf(type.toString())
 
         val cursor = db.query(
             BasketballContract.BorrowRecord.TABLE_NAME,  // The table to query

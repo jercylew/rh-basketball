@@ -26,7 +26,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.preference.PreferenceManager
-import com.chaquo.python.Python
+//import com.chaquo.python.Python
 import com.ruihao.basketball.databinding.ActivityUserRegisterBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope

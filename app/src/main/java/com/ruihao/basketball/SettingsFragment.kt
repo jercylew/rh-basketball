@@ -64,7 +64,7 @@ class SettingsFragment : PreferenceFragmentCompat(),
     private fun setPreferenceSummary(preference: Preference, value: String?) {
         if (preference is ListPreference) {
             // For list preferences, figure out the label of the selected value
-            val listPreference: ListPreference = preference as ListPreference
+            val listPreference: ListPreference = preference
             val prefIndex: Int = listPreference.findIndexOfValue(value)
             if (prefIndex >= 0) {
                 // Set the summary to that label

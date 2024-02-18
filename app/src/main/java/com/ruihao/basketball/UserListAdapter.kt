@@ -44,9 +44,9 @@ class UserListAdapter(context: Context, usersList: ArrayList<User>) :
             (holder as UserListAdapter.ViewHolder).mIVPhoto.setImageBitmap(imgBitmap)
         }
         (holder as UserListAdapter.ViewHolder).mTVClassGrade.text = "${userInfo.classNo}"
-        (holder as UserListAdapter.ViewHolder).mTVName.text = userInfo.name
-        (holder as UserListAdapter.ViewHolder).mTVGender.text = userInfo.gender
-        (holder as UserListAdapter.ViewHolder).mTVNumber.text = userInfo.barQRNo  //Usually student number used to make bar/QR code
+        holder.mTVName.text = userInfo.name
+        holder.mTVGender.text = userInfo.gender
+        holder.mTVNumber.text = userInfo.barQRNo  //Usually student number used to make bar/QR code
 
         holder.itemView.setOnLongClickListener {
             val pop = PopupMenu(holder.itemView.context, it)

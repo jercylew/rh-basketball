@@ -34,10 +34,6 @@ class SerialPort {
         }
 
         mFd = open(device.absolutePath, baudrate, flags);
-        if (mFd == null) {
-            Log.e(TAG, "native open returns null");
-            throw IOException()
-        }
         mFileInputStream = FileInputStream(mFd);
         mFileOutputStream = FileOutputStream(mFd);
     }

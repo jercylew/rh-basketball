@@ -24,7 +24,6 @@ abstract class SerialHelper(var sPort: String, var iBaudRate: Int) {
             super.run()
             while (!isInterrupted) {
                 try {
-                    if (mInputStream == null) return
                     val buffer = ByteArray(512)
                     val size = mInputStream.read(buffer)
                     if (size > 0) {
@@ -51,10 +50,8 @@ abstract class SerialHelper(var sPort: String, var iBaudRate: Int) {
 
     open fun close() {
         if (mReadThread != null) mReadThread.interrupt()
-        if (mSerialPort != null) {
-            mSerialPort!!.close()
-            mSerialPort = null
-        }
+        mSerialPort!!.close()
+        mSerialPort = null
         _isOpen = false
     }
 

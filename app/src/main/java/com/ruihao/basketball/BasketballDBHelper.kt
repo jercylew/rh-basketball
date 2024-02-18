@@ -154,16 +154,16 @@ internal class BasketballDBHelper(context: Context?) :
             sortOrder // The sort order
         )
 
-        var name = ""
-        var barQRNo = ""
-        var icCardNo = ""
-        var id = ""
-        var gender = ""
-        var classNo = ""
-        var gradeNo = ""
-        var age = 0
-        var isAdmin = false
-        var photoUrl = ""
+        var name: String
+        var barQRNo: String
+        var icCardNo: String
+        var id: String
+        var gender: String
+        var classNo: String
+        var gradeNo: String
+        var age: Int
+        var isAdmin: Boolean
+        var photoUrl: String
         while (cursor.moveToNext()) {
             name = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_NAME))
             barQRNo = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.User.COLUMN_BAR_QR_NO))
@@ -330,11 +330,11 @@ internal class BasketballDBHelper(context: Context?) :
             sortOrder // The sort order
         )
 
-        var id = ""
-        var borrowerId = ""
-        var type: Int = -1
-        var captureImagePath = ""
-        var createdTime = ""
+        var id: String
+        var borrowerId: String
+        var type: Int
+        var captureImagePath: String
+        var createdTime: String
         while (cursor.moveToNext()) {
             id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
             borrowerId = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_BORROWER_ID))
@@ -382,20 +382,20 @@ internal class BasketballDBHelper(context: Context?) :
             sortOrder // The sort order
         )
 
-        var id = ""
-        var borrowerId = ""
-        var type: Int = -1
-        var captureImagePath = ""
-        var createdTime = ""
+        var recordId: String
+        var borrowerId: String
+        var recordType: Int
+        var captureImagePath: String
+        var createdTime: String
         while (cursor.moveToNext()) {
-            id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
+            recordId = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
             borrowerId = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_BORROWER_ID))
-            type = cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE))
+            recordType = cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE))
             captureImagePath = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_CAPTURE_IMAGE_PATH))
             createdTime = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_CREATED_TIME))
 
-            val record = BorrowRecord(id = id, borrowerId = borrowerId,
-                type = type, createdTime = createdTime, captureImagePath = captureImagePath)
+            val record = BorrowRecord(id = recordId, borrowerId = borrowerId,
+                type = recordType, createdTime = createdTime, captureImagePath = captureImagePath)
             records.add(record)
         }
         cursor.close()
@@ -434,20 +434,20 @@ internal class BasketballDBHelper(context: Context?) :
             sortOrder // The sort order
         )
 
-        var id = ""
-        var borrowerId = ""
-        var type: Int = -1
-        var captureImagePath = ""
-        var createdTime = ""
+        var recordId: String
+        var borrowerId: String
+        var recordType: Int
+        var captureImagePath: String
+        var createdTime: String
         while (cursor.moveToNext()) {
-            id = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
+            recordId = cursor.getString(cursor.getColumnIndexOrThrow(BaseColumns._ID))
             borrowerId = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_BORROWER_ID))
-            type = cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE))
+            recordType = cursor.getInt(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_RECORD_TYPE))
             captureImagePath = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_CAPTURE_IMAGE_PATH))
             createdTime = cursor.getString(cursor.getColumnIndexOrThrow(BasketballContract.BorrowRecord.COLUMN_CREATED_TIME))
 
-            val record = BorrowRecord(id = id, borrowerId = borrowerId,
-                type = type, createdTime = createdTime, captureImagePath = captureImagePath)
+            val record = BorrowRecord(id = recordId, borrowerId = borrowerId,
+                type = recordType, createdTime = createdTime, captureImagePath = captureImagePath)
             records.add(record)
         }
         cursor.close()

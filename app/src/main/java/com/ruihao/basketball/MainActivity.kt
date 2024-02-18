@@ -143,7 +143,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         actionBar?.hide()
         val windowInsetsController =
-            WindowCompat.getInsetsController(window, window.decorView) ?: return
+            WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
@@ -411,7 +411,7 @@ class MainActivity : AppCompatActivity() {
             builder.setView(dialogContent)
                 // Add action buttons.
                 .setPositiveButton(R.string.dialog_ok,
-                    DialogInterface.OnClickListener { dialog, id ->
+                    DialogInterface.OnClickListener { dialog, _ ->
                         val editAdminPassword = dialogContent.findViewById(R.id.admin_password) as EditText
                         val enteredPassword = editAdminPassword.text.toString()
                         Log.d(TAG, "Trying to login admin user: $enteredPassword")
@@ -431,7 +431,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     })
                 .setNegativeButton(R.string.dialog_cancel,
-                    DialogInterface.OnClickListener { dialog, id ->
+                    DialogInterface.OnClickListener { dialog, _ ->
                         dialog.cancel()
                     })
             builder.create()
@@ -456,7 +456,7 @@ class MainActivity : AppCompatActivity() {
             if (RESULT_OK != result.resultCode) {
                 return@registerForActivityResult
             }
-            val intent = result.data ?: return@registerForActivityResult
+//            val intent = result.data ?: return@registerForActivityResult
 
             Log.d(TAG, "Coming back from Admin page")
             loadSettings()
@@ -609,8 +609,7 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "Trying to upload offline ball record, length: ${offlineRecords.size}")
         for (record in offlineRecords) {
             val recordId: String = UUID.randomUUID().toString()
-            var recordType: Int = -1
-            recordType = if (record.type == 2) {
+            var recordType: Int = if (record.type == 2) {
                 0
             } else {
                 1
@@ -1361,7 +1360,7 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.M)
     private fun isNetworkAvailable(): Boolean {
         val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        val activeNetwork = connectivityManager?.activeNetwork
+        val activeNetwork = connectivityManager.activeNetwork
 
         Log.d(TAG, "Got active network: ${activeNetwork.toString()}")
         return activeNetwork != null
@@ -1419,7 +1418,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun getJSONFieldString(joObject: JSONObject, field: String, defaultValue: String = ""): String {
         if (joObject.isNull(field)) {
-            return ""
+            return defaultValue
         }
 
         return joObject.getString(field)
@@ -1427,7 +1426,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun getJSONFieldDouble(joObject: JSONObject, field: String, defaultValue: Double = 0.0): Double {
         if (joObject.isNull(field)) {
-            return 0.0
+            return defaultValue
         }
 
         return joObject.getDouble(field)

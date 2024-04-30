@@ -104,6 +104,7 @@ class MainActivity : AppCompatActivity() {
     private var mDbHelper: BasketballDBHelper = BasketballDBHelper(this)
     private var mWSCheckTimer: Timer? = null
     private var mWSCheckTimerTicks: Int = 0
+    private var mIsUserSyned: Boolean = false
 
     //Camera
 //    private var imageCapture: ImageCapture? = null
@@ -529,6 +530,27 @@ class MainActivity : AppCompatActivity() {
                 mFaceRecognitionWSClient.reconnect()
             }
 
+            //Check if it is at midnight
+            val timeHour = SimpleDateFormat("HH", Locale.US)
+                .format(System.currentTimeMillis())
+            val timeMins = SimpleDateFormat("mm", Locale.US)
+                .format(System.currentTimeMillis())
+
+            val hours = timeHour.toInt()
+            val mins = timeMins.toInt()
+            Log.d(TAG, "Current time, $hours:$mins")
+            if (hours == 0) {
+                mIsUserSyned = false
+            }
+
+            if (hours == 1 && mins > 30) {
+                if (!mIsUserSyned) {
+                    syncUserInfoFromCloud()
+                    mIsUserSyned = true
+                }
+            }
+
+
             runOnUiThread {
                 updateBallsQuantity()
                 updateGridView()
@@ -565,7 +587,7 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, "TTS initialize failed, status code: $status")
             }
         }
-        syncUserInfoFromCloud()
+//        syncUserInfoFromCloud()
     }
 
     private fun uploadOfflineBallRecords() {
@@ -1341,11 +1363,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         GlobalScope.launch {
-            val postUrl = "https://readerapp.dingcooltech.com/comm/apiComm/stuentInfo.querylist?fromid=1632564838868836353&questionName=stuentInfo"
+            val postUrl = "https://readerapp.dingcooltech.com/comm/apiComm/stuentInfo.getStudentids?fromid=1632564838868836353&questionName=stuentInfo"
             val joPayload = JSONObject()
             joPayload.put("fromid", "1632564838868836353")
             joPayload.put("questionName", "studentInfo")
-            joPayload.put("rows", 10)
+            joPayload.put("rows", 100)
 
             //Start synchronizing
             playAudio(R.string.tip_start_sync_users)
@@ -1587,6 +1609,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun syncBorrowRecordToCloud(userId: String, recordType: Int, recordId: String, isNew: Boolean = false): Unit {
+        return
+
         val user: User = mDbHelper.getUser(userId) ?: return
 
         // Do not support for current product due to lack of camera

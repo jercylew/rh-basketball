@@ -38,6 +38,7 @@ class BorrowLogActivity : AppCompatActivity() {
         binding = ActivityBorrowLogBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        binding.rcvBorrowRecordList.addItemDecoration(SimpleItemDecoration(this))
         binding.ibtnUserListBack.setOnClickListener{
             finish()
         }

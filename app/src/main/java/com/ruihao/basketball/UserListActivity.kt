@@ -1,23 +1,15 @@
 package com.ruihao.basketball
 
-import android.Manifest
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.view.View
-import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.ruihao.basketball.databinding.ActivityMainBinding
 import com.ruihao.basketball.databinding.ActivityUserListBinding
 import java.io.File
-import java.util.Arrays
 
 
 class UserListActivity : AppCompatActivity() {
@@ -30,9 +22,6 @@ class UserListActivity : AppCompatActivity() {
 
     private val mAppDataFile: File = File(Environment.getExternalStorageDirectory().path
             + "/RhBasketball")
-
-    private lateinit var mBtnBack: ImageButton
-    private var recyclerView: RecyclerView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         actionBar?.hide()
@@ -49,9 +38,8 @@ class UserListActivity : AppCompatActivity() {
 
         binding = ActivityUserListBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        recyclerView = findViewById(R.id.rcvUserList)
-        mBtnBack = findViewById(R.id.ibtnUserListBack)
-        mBtnBack.setOnClickListener{
+        binding.rcvUserList.addItemDecoration(SimpleItemDecoration(this))
+        binding.ibtnUserListBack.setOnClickListener{
             finish()
         }
         binding.fabAddNewUser.setOnClickListener{
@@ -67,12 +55,12 @@ class UserListActivity : AppCompatActivity() {
         binding.adminUserListView.requestFocus()
 
         val linearLayoutManager = LinearLayoutManager(applicationContext)
-        recyclerView!!.layoutManager = linearLayoutManager
+        binding.rcvUserList.layoutManager = linearLayoutManager
 
         //Update data
         val userList: ArrayList<User> = mDbHelper.getAllUsers()
         val adapter =  UserListAdapter(this@UserListActivity, userList)
-        recyclerView!!.adapter = adapter
+        binding.rcvUserList.adapter = adapter
 
         adapter.setOnClickEditListener(object :
             UserListAdapter.OnClickEditListener {

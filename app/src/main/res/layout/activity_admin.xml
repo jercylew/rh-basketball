@@ -377,5 +377,17 @@
         app:layout_constraintTop_toBottomOf="@+id/btnBorrow"
         app:layout_constraintVertical_bias="0.526" />
 
+    <TextView
+        android:id="@+id/tvReturnCounterDown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:textColor="@color/red"
+        android:textSize="30sp"
+        app:layout_constraintBottom_toTopOf="@+id/tvGreeting"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnBorrow" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

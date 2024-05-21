@@ -46,6 +46,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.io.OutputStream
+import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
@@ -67,7 +69,9 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     private var mReturnBallTimer: CountDownTimer? = null
     private var mCameraIP = ""
     private var mAdminPassword = ""
+    private var mMachineId: String = ""
     private var mTTSService: TextToSpeech? = null
+    private var mIsSyncBusy: Boolean = false
 
     private val mAppDataFile: File = File(
         Environment.getExternalStorageDirectory().path
@@ -112,12 +116,16 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
 
         mUserId = intent.getStringExtra("userId").toString()
         mUserName = intent.getStringExtra("userName").toString()
+        mMachineId = intent.getStringExtra("machineId").toString()
         mModbusOk = intent.getBooleanExtra("modbusOk", false)
 
         binding = ActivityAdminBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         binding.btnBorrow.setOnClickListener {
+            if (mIsSyncBusy) {
+                return@setOnClickListener
+            }
             if (!mModbusOk) {
 //                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
 //                    Toast.LENGTH_SHORT).show()
@@ -143,13 +151,12 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 Log.e(TAG, "Failed to write command of releasing ball!")
                 return@setOnClickListener
             }
-            val savedCaptureImagePath = borrowReturnCapturePath("borrow")
-            takePhoto(savedCaptureImagePath)
 
             // Check the number of remaining balls decreased & door flag cleared
-            var numOfLoop: Int = 0 //3 seconds
-            var regCleared: Boolean = true
-            while (readModbusRegister(addressToWrite) == 1 ) //modbus_read(num_qty) == m_remainQty(selected) ||
+            var numOfLoop = 0 //3 seconds
+            var regCleared = true
+            mIsSyncBusy = true
+            while (readModbusRegister(addressToWrite) == 1) //modbus_read(num_qty) == m_remainQty(selected) ||
             {
                 Thread.sleep(100) //Warning: UI Freezing
 
@@ -161,14 +168,13 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             }
 
             if (!regCleared) { //Timeout
-//                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
-//                    Toast.LENGTH_SHORT).show()
                 playAudio(R.string.tip_device_error)
+                mIsSyncBusy = false
                 return@setOnClickListener
             }
 
             // Update the counter
-            if (!writeModbusRegister(addressUpdateCount, (preBallQty-1))) {
+            if (!writeModbusRegister(addressUpdateCount, (preBallQty - 1))) {
                 Log.e(TAG, "Failed to update the ball qty to the register")
             }
             Thread.sleep(200)
@@ -176,15 +182,20 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             updateBallsQuantity()
 
             // Inform the user toc (Play audio)
-            Toast.makeText(this@AdminActivity, getString(R.string.tip_take_basketball),
-                Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this@AdminActivity, getString(R.string.tip_take_basketball),
+                Toast.LENGTH_SHORT
+            ).show()
             playAudio(R.string.tip_take_basketball)
 
-            // Save borrow record (DO not do this now)
             val recordId: String = UUID.randomUUID().toString()
-            mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUserId, type = 0, captureImagePath = savedCaptureImagePath)
+            syncBorrowRecordToCloud(mUserId, 0, recordId, true)
+            mIsSyncBusy = false
         }
         binding.btnReturn.setOnClickListener {
+            if (mIsSyncBusy) {
+                return@setOnClickListener
+            }
             if (!mModbusOk) {
 //                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
 //                    Toast.LENGTH_SHORT).show()
@@ -212,104 +223,80 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
                 Toast.LENGTH_SHORT).show()
             playAudio(R.string.tip_return_basketball)
 
-            val savedCaptureImagePath = borrowReturnCapturePath("return")
-            takePhoto(savedCaptureImagePath)
-
+            mIsSyncBusy = true
             mReturnBallTimer = object : CountDownTimer(15000, 1000) {
                 override fun onTick(millisUntilFinished: Long) {
-                    binding.tvReturnBallCounterDown.text = String.format("%d", (millisUntilFinished / 1000))
+                    binding.tvReturnCounterDown.text =
+                        String.format("%d", (millisUntilFinished / 1000))
 
                     if (readModbusRegister(addressBallEntered) == 1) {
-                        Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
-                            Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this@AdminActivity, getString(R.string.tip_return_succeed),
+                            Toast.LENGTH_SHORT
+                        ).show()
                         playAudio(R.string.tip_return_succeed)
                         updateBallsQuantity()
-                        binding.tvReturnBallCounterDown.text = ""
+                        binding.tvReturnCounterDown.text = ""
 
                         val recordId: String = UUID.randomUUID().toString()
-                        mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUserId,
-                            type = 1, captureImagePath = savedCaptureImagePath)
-
+                        syncBorrowRecordToCloud(mUserId, 1, recordId, true)
+//                        logoutUser(mUser!!.id)
+                        mIsSyncBusy = false
                         cancel()
-                    }
-                    else {
+                    } else {
                         val remainSecs: Long = millisUntilFinished / 1000
                         if (remainSecs == 10L || remainSecs == 20L) {
                             playAudio(R.string.tip_return_basketball)
                         }
                     }
                 }
+
                 override fun onFinish() {
                     if (readModbusRegister(addressBallEntered) == 1) {
-                        Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
-                            Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this@AdminActivity, getString(R.string.tip_return_succeed),
+                            Toast.LENGTH_SHORT
+                        ).show()
                         playAudio(R.string.tip_return_succeed)
                         updateBallsQuantity()
-
                         val recordId: String = UUID.randomUUID().toString()
-                        mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUserId, type = 1, captureImagePath = savedCaptureImagePath)
-
-                        // The user is responsible to close the door, no need to write command
-                        // writeModbusRegister(addressOpen, 0)
+                        syncBorrowRecordToCloud(mUserId, 1, recordId, true)
                     }
                     else {
-                        Toast.makeText(this@AdminActivity, getString(R.string.tip_return_failed),
-                            Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this@AdminActivity, getString(R.string.tip_return_failed),
+                            Toast.LENGTH_SHORT
+                        ).show()
                         playAudio(R.string.tip_return_failed)
                     }
-                    binding.tvReturnBallCounterDown.text = ""
+                    binding.tvReturnCounterDown.text = ""
+                    mIsSyncBusy = false
                 }
             }
             (mReturnBallTimer as CountDownTimer).start()
 
-//            var numOfLoop: Int = 0
-//            var regSet: Boolean = true
-//            while (readModbusRegister(addressBallEntered) == 0) {
-//                Thread.sleep(100)
-//                Log.d(TAG, "Loop check reg state, numOfLoop: $numOfLoop")
-//                numOfLoop++
-//
-//                if (numOfLoop % 30 == 0) {
-//                    playAudio(R.raw.tip_return_basketball)
-//                }
-//
-//                if (numOfLoop >= 178) { // waiting for tip_return_basketball audio complete
-//                    regSet = false
-//                    break
-//                }
-//            }
-//            if (!regSet) { //Did not detect the signal of ball entered
-//                Toast.makeText(this@AdminActivity, getString(R.string.tip_return_failed),
-//                    Toast.LENGTH_SHORT).show()
-//                playAudio(R.raw.tip_return_failed)
-//                return@setOnClickListener
-//            }
-//
-//
-//            // The door lock will close the door itself, no need to write command
-////            writeModbusRegister(addressOpen, 0)
-//
-//            // Inform user to return the ball
-//            Toast.makeText(this@AdminActivity, getString(R.string.tip_return_succeed),
-//                Toast.LENGTH_SHORT).show()
-//            playAudio(R.raw.tip_return_succeed)
-//            updateBallsQuantity()
-//
-//            val recordId: String = UUID.randomUUID().toString()
-//            mDbHelper.addNewBorrowRecord(id = recordId, borrowerId = mUserId, type = 1, captureImagePath = savedCaptureImagePath)
         }
         binding.cardUserRegister.setOnClickListener{  // TODO: Deprecated this soon
+            if (mIsSyncBusy) {
+                return@setOnClickListener
+            }
             val myIntent = Intent(this@AdminActivity, UserRegisterActivity::class.java)
             myIntent.putExtra("userId", mUserId)
             myIntent.putExtra("actionType", "add")
             this@AdminActivity.startActivity(myIntent)
         }
         binding.cardBorrowLog.setOnClickListener{
+            if (mIsSyncBusy) {
+                return@setOnClickListener
+            }
             val myIntent = Intent(this@AdminActivity, BorrowLogActivity::class.java)
             myIntent.putExtra("userId", mUserId)
             this@AdminActivity.startActivity(myIntent)
         }
         binding.cardLoadBalls.setOnClickListener{
+            if (mIsSyncBusy) {
+                return@setOnClickListener
+            }
             if (!mModbusOk) {
 //                Toast.makeText(this@AdminActivity, getString(R.string.tip_device_error),
 //                    Toast.LENGTH_SHORT).show()
@@ -338,6 +325,9 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             // Close the lock TODO： The user click a button to lock the doors
         }
         binding.cardSettings.setOnClickListener{
+            if (mIsSyncBusy) {
+                return@setOnClickListener
+            }
             val intent = Intent(this@AdminActivity, SettingsActivity::class.java)
             intent.putExtra("modbusOk", mModbusOk)
             intent.putExtra("userId", mUserId)
@@ -345,6 +335,9 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             startActivity(intent)
         }
         binding.cardUserList.setOnClickListener{
+            if (mIsSyncBusy) {
+                return@setOnClickListener
+            }
             val myIntent = Intent(this@AdminActivity, UserListActivity::class.java)
             myIntent.putExtra("modbusOk", mModbusOk)
             myIntent.putExtra("userId", mUserId)
@@ -352,6 +345,9 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
             this@AdminActivity.startActivity(myIntent)
         }
         binding.ibtnAdminBack.setOnClickListener{
+            if (mIsSyncBusy) {
+                mReturnBallTimer?.cancel()
+            }
             val returnIntent = Intent()
             returnIntent.putExtra("state", "back")
             setResult(RESULT_OK, returnIntent)
@@ -367,6 +363,95 @@ class AdminActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
         Log.d(TAG, "Received Key: $keyCode")
 
         return true
+    }
+
+    private fun syncBorrowRecordToCloud(userId: String, recordType: Int, recordId: String, isNew: Boolean = false): Unit {
+        return
+
+        val user: User = mDbHelper.getUser(userId) ?: return
+
+        // Do not support for current product due to lack of camera
+        val typeText = if(recordType == 0) "borrow" else "return"
+        val typeTextCN = if(recordType == 0) "借" else "还"
+        val savedCaptureImagePath = borrowReturnCapturePath(typeText)
+        takePhoto(savedCaptureImagePath)
+        GlobalScope.launch {
+            val currentDateTimeText = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+                .format(System.currentTimeMillis())
+            var recordIdSplit = recordId.replace("-", "")
+            recordIdSplit = recordIdSplit.substring(0, 20)
+
+            val joRecord = JSONObject()
+            joRecord.put("filed169424554716796", user.classNo)
+            joRecord.put("filed169424554859169", user.gradeNo)
+
+            joRecord.put("gender", user.gender)
+            joRecord.put("filed170031757888118", user.barQRNo)
+            joRecord.put("filed169424556225866", mMachineId)
+            joRecord.put("filed_j2tj", user.name)
+            joRecord.put("filed169424561621229", currentDateTimeText)
+            joRecord.put("filed_2f9g", typeTextCN)
+            joRecord.put("\$tableNewId", recordIdSplit)
+
+            var recordTypeForDB = recordType // 0/2 for synchronized/un-synchronized borrow, 1/3 for synchronized/un-synchronized return return
+            try {
+                val saveBallRecordUrlAddress = "https://readerapp.dingcooltech.com/comm/apiComm/balls.SaveDataInfo"
+                val saveBallUrl = URL(saveBallRecordUrlAddress)
+                val httpURLConnection = saveBallUrl.openConnection() as HttpURLConnection
+                httpURLConnection.requestMethod = "POST"
+                httpURLConnection.setRequestProperty("Content-Type", "application/json")
+                httpURLConnection.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ7XCJkZXB0Y29kZVwiOlwiMTAwMDEwMDA2OUQwMDAwMVwiLFwiZGVwdGlkXCI6MTg0LFwiZGVwdG5hbWVcIjpcIuWQjuWPsOeuoeeQhumDqFwiLFwiZmRlcHRjb2Rlc1wiOltcIjEwMDAxMDAwNjlEMDAwMDFcIl0sXCJmdXNlcnNcIjpbXCJcIixcIlwiLFwiXCJdLFwib3JnYW5jb2RlXCI6XCIxMDAwMTAwMDY5XCIsXCJvcmdhbmlkXCI6NjgsXCJvcmdhbm5hbWVcIjpcIuWNg-ael-WxsVwiLFwicGFzc3dvcmRcIjpcIlwiLFwicmVhbGFuYW1lXCI6XCJhZDAwMTBcIixcInJvbGVzXCI6W1wi566h55CG5ZGYXCJdLFwidXNlcklkXCI6MjAzLFwidXNlck5hbWVcIjpcImFkMDAxMFwifSIsImV4cCI6MTcwMTY2MTU2OCwiaWF0IjoxNzAxNjU3OTY4fQ.oCes4NbkxfjRtstdbxmMECYkTWigLWidkP_Irul0hxU")
+
+
+                //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
+                httpURLConnection.doOutput = true
+                // this is used for just in case we don't know about the data size associated with our request
+                httpURLConnection.setChunkedStreamingMode(0)
+
+                Log.d(TAG, "Upload ball record, HTTP post: $joRecord")
+                // to write tha data in our request
+                val outputStream: OutputStream =
+                    BufferedOutputStream(httpURLConnection.outputStream)
+                val outputStreamWriter = OutputStreamWriter(outputStream)
+                outputStreamWriter.write(joRecord.toString())
+                outputStreamWriter.flush()
+                outputStreamWriter.close()
+
+                val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+                val bufferReader = BufferedReader(InputStreamReader(inputStream))
+                val respText =  bufferReader.readText()
+                bufferReader.close()
+                httpURLConnection.disconnect()
+
+                Log.d(TAG, "Upload ball record to cloud, response: $respText")
+                val joRegisterResp = JSONObject(respText)
+
+                if (joRegisterResp.getInt("code") != 0) {
+                    recordTypeForDB += 2
+                    Log.e(TAG, "Failed to upload ball record: $joRecord")
+                }
+                else {
+                    //Succeed
+                }
+            }
+            catch (exc: Exception) {
+                recordTypeForDB += 2
+                Log.d(TAG, "Exception occurred when uploading ball record to cloud: ${exc.toString()}")
+            }
+
+            if (isNew) {
+                mDbHelper.addNewBorrowRecord(
+                    id = recordId,
+                    borrowerId = mUserId,
+                    type = recordTypeForDB,
+                    captureImagePath = savedCaptureImagePath
+                )
+            }
+            else {
+                mDbHelper.updateBorrowRecord(id = recordId, type = recordTypeForDB,
+                    borrowerId = mUserId, captureImagePath = savedCaptureImagePath)
+            }
+        }
     }
 
     private fun updateSharedPreferencesFromController() {

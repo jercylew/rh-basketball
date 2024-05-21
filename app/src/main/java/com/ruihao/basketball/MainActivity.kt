@@ -219,6 +219,7 @@ class MainActivity : AppCompatActivity() {
             // Check the number of remaining balls decreased & door flag cleared
             var numOfLoop: Int = 0 //3 seconds
             var regCleared: Boolean = true
+            mIsSyncBusy = true
             while (readModbusRegister(addressToWrite) == 1) //modbus_read(num_qty) == m_remainQty(selected) ||
             {
                 Thread.sleep(100) //Warning: UI Freezing
@@ -236,6 +237,7 @@ class MainActivity : AppCompatActivity() {
 //                    Toast.LENGTH_SHORT
 //                ).show()
                 playAudio(R.string.tip_device_error)
+                mIsSyncBusy = false
                 return@setOnClickListener
             }
 
@@ -258,6 +260,7 @@ class MainActivity : AppCompatActivity() {
             val recordId: String = UUID.randomUUID().toString()
             syncBorrowRecordToCloud(mUser!!.id, 0, recordId, true)
 
+            mIsSyncBusy = false
             logoutUser(mUser!!.id)
         }
         binding.btnReturn.setOnClickListener {
@@ -309,6 +312,7 @@ class MainActivity : AppCompatActivity() {
             ).show()
             playAudio(R.string.tip_return_basketball)
 
+            mIsSyncBusy = true
             mReturnBallTimer = object : CountDownTimer(15000, 1000) {
                 override fun onTick(millisUntilFinished: Long) {
                     binding.tvReturnCounterDown.text =
@@ -327,6 +331,7 @@ class MainActivity : AppCompatActivity() {
                         val recordId: String = UUID.randomUUID().toString()
                         syncBorrowRecordToCloud(mUser!!.id, 1, recordId, true)
                         logoutUser(mUser!!.id)
+                        mIsSyncBusy = false
                         cancel()
                     } else {
                         val remainSecs: Long = millisUntilFinished / 1000
@@ -359,8 +364,10 @@ class MainActivity : AppCompatActivity() {
                             Toast.LENGTH_SHORT
                         ).show()
                         playAudio(R.string.tip_return_failed)
+                        logoutUser(mUser!!.id)
                     }
                     binding.tvReturnCounterDown.text = ""
+                    mIsSyncBusy = false
                 }
             }
             (mReturnBallTimer as CountDownTimer).start()
@@ -587,7 +594,7 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, "TTS initialize failed, status code: $status")
             }
         }
-//        syncUserInfoFromCloud()
+        syncUserInfoFromCloud()
     }
 
     private fun uploadOfflineBallRecords() {
@@ -1254,6 +1261,7 @@ class MainActivity : AppCompatActivity() {
                 myIntent.putExtra("modbusOk", mModbusOk) //Optional parameters
                 myIntent.putExtra("userId", id)
                 myIntent.putExtra("userName", name)
+                myIntent.putExtra("machineId", mMachineId)
 
                 mAdminActivityRunning = true
                 mAdminActivityLauncher.launch(myIntent)
@@ -1450,7 +1458,7 @@ class MainActivity : AppCompatActivity() {
         bufferReader.close()
         httpURLConnection.disconnect()
 
-//        Log.d(TAG, "Get user list from cloud: $respText")
+        Log.d(TAG, "Get user list from cloud: $respText")
         val joResp = JSONObject(respText)
         if (!joResp.getBoolean("success")) {
             return 0

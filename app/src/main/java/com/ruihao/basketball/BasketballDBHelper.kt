@@ -63,6 +63,11 @@ internal class BasketballDBHelper(context: Context?) :
     fun addNewUser(id: String, name: String?, barQRNo: String?, icCardNo: String?, age: Int?,
                    gender: Int?, tel: String?, classNo: String?, gradeNo: String?,
                    photoUrl: String?, isAdmin: Int? = 0) {
+        if (checkUserExistWithBarCode(barQRNo)) {
+            Log.d(TAG, "User ($name, $barQRNo, $icCardNo) already existed")
+            return
+        }
+
         val db = this.writableDatabase
         val values = ContentValues()
         val genderText: String = if(gender == 0) "男"  else "女"
@@ -253,6 +258,33 @@ internal class BasketballDBHelper(context: Context?) :
 
         return User(name = name, id = id, barQRNo = barQRNo, icCardNo = icCardNo, gender = gender, classNo = classNo,
             gradeNo = gradeNo, age = age, photoUrl = photoUrl, isAdmin = isAdmin)
+    }
+
+    fun checkUserExistWithBarCode(barQRNo: String?): Boolean {
+        val db = this.readableDatabase
+
+        val projection = arrayOf<String>(
+            BaseColumns._ID,
+        )
+
+        val selection =
+            "${BasketballContract.User.COLUMN_BAR_QR_NO} = ?"
+        val selectionArgs = arrayOf(barQRNo)
+
+        val sortOrder: String =
+            BasketballContract.User.COLUMN_NAME + " DESC"
+
+        val cursor = db.query(
+            BasketballContract.User.TABLE_NAME,  // The table to query
+            projection,  // The array of columns to return (pass null to get all)
+            selection,  // The columns for the WHERE clause
+            selectionArgs,  // The values for the WHERE clause
+            null,  // don't group the rows
+            null,  // don't filter by row groups
+            sortOrder // The sort order
+        )
+
+        return (cursor.count > 0)
     }
 
     fun addNewBorrowRecord(id: String, borrowerId: String?, type: Int?, captureImagePath: String?) {
@@ -457,6 +489,7 @@ internal class BasketballDBHelper(context: Context?) :
     }
 
     companion object {
+        private val TAG = BasketballContract::class.simpleName
         const val DATABASE_VERSION = 2
         const val DATABASE_NAME = "Basketball.db"
         private const val SQL_CREATE_TABLE_USER =

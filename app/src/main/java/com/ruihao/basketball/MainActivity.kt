@@ -1436,7 +1436,7 @@ class MainActivity : AppCompatActivity() {
         val httpURLConnection = cloudUserInfoUrl.openConnection() as HttpURLConnection
         httpURLConnection.requestMethod = "POST"
         httpURLConnection.setRequestProperty("Content-Type", "application/json")
-        httpURLConnection.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ7XCJhdmF0YXJcIjpcImh0dHBzOi8vcmVhZGVyYXBwLmRpbmdjb29sdGVjaC5jb20vZmlsZS9kb3dubG9hZEltZz9wYXRoPSUyRmRhdGElMkZBdHRhY2htZW50RmlsZSUyRjE2OTA4Nzc3NDcyNDIxNjg2Mjg5NjEwMzMyMDE2NjQyLnBuZ1wiLFwiZGVwdGNvZGVcIjpcIjEwMDAxRDAwMDAxXCIsXCJkZXB0aWRcIjoyLFwiZGVwdG5hbWVcIjpcIuWQjuWPsOeuoeeQhlwiLFwiZmRlcHRjb2Rlc1wiOltcIjEwMDAxRDAwMDAxXCJdLFwiZnVzZXJzXCI6W1wiYWRtaW5cIixcIlwiLFwiXCJdLFwib3JnYW5jb2RlXCI6XCIxMDAwMVwiLFwib3JnYW5pZFwiOjEsXCJvcmdhbm5hbWVcIjpcIuaZuuaFp-agoeWbrVwiLFwicGFzc3dvcmRcIjpcIlwiLFwicGhvbmVcIjpcIlwiLFwicmVhbGFuYW1lXCI6XCLnrqHnkIblkZhcIixcInJvbGVzXCI6W1wi6LaF57qn566h55CG5ZGYXCIsXCLmtYvor5Xop5LoibJcIixcImJvb3NcIixcIkhSXCIsXCLnrqHnkIblsYJcIixcIuaIkOWRmFwiLFwi5bmz5Y-w566h55CG5ZGYXCJdLFwidXNlcklkXCI6NyxcInVzZXJOYW1lXCI6XCJhZG1pblwifSIsImV4cCI6MTcxNjU0NzI1MywiaWF0IjoxNzE2MTg3MjUzfQ.9d50YPapKyA3yMfocAK5vOEo9silkm9UZY6l7wDAFpw")
+        httpURLConnection.setRequestProperty("Authorization", getAuthorizeToken())
 
         //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
         httpURLConnection.doOutput = true
@@ -1654,7 +1654,7 @@ class MainActivity : AppCompatActivity() {
                 val httpURLConnection = saveBallUrl.openConnection() as HttpURLConnection
                 httpURLConnection.requestMethod = "POST"
                 httpURLConnection.setRequestProperty("Content-Type", "application/json")
-                httpURLConnection.setRequestProperty("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ7XCJkZXB0Y29kZVwiOlwiMTAwMDEwMDA2OUQwMDAwMVwiLFwiZGVwdGlkXCI6MTg0LFwiZGVwdG5hbWVcIjpcIuWQjuWPsOeuoeeQhumDqFwiLFwiZmRlcHRjb2Rlc1wiOltcIjEwMDAxMDAwNjlEMDAwMDFcIl0sXCJmdXNlcnNcIjpbXCJcIixcIlwiLFwiXCJdLFwib3JnYW5jb2RlXCI6XCIxMDAwMTAwMDY5XCIsXCJvcmdhbmlkXCI6NjgsXCJvcmdhbm5hbWVcIjpcIuWNg-ael-WxsVwiLFwicGFzc3dvcmRcIjpcIlwiLFwicmVhbGFuYW1lXCI6XCJhZDAwMTBcIixcInJvbGVzXCI6W1wi566h55CG5ZGYXCJdLFwidXNlcklkXCI6MjAzLFwidXNlck5hbWVcIjpcImFkMDAxMFwifSIsImV4cCI6MTcwMTY2MTU2OCwiaWF0IjoxNzAxNjU3OTY4fQ.oCes4NbkxfjRtstdbxmMECYkTWigLWidkP_Irul0hxU")
+                httpURLConnection.setRequestProperty("Authorization", getAuthorizeToken())
 
 
                 //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
@@ -1702,6 +1702,57 @@ class MainActivity : AppCompatActivity() {
                 )
             }
         }
+    }
+
+    private fun getAuthorizeToken(): String {
+        var strToken = ""
+        val joRecord = JSONObject()
+        joRecord.put("username", "ad0010")
+        joRecord.put("password", "9+Xmq+9awZtAUCHceDyhXg==")
+
+        try {
+            val loginUrlAddress = "https://readerapp.dingcooltech.com/tappUser/login"
+            val loginUrl = URL(loginUrlAddress)
+            val httpURLConnection = loginUrl.openConnection() as HttpURLConnection
+            httpURLConnection.requestMethod = "POST"
+            httpURLConnection.setRequestProperty("Content-Type", "application/json")
+            httpURLConnection.setRequestProperty("Accept", "application/json, text/plain, */*")
+
+            //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
+            httpURLConnection.doOutput = true
+            // this is used for just in case we don't know about the data size associated with our request
+            httpURLConnection.setChunkedStreamingMode(0)
+
+            Log.d(TAG, "Login user, HTTP post: $joRecord")
+            // to write tha data in our request
+            val outputStream: OutputStream =
+                BufferedOutputStream(httpURLConnection.outputStream)
+            val outputStreamWriter = OutputStreamWriter(outputStream)
+            outputStreamWriter.write(joRecord.toString())
+            outputStreamWriter.flush()
+            outputStreamWriter.close()
+
+            val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+            val bufferReader = BufferedReader(InputStreamReader(inputStream))
+            val respText =  bufferReader.readText()
+            bufferReader.close()
+            httpURLConnection.disconnect()
+
+            Log.d(TAG, "Login user, response: $respText")
+            val joRegisterResp = JSONObject(respText)
+
+            if (joRegisterResp.getInt("code") != 0) {
+                Log.e(TAG, "Failed to upload ball record: $joRecord")
+                return ""
+            }
+
+            strToken = joRegisterResp.getString("data")
+        }
+        catch (exc: Exception) {
+            Log.d(TAG, "Exception occurred when login user: ${exc.toString()}")
+            return ""
+        }
+        return "Bearer $strToken"
     }
 
     inner class SerialControl

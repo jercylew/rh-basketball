@@ -1696,7 +1696,7 @@ class MainActivity : AppCompatActivity() {
             if (isNew) {
                 mDbHelper.addNewBorrowRecord(
                     id = recordId,
-                    borrowerId = mUser!!.id,
+                    borrowerId = userId,
                     type = recordTypeForDB,
                     captureImagePath = savedCaptureImagePath
                 )

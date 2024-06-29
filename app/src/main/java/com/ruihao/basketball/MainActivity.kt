@@ -257,11 +257,13 @@ class MainActivity : AppCompatActivity() {
             ).show()
             playAudio(R.string.tip_take_basketball)
 
-            val recordId: String = UUID.randomUUID().toString()
-            syncBorrowRecordToCloud(mUser!!.id, 0, recordId, true)
-
-            mIsSyncBusy = false
+            val userId = mUser!!.id
+            GlobalScope.launch {
+                val recordId: String = UUID.randomUUID().toString()
+                syncBorrowRecordToCloud(userId, 0, recordId, true)
+            }
             logoutUser(mUser!!.id)
+            mIsSyncBusy = false
         }
         binding.btnReturn.setOnClickListener {
             if (mUser == null) {
@@ -328,10 +330,13 @@ class MainActivity : AppCompatActivity() {
                         updateGridView()
                         binding.tvReturnCounterDown.text = ""
 
-                        val recordId: String = UUID.randomUUID().toString()
-                        syncBorrowRecordToCloud(mUser!!.id, 1, recordId, true)
-                        logoutUser(mUser!!.id)
+                        val userId = mUser!!.id
+                        GlobalScope.launch {
+                            val recordId: String = UUID.randomUUID().toString()
+                            syncBorrowRecordToCloud(userId, 1, recordId, true)
+                        }
                         mIsSyncBusy = false
+                        logoutUser(mUser!!.id)
                         cancel()
                     } else {
                         val remainSecs: Long = millisUntilFinished / 1000
@@ -350,13 +355,17 @@ class MainActivity : AppCompatActivity() {
                         playAudio(R.string.tip_return_succeed)
                         updateBallsQuantity()
                         updateGridView()
-                        val recordId: String = UUID.randomUUID().toString()
-                        syncBorrowRecordToCloud(mUser!!.id, 1, recordId, true)
+
+                        val userId = mUser!!.id
+                        GlobalScope.launch {
+                            val recordId: String = UUID.randomUUID().toString()
+                            syncBorrowRecordToCloud(userId, 1, recordId, true)
+                        }
+
+                        logoutUser(mUser!!.id)
 
                         // The user is responsible to close the door, no need to write command
                         // writeModbusRegister(addressOpen, 0)
-
-                        logoutUser(mUser!!.id)
                     }
                     else {
                         Toast.makeText(
@@ -600,24 +609,25 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, "TTS initialize failed, status code: $status")
             }
         }
-//        syncUserInfoFromCloud()
     }
 
     private fun uploadOfflineBallRecords() {
-        val offlineRecords = ArrayList<BorrowRecord>()
-        offlineRecords.addAll(mDbHelper.getBorrowRecordsWithType(2))
-        offlineRecords.addAll(mDbHelper.getBorrowRecordsWithType(3))
+        GlobalScope.launch {
+            val offlineRecords = ArrayList<BorrowRecord>()
+            offlineRecords.addAll(mDbHelper.getBorrowRecordsWithType(2))
+            offlineRecords.addAll(mDbHelper.getBorrowRecordsWithType(3))
 
-        Log.d(TAG, "Trying to upload offline ball record, length: ${offlineRecords.size}")
-        for (record in offlineRecords) {
-            val recordId: String = UUID.randomUUID().toString()
-            val recordType: Int = if (record.type == 2 || record.type == 0) {
-                0
-            } else {
-                1
+            Log.d(TAG, "Trying to upload offline ball record, length: ${offlineRecords.size}")
+            for (record in offlineRecords) {
+                val recordId: String = record.id
+                val recordType: Int = if (record.type == 2 || record.type == 0) {
+                    0
+                } else {
+                    1
+                }
+
+                syncBorrowRecordToCloud(record.borrowerId, recordType, recordId)
             }
-
-            syncBorrowRecordToCloud(record.borrowerId, recordType, recordId)
         }
     }
 
@@ -1643,78 +1653,81 @@ class MainActivity : AppCompatActivity() {
             takePhoto(savedCaptureImagePath)
         }
 
-        GlobalScope.launch {
-            val currentDateTimeText = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
-                .format(System.currentTimeMillis())
-            var recordIdSplit = recordId.replace("-", "")
-            recordIdSplit = recordIdSplit.substring(0, 20)
+        val currentDateTimeText = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            .format(System.currentTimeMillis())
+        var recordIdSplit = recordId.replace("-", "")
+        recordIdSplit = recordIdSplit.substring(0, 20)
 
-            val joRecord = JSONObject()
-            joRecord.put("filed169424554716796", user.classNo)
-            joRecord.put("filed169424554859169", user.gradeNo)
+        val joRecord = JSONObject()
+        joRecord.put("filed169424554716796", user.classNo)
+        joRecord.put("filed169424554859169", user.gradeNo)
 
-            joRecord.put("gender", user.gender)
-            joRecord.put("filed170031757888118", user.barQRNo)
-            joRecord.put("filed169424556225866", mMachineId)
-            joRecord.put("filed_j2tj", user.name)
-            joRecord.put("filed169424561621229", currentDateTimeText)
-            joRecord.put("filed_2f9g", typeTextCN)
-            joRecord.put("\$tableNewId", recordIdSplit)
+        joRecord.put("gender", user.gender)
+        joRecord.put("filed170031757888118", user.barQRNo)
+        joRecord.put("filed169424556225866", mMachineId)
+        joRecord.put("filed_j2tj", user.name)
+        joRecord.put("filed169424561621229", currentDateTimeText)
+        joRecord.put("filed_2f9g", typeTextCN)
+        joRecord.put("\$tableNewId", recordIdSplit)
 
-            var recordTypeForDB = recordType // 0/2 for synchronized/un-synchronized borrow, 1/3 for synchronized/un-synchronized return return
-            try {
-                val saveBallRecordUrlAddress = "https://readerapp.dingcooltech.com/comm/apiComm/balls.SaveDataInfo"
-                val saveBallUrl = URL(saveBallRecordUrlAddress)
-                val httpURLConnection = saveBallUrl.openConnection() as HttpURLConnection
-                httpURLConnection.requestMethod = "POST"
-                httpURLConnection.setRequestProperty("Content-Type", "application/json")
-                httpURLConnection.setRequestProperty("Authorization", getAuthorizeToken())
+        var recordTypeForDB = recordType // 0/2 for synchronized/un-synchronized borrow, 1/3 for synchronized/un-synchronized return return
+        try {
+            val saveBallRecordUrlAddress = "https://readerapp.dingcooltech.com/comm/apiComm/balls.SaveDataInfo"
+            val saveBallUrl = URL(saveBallRecordUrlAddress)
+            val httpURLConnection = saveBallUrl.openConnection() as HttpURLConnection
+            httpURLConnection.requestMethod = "POST"
+            httpURLConnection.setRequestProperty("Content-Type", "application/json")
+            httpURLConnection.setRequestProperty("Authorization", getAuthorizeToken())
 
 
-                //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
-                httpURLConnection.doOutput = true
-                // this is used for just in case we don't know about the data size associated with our request
-                httpURLConnection.setChunkedStreamingMode(0)
+            //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
+            httpURLConnection.doOutput = true
+            // this is used for just in case we don't know about the data size associated with our request
+            httpURLConnection.setChunkedStreamingMode(0)
 
-                Log.d(TAG, "Upload ball record, HTTP post: $joRecord")
-                // to write tha data in our request
-                val outputStream: OutputStream =
-                    BufferedOutputStream(httpURLConnection.outputStream)
-                val outputStreamWriter = OutputStreamWriter(outputStream)
-                outputStreamWriter.write(joRecord.toString())
-                outputStreamWriter.flush()
-                outputStreamWriter.close()
+            Log.d(TAG, "Upload ball record, HTTP post: $joRecord")
+            // to write tha data in our request
+            val outputStream: OutputStream =
+                BufferedOutputStream(httpURLConnection.outputStream)
+            val outputStreamWriter = OutputStreamWriter(outputStream)
+            outputStreamWriter.write(joRecord.toString())
+            outputStreamWriter.flush()
+            outputStreamWriter.close()
 
-                val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
-                val bufferReader = BufferedReader(InputStreamReader(inputStream))
-                val respText =  bufferReader.readText()
-                bufferReader.close()
-                httpURLConnection.disconnect()
+            val inputStream: InputStream = BufferedInputStream(httpURLConnection.inputStream)
+            val bufferReader = BufferedReader(InputStreamReader(inputStream))
+            val respText =  bufferReader.readText()
+            bufferReader.close()
+            httpURLConnection.disconnect()
 
-                Log.d(TAG, "Upload ball record to cloud, response: $respText")
-                val joRegisterResp = JSONObject(respText)
+            Log.d(TAG, "Upload ball record to cloud, response: $respText")
+            val joRegisterResp = JSONObject(respText)
 
-                if (joRegisterResp.getInt("code") != 0) {
-                    recordTypeForDB += 2
-                    Log.e(TAG, "Failed to upload ball record: $joRecord")
-                }
-                else {
-                    //Succeed
-                }
-            }
-            catch (exc: Exception) {
+            if (joRegisterResp.getInt("code") != 0) {
                 recordTypeForDB += 2
-                Log.d(TAG, "Exception occurred when uploading ball record to cloud: ${exc.toString()}")
+                Log.e(TAG, "Failed to upload ball record: $joRecord")
             }
+            else {
+                //Succeed
+            }
+        }
+        catch (exc: Exception) {
+            recordTypeForDB += 2
+            Log.d(TAG, "Exception occurred when uploading ball record to cloud: ${exc.toString()}")
+        }
 
-            if (isNew) {
-                mDbHelper.addNewBorrowRecord(
-                    id = recordId,
-                    borrowerId = userId,
-                    type = recordTypeForDB,
-                    captureImagePath = savedCaptureImagePath
-                )
-            }
+        if (isNew) {
+            mDbHelper.addNewBorrowRecord(
+                id = recordId,
+                borrowerId = userId,
+                type = recordTypeForDB,
+                captureImagePath = savedCaptureImagePath
+            )
+        }
+        else {
+            mDbHelper.updateBorrowRecord(id = recordId,
+                borrowerId = userId, type = recordTypeForDB,
+                captureImagePath = savedCaptureImagePath)
         }
     }
 

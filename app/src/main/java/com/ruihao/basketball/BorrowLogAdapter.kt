@@ -57,7 +57,7 @@ class BorrowLogAdapter(context: Context, borrowRecordList: ArrayList<BorrowRecor
 
         holder.mTVName.text = borrowerInfo.name
         holder.mTVDateTime.text = record.createdTime
-        holder.mTVType.text = if (record.type == 0) "借" else "还"
+        holder.mTVType.text = if (record.type == 0 || record.type == 2) "借" else "还"
         if (File(record.captureImagePath).exists()) {
             val imgBitmap = BitmapFactory.decodeFile(record.captureImagePath)
             holder.mTVCaptureImage.setImageBitmap(imgBitmap)

@@ -415,6 +415,12 @@ class MainActivity : AppCompatActivity() {
             val dialog: AlertDialog = builder.create()
             dialog.show()
         }
+        binding.tvGreeting.setOnLongClickListener {
+            if (mUser != null) {
+                logoutUser(mUser!!.id)
+            }
+            return@setOnLongClickListener true
+        }
 
         comPort = SerialControl()
 
@@ -1387,9 +1393,10 @@ class MainActivity : AppCompatActivity() {
             try {
                 mDbHelper.clearAllUsers()
                 val cloudUserInfoUrl = URL(postUrl)
+                val strToken = getAuthorizeToken()
                 for (page in 1..300) { // At most 3000
                     try {
-                        val addedUsersCount = addBatchUsers(cloudUserInfoUrl, page, joPayload)
+                        val addedUsersCount = addBatchUsers(cloudUserInfoUrl, page, joPayload, strToken)
                         if (addedUsersCount == 0) {
                             break
                         }
@@ -1432,11 +1439,11 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun addBatchUsers(cloudUserInfoUrl: URL, page: Int, joReqCommonPayload: JSONObject): Int {
+    private fun addBatchUsers(cloudUserInfoUrl: URL, page: Int, joReqCommonPayload: JSONObject, authorizeToken: String): Int {
         val httpURLConnection = cloudUserInfoUrl.openConnection() as HttpURLConnection
         httpURLConnection.requestMethod = "POST"
         httpURLConnection.setRequestProperty("Content-Type", "application/json")
-        httpURLConnection.setRequestProperty("Authorization", getAuthorizeToken())
+        httpURLConnection.setRequestProperty("Authorization", authorizeToken)
 
         //to tell the connection object that we will be wrting some data on the server and then will fetch the output result
         httpURLConnection.doOutput = true
@@ -1551,14 +1558,21 @@ class MainActivity : AppCompatActivity() {
             jaUsersListToRegister.put(joUserInfoToRegister)
         }
 
-        val registerCount = registerBatchUserToFaceRecogMachine(jaUsersListToRegister)
-        Log.d(TAG, "Registered face in face recognize machine: $registerCount users")
+        if (mediaPlayer.isPlaying)
+        {
+            val registerCount = registerBatchUserToFaceRecogMachine(jaUsersListToRegister)
+            Log.d(TAG, "Registered face in face recognize machine: $registerCount users")
+        }
 
         return jaList.length()
     }
 
     private fun registerBatchUserToFaceRecogMachine(jaUsersList: JSONArray): Int {
         if (jaUsersList.length() == 0) {
+            return 0
+        }
+
+        if (!mediaPlayer.isPlaying) {
             return 0
         }
 

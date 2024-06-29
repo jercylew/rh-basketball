@@ -598,14 +598,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun uploadOfflineBallRecords() {
-        var offlineRecords = ArrayList<BorrowRecord>()
+        val offlineRecords = ArrayList<BorrowRecord>()
         offlineRecords.addAll(mDbHelper.getBorrowRecordsWithType(2))
         offlineRecords.addAll(mDbHelper.getBorrowRecordsWithType(3))
 
         Log.d(TAG, "Trying to upload offline ball record, length: ${offlineRecords.size}")
         for (record in offlineRecords) {
             val recordId: String = UUID.randomUUID().toString()
-            var recordType: Int = if (record.type == 2) {
+            val recordType: Int = if (record.type == 2 || record.type == 0) {
                 0
             } else {
                 1
@@ -630,15 +630,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun canUserBorrow(): Boolean {
-        if (mUser == null) {
-            return false
-        }
-
-        // Already borrowed maximum number of balls
-        val borrowRecords = mDbHelper.getBorrowRecordsForUser(mUser!!.id, 0)
-        val returnRecords = mDbHelper.getBorrowRecordsForUser(mUser!!.id, 1)
-
-        return (borrowRecords.size - returnRecords.size < MAX_BORROW_QTY_ALLOWED)
+//        if (mUser == null) {
+//            return false
+//        }
+//
+//        // Already borrowed maximum number of balls
+//        val borrowRecords = mDbHelper.getBorrowRecordsForUser(mUser!!.id, 0)
+//        val returnRecords = mDbHelper.getBorrowRecordsForUser(mUser!!.id, 1)
+//
+//        return (borrowRecords.size - returnRecords.size < MAX_BORROW_QTY_ALLOWED)
+        return true
     }
 
     override fun onStart() {
@@ -1617,15 +1618,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun syncBorrowRecordToCloud(userId: String, recordType: Int, recordId: String, isNew: Boolean = false): Unit {
-        return
-
         val user: User = mDbHelper.getUser(userId) ?: return
 
         // Do not support for current product due to lack of camera
         val typeText = if(recordType == 0) "borrow" else "return"
         val typeTextCN = if(recordType == 0) "借" else "还"
-        val savedCaptureImagePath = borrowReturnCapturePath(typeText)
-        takePhoto(savedCaptureImagePath)
+        var savedCaptureImagePath = ""
+        if (isNew) {
+            savedCaptureImagePath = borrowReturnCapturePath(typeText)
+            takePhoto(savedCaptureImagePath)
+        }
+
         GlobalScope.launch {
             val currentDateTimeText = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
                 .format(System.currentTimeMillis())
@@ -1697,10 +1700,6 @@ class MainActivity : AppCompatActivity() {
                     type = recordTypeForDB,
                     captureImagePath = savedCaptureImagePath
                 )
-            }
-            else {
-                mDbHelper.updateBorrowRecord(id = recordId, type = recordTypeForDB,
-                    borrowerId = mUser!!.id, captureImagePath = savedCaptureImagePath)
             }
         }
     }
